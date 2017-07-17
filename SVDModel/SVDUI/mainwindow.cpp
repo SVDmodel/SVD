@@ -3,9 +3,10 @@
 #include <QDebug>
 #include <QFileDialog>
 
-#include "../Predictor/predictor.h"
+#include "testdnn.h"
 
-Predictor model;
+#include "modelcontroller.h"
+ModelController *mc=0;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -19,41 +20,30 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_runInception_clicked()
-{
-    //QStringList argv = { "inception" };
-    //char *argv[] = { "inception" };
 
-    //int result = inception(1, argv);
+void MainWindow::on_actionTest_DNN_triggered()
+{
+    // open test DNN form and show model
+    TestDNN *testdnn = new TestDNN();
+    testdnn->show();
 
 }
 
-void MainWindow::on_setupModel_clicked()
+void MainWindow::on_pbStart_clicked()
 {
-    if (model.setup(ui->modelPath->text()))
-        qDebug() << "setup successful";
-}
-
-void MainWindow::on_selectFile_clicked()
-{
-    QString fileName = QFileDialog::getOpenFileName(this,
-          tr("Open Image"), "/home/werner", tr("Image Files (*.png *.jpg *.bmp)"));
-    if (!fileName.isEmpty()) {
-        ui->imagePath->setText(fileName);
-        QImage img;
-        img.load(fileName);
-        ui->image->setPixmap(QPixmap::fromImage(img));
-        QString result = model.classifyImage(fileName);
-        ui->output->appendPlainText(result);
+    if (!mc) {
+        ui->lLog->appendPlainText("Starting ModelController...");
+        mc = new ModelController(this);
+        connect(mc, &ModelController::log, ui->lLog, &QPlainTextEdit::appendPlainText);
     }
+
 }
 
-void MainWindow::on_doPredict_clicked()
+void MainWindow::on_pbStop_clicked()
 {
-    QString fileName = ui->imagePath->text();
-    for (int i=0;i<1000;++i) {
-        QString result = model.classifyImage(fileName);
-        ui->output->appendPlainText(result);
+    if (mc) {
+        ui->lLog->appendPlainText("Stopping ModelController...");
+        delete mc;
+        mc=0;
     }
-    ui->output->appendPlainText("*** executed 1000 times *** ");
 }

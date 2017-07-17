@@ -15,13 +15,12 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 private slots:
-    void on_runInception_clicked();
 
-    void on_setupModel_clicked();
+    void on_actionTest_DNN_triggered();
 
-    void on_selectFile_clicked();
+    void on_pbStart_clicked();
 
-    void on_doPredict_clicked();
+    void on_pbStop_clicked();
 
 private:
     Ui::MainWindow *ui;
