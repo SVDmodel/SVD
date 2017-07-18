@@ -1,25 +1,57 @@
 #include "modelcontroller.h"
 #include "modelshell.h"
+#include "toymodel.h"
 
 ModelController::ModelController(QObject *parent) : QObject(parent)
 {
     ModelShell *model_shell = new ModelShell;
-    model_shell->moveToThread(&modelThread);
+    modelThread = new QThread();
+    mModel = model_shell;
+    mModel->moveToThread(modelThread);
 
-    connect(&modelThread, &QThread::finished, model_shell, &QObject::deleteLater);
+    connect(modelThread, &QThread::finished, model_shell, &QObject::deleteLater);
 
     //connect(this, &ModelController::operate, model_shell, &ModelShell::doWork);
     //connect(model_shell, &ModelShell::resultReady, this, &ModelController::handleResults);
 
+    dnnThread = new QThread();
+    ToyInference *ti = new ToyInference;
+    ti->moveToThread(dnnThread);
+    connect(dnnThread, &QThread::finished, ti, &QObject::deleteLater);
+
+    // connection between main model and DNN:
+    connect(&mModel->toyModel(), &ToyModel::newPackage, ti, &ToyInference::doWork);
+    connect(ti, &ToyInference::workDone, &mModel->toyModel(), &ToyModel::processedPackage);
+
     // logging
-    connect(model_shell, &ModelShell::log, this, &ModelController::log);
+    connect(mModel, &ModelShell::log, this, &ModelController::log);
     log("Modelcontroller: before thread.start()");
-    modelThread.start();
+    modelThread->setObjectName("SVDMain");
+    modelThread->start();
+
+    dnnThread->setObjectName("SVDDNN");
+    dnnThread->start();
 }
 
 ModelController::~ModelController()
 {
-    modelThread.quit();
-    modelThread.wait();
+    abort();
+    modelThread->quit();
+    dnnThread->quit();
+    modelThread->wait();
+    dnnThread->wait();
     log("Destroyed Thread");
+
+}
+
+void ModelController::run()
+{
+    QMetaObject::invokeMethod(mModel, "run");
+}
+
+void ModelController::abort()
+{
+    QMetaObject::invokeMethod(mModel, "abort");
+    log(".... stopping thread....");
+
 }

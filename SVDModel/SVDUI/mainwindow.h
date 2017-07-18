@@ -22,6 +22,10 @@ private slots:
 
     void on_pbStop_clicked();
 
+    void on_run_clicked();
+
+    void on_pushButton_clicked();
+
 private:
     Ui::MainWindow *ui;
 };

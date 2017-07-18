@@ -5,6 +5,7 @@
 #-------------------------------------------------
 
 QT       -= gui
+QT       += concurrent
 
 TARGET = SVDCore
 TEMPLATE = lib
@@ -24,11 +25,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         svdcore.cpp \
-    modelshell.cpp
+    modelshell.cpp \
+    toymodel.cpp
 
 HEADERS += \
         svdcore.h \
-    modelshell.h
+    modelshell.h \
+    toymodel.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

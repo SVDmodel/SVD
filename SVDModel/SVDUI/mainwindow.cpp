@@ -36,7 +36,6 @@ void MainWindow::on_pbStart_clicked()
         mc = new ModelController(this);
         connect(mc, &ModelController::log, ui->lLog, &QPlainTextEdit::appendPlainText);
     }
-
 }
 
 void MainWindow::on_pbStop_clicked()
@@ -46,4 +45,16 @@ void MainWindow::on_pbStop_clicked()
         delete mc;
         mc=0;
     }
+}
+
+void MainWindow::on_run_clicked()
+{
+    if (mc)
+        mc->run();
+}
+
+void MainWindow::on_pushButton_clicked()
+{
+    if (mc)
+        mc->abort();
 }
