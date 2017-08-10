@@ -317,3 +317,61 @@ QString Predictor::classifyImage(QString image_path)
     return res;
 
 }
+
+QString Predictor::insight()
+{
+
+    //# https://joe-antognini.github.io/machine-learning/windows-tf-project
+    std::vector<float> data = std::vector<float>(4*40, 0.f);
+    auto mapped_x = Eigen::TensorMap<Eigen::Tensor<float, 2> >(&data[0],4,40);
+    auto eigen_x = Eigen::Tensor<float,2>(mapped_x);
+
+
+    Tensor Input1(tensorflow::DT_FLOAT, tensorflow::TensorShape({4,40}));
+    //Input1.tensor<float,2>() = eigen_x;
+
+
+//    auto mapped_X_ = Eigen::TensorMap<Eigen::Tensor<float, 2, Eigen::RowMajor>>
+//                         (&data[0], 2, 2);
+//      auto eigen_X_ = Eigen::Tensor<float, 2, Eigen::RowMajor>(mapped_X_);
+
+//      Tensor X_(DT_FLOAT, TensorShape({ 2, 2 }));
+//      X_.tensor<float, 2>() = eigen_X_;
+
+    //Setup Input Tensors
+
+    Tensor Input0(tensorflow::DT_FLOAT, tensorflow::TensorShape({1,1}));
+
+    // Output
+//std::vector output;
+
+    auto t = Input1.tensor<float,2>();
+    const Eigen::Tensor<float, 2>::Dimensions& d = t.dimensions();
+    QStringList out;
+    out  << QString("Dim size: %1, dim0: %2 dim1: %3 ").arg(int(d.size)).arg(int(d[0])).arg(int(d[1])) ;
+    out << QString("n dimensionsXXX: %1").arg(t.NumDimensions);
+
+    size_t dx=d[0], dy=d[1];
+    float sum=0.f;
+    for (size_t x=0;x<dx;++x)
+        for (size_t y=0;y<dy;++y)
+            t(x,y) = 0.f;
+
+
+    //t.setContstant(0.f);
+    t(2,20) = 10.f;
+    t(1, 10) = 5.f;
+
+    for (size_t x=0;x<dx;++x)
+        for (size_t y=0;y<dy;++y)
+            sum += t(x,y);
+
+    out << QString("sum: %1").arg(sum);
+
+    //std::cout << "Dims " << t.NumDimensions;
+
+    //Input1.scalar<float>()() = 1.0;
+    //Input0.scalar<float>()() = 0.0;
+
+    return out.join("\n");
+}

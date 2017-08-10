@@ -41,8 +41,14 @@ FORMS += \
 win32:CONFIG (release, debug|release): LIBS += -L../Predictor/release -lPredictor
 else:win32:CONFIG (debug, debug|release): LIBS += -L../Predictor/debug -lPredictor
 
+# https://forum.qt.io/topic/22298/solved-change-of-library-but-creator-does-not-build-completely
+win32:CONFIG (release, debug|release): PRE_TARGETDEPS += ../Predictor/release/Predictor.lib
+else:win32:CONFIG (debug, debug|release): PRE_TARGETDEPS += ../Predictor/debug/Predictor.lib
+
+
 win32:CONFIG (release, debug|release): LIBS += -L../SVDCore/release -lSVDCore
 else:win32:CONFIG (debug, debug|release): LIBS += -L../SVDCore/debug -lSVDCore
 
 
 LIBS += -LE:/dev/tensorflow/tensorflow/contrib/cmake/build/Release -ltensorflow
+

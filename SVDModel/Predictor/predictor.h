@@ -15,6 +15,8 @@ public:
     bool setup(QString model_path);
     // inception
     QString classifyImage(QString image_path);
+    //
+    QString insight();
 private:
     tensorflow::Session *session;
     std::string label_file;

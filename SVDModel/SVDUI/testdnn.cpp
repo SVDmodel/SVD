@@ -51,10 +51,13 @@ void TestDNN::on_selectFile_clicked()
 
 void TestDNN::on_doPredict_clicked()
 {
-    QString fileName = ui->imagePath->text();
+
+    QString text = model.insight();
+    ui->output->appendPlainText(text);
+/*    QString fileName = ui->imagePath->text();
     for (int i=0;i<1000;++i) {
         QString result = model.classifyImage(fileName);
         ui->output->appendPlainText(result);
     }
-    ui->output->appendPlainText("*** executed 1000 times *** !!");
+    ui->output->appendPlainText("*** executed 1000 times *** !!"); */
 }
