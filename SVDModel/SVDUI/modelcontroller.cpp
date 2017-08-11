@@ -22,6 +22,7 @@ ModelController::ModelController(QObject *parent) : QObject(parent)
     // connection between main model and DNN:
     connect(&mModel->toyModel(), &ToyModel::newPackage, ti, &ToyInference::doWork);
     connect(ti, &ToyInference::workDone, &mModel->toyModel(), &ToyModel::processedPackage);
+    connect(&mModel->toyModel(), &ToyModel::finished, this, &ModelController::finishedRun);
 
     // logging
     connect(mModel, &ModelShell::log, this, &ModelController::log);
@@ -46,7 +47,8 @@ ModelController::~ModelController()
 
 void ModelController::run()
 {
-    QMetaObject::invokeMethod(mModel, "run");
+    QMetaObject::invokeMethod(mModel, "run", Qt::QueuedConnection);
+    log("... ModelController: started");
 }
 
 void ModelController::abort()
@@ -54,4 +56,9 @@ void ModelController::abort()
     QMetaObject::invokeMethod(mModel, "abort");
     log(".... stopping thread....");
 
+}
+
+void ModelController::finishedRun()
+{
+    log(" *** Finished ***");
 }

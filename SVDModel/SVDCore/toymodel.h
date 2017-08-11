@@ -6,6 +6,8 @@
 #include <memory>
 
 #include <QObject>
+#include <QFutureWatcher>
+#include <QFuture>
 
 struct InferenceItem {
     int index;
@@ -43,11 +45,15 @@ private:
 
     void finalizeState();
 
+    QFutureWatcher<void> packageWatcher;
+    QFuture<void> packageFuture;
+
     std::vector<int> data;
     std::vector<int> to_process;
     std::list< std::list<InferenceItem*>* > for_inference;
 public slots:
     void processedPackage(std::list<InferenceItem*>*package);
+    void allPackagesBuilt();
 signals:
     void newPackage(std::list<InferenceItem*>*);
     void finished();

@@ -49,6 +49,9 @@ else:win32:CONFIG (debug, debug|release): PRE_TARGETDEPS += ../Predictor/debug/P
 win32:CONFIG (release, debug|release): LIBS += -L../SVDCore/release -lSVDCore
 else:win32:CONFIG (debug, debug|release): LIBS += -L../SVDCore/debug -lSVDCore
 
+win32:CONFIG (release, debug|release): PRE_TARGETDEPS += ../SVDCore/release/SVDCore.lib
+else:win32:CONFIG (debug, debug|release): PRE_TARGETDEPS += ../SVDCore/debug/SVDCore.lib
+
 
 LIBS += -LE:/dev/tensorflow/tensorflow/contrib/cmake/build/Release -ltensorflow
 

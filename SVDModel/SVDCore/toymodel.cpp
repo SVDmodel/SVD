@@ -9,9 +9,12 @@
 
 ToyModel::ToyModel()
 {
-    data = std::vector<int>(10000,0);
+    data = std::vector<int>(1000,0);
     mAbort = false;
     mLivePackages = 0;
+
+    connect(&packageWatcher, SIGNAL(finished()), this, SLOT(allPackagesBuilt()));
+    packageWatcher.setFuture(packageFuture);
 
 }
 
@@ -19,27 +22,21 @@ void ToyModel::run()
 {
     // the main steps:
     // 1) find issues to process
+    std::cout << "Model run started" << std::endl;
+    std::cout << "***************************" << std::endl;
     to_process.clear();
 
     for (int i=0;i<data.size();++i)
         if (data[i] == 0)
             to_process.push_back(i);
 
-    std::cout << to_process.size() << "items in list" << std::endl;
+    std::cout << to_process.size() << " items in list" << std::endl;
 
     // 2) now prepare the data
-    QFutureWatcher<void> watcher;
-    QFuture<void> result = QtConcurrent::map(to_process, [this](int idx){ this->buildDataPackage(idx); });
+    packageFuture = QtConcurrent::map(to_process, [this](int idx){ this->buildDataPackage(idx); });
+    packageWatcher.setFuture(packageFuture);
+    std::cout << ".... prepara data packages running ...." << std::endl;
 
-    watcher.setPendingResultsLimit(5);
-    watcher.setFuture(result);
-
-    result.waitForFinished();
-    startInference(); // start last batch (even if < than batch size)
-
-    std::cout << "finished prepare..." << std::endl;
-
-    // wait for the results coming in ....
 }
 
 void ToyModel::buildDataPackage(int point_index)
@@ -78,7 +75,7 @@ void ToyModel::addDataPackage(InferenceItem *item)
         for_inference.push_back( new std::list<InferenceItem*>() );
         mLivePackages++;
         list = for_inference.back();
-        std::cout << "created new data list, #=" << for_inference.size() << std::endl;
+        // std::cout << "created new data list, #=" << for_inference.size() << std::endl;
     }
     list->push_back(item);
 
@@ -94,6 +91,14 @@ void ToyModel::startInference()
     for_inference.pop_front();
 
     // Call inference machine: route to DNN thread
+    while (mLivePackages>3 && !isCancel()) {
+        // wait some time...
+        std::cout << "... wait until <=3 .... #packages=" << mLivePackages << std::endl;
+        QThread::msleep(1000);
+        QCoreApplication::processEvents(); // allow receiving of packages...
+
+    }
+    std::cout << "sending package to Inference... (now " << mLivePackages << ")" << std::endl;
     emit newPackage(inf_list);
 
 }
@@ -107,8 +112,10 @@ void ToyModel::finalizeState()
         if (item==0) zeros++;
     }
     std::cout << "Zeros:" << zeros << std::endl;
+    emit finished();
 }
 
+QMutex lock_processed_package;
 void ToyModel::processedPackage(std::list<InferenceItem *> *package)
 {
     // DNN delivered processed package....
@@ -122,7 +129,7 @@ void ToyModel::processedPackage(std::list<InferenceItem *> *package)
 
     // now the data can be freed:
     {
-    QMutexLocker locker(&lock_inference_list);
+    QMutexLocker locker(&lock_processed_package);
     mLivePackages--;
     delete package;
     }
@@ -130,11 +137,19 @@ void ToyModel::processedPackage(std::list<InferenceItem *> *package)
     if (mLivePackages==0) {
         finalizeState();
         std::cout << "Model: processsed Last Package!" << std::endl;
+        std::cout << "************************" << std::endl;
     } else {
         std::cout << "Model: #packages: " << mLivePackages << std::endl;
     }
-    emit finished();
 
+
+
+}
+
+void ToyModel::allPackagesBuilt()
+{
+    std::cout << "all data preparations are finished... building last batch" << std::endl;
+    startInference(); // start last batch (even if < than batch size)
 
 }
 

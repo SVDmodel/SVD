@@ -21,7 +21,7 @@ void ModelShell::run()
 
     toy.run();
 
-    emit log("Finished run");
+    emit log("... model running...");
 }
 
 void ModelShell::runTest()

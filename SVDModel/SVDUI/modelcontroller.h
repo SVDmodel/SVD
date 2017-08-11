@@ -21,6 +21,7 @@ signals:
 public slots:
     void run();
     void abort();
+    void finishedRun();
 private:
     ModelShell *mModel;
 

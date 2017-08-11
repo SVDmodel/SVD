@@ -52,7 +52,9 @@ void TestDNN::on_selectFile_clicked()
 void TestDNN::on_doPredict_clicked()
 {
 
-    QString text = model.insight();
+    //QString text = model.insight();
+    //ui->output->appendPlainText(text);
+    QString text = model.runModel();
     ui->output->appendPlainText(text);
 /*    QString fileName = ui->imagePath->text();
     for (int i=0;i<1000;++i) {
