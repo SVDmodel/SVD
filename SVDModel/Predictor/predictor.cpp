@@ -35,6 +35,23 @@ using tensorflow::Status;
 using tensorflow::string;
 using tensorflow::int32;
 
+/// Some array conversion tools.
+/// \author David Stutz
+template<typename T, int NDIMS>
+class TensorConversion {
+public:
+
+  /// Access the underlying data pointer of the tensor.
+  /// \param tensor
+  /// \return
+  static T* AccessDataPointer(const tensorflow::Tensor &tensor) {
+    // get underlying Eigen tensor
+    auto tensor_map = tensor.tensor<T, NDIMS>();
+    // get the underlying array
+    auto array = tensor_map.data();
+    return const_cast<T*>(array);
+  }
+};
 
 // Takes a file name, and loads a list of labels from it, one per line, and
 // returns a vector of the strings. It pads with empty strings so the length
@@ -252,8 +269,9 @@ bool Predictor::setup(QString model_path)
     //  return -1;
     //}
 
-
-    session = tensorflow::NewSession(tensorflow::SessionOptions());
+    tensorflow::SessionOptions opts;
+    opts.config.set_log_device_placement(true);
+    session = tensorflow::NewSession(tensorflow::SessionOptions()); // no specific options: tensorflow::SessionOptions()
 
     string graph_path = model_path.toStdString();
 
@@ -331,19 +349,19 @@ QString Predictor::insight()
     //Input1.tensor<float,2>() = eigen_x;
 
 
-//    auto mapped_X_ = Eigen::TensorMap<Eigen::Tensor<float, 2, Eigen::RowMajor>>
-//                         (&data[0], 2, 2);
-//      auto eigen_X_ = Eigen::Tensor<float, 2, Eigen::RowMajor>(mapped_X_);
+    //    auto mapped_X_ = Eigen::TensorMap<Eigen::Tensor<float, 2, Eigen::RowMajor>>
+    //                         (&data[0], 2, 2);
+    //      auto eigen_X_ = Eigen::Tensor<float, 2, Eigen::RowMajor>(mapped_X_);
 
-//      Tensor X_(DT_FLOAT, TensorShape({ 2, 2 }));
-//      X_.tensor<float, 2>() = eigen_X_;
+    //      Tensor X_(DT_FLOAT, TensorShape({ 2, 2 }));
+    //      X_.tensor<float, 2>() = eigen_X_;
 
     //Setup Input Tensors
 
     Tensor Input0(tensorflow::DT_FLOAT, tensorflow::TensorShape({1,1}));
 
     // Output
-//std::vector output;
+    //std::vector output;
 
     auto t = Input1.tensor<float,2>();
     const Eigen::Tensor<float, 2>::Dimensions& d = t.dimensions();
@@ -373,5 +391,274 @@ QString Predictor::insight()
     //Input1.scalar<float>()() = 1.0;
     //Input0.scalar<float>()() = 0.0;
 
+
+
+    // trying to create and fill a Tensorflow tensor, with at least 4 dimensions
+    // to see how the data is stored in memory;
+    // hopefully able to convert it to the Eigen tensor and from there to an array.
+    const int batch_size = 1;
+    const int depth = 5;
+    const int height = 5;
+    const int width = 5;
+    const int channels = 3;
+    Tensor tensor(tensorflow::DT_INT32, tensorflow::TensorShape({batch_size, depth, height, width, channels}));
+
+    // get underlying Eigen tensor
+    auto tensor_map = tensor.tensor<int, 5>();
+
+    // fill and print the tensor
+    QString s;
+    for (int n = 0; n < batch_size; n++) {
+        for (int d = 0; d < depth; d++) {
+            std::cout << d << " --" << std::endl;
+            for (int h = 0; h < height; h++) {
+                for (int w = 0; w < width; w++) {
+                    for (int c = 0; c < channels; c++) {
+                        tensor_map(n, d, h, w, c) = (((n*depth + d)*height + h)*width + w)*channels + c;
+                        s+=QString("%1,").arg(tensor_map(n, d, h, w, c));
+
+                    }
+                  s += " ** ";
+                }
+                s+= "\n";
+            }
+        }
+    }
+    out << s;
+
+    // get the underlying array
+    auto array = tensor_map.data();
+    int* int_array = static_cast<int*>(array);
+
+    s="";
+    // try to print the same to see the data layout
+    for (int n = 0; n < batch_size; n++) {
+        for (int d = 0; d < depth; d++) {
+            out << QString::number(d);
+            for (int h = 0; h < height; h++) {
+                for (int w = 0; w < width; w++) {
+                    for (int c = 0; c < channels; c++) {
+
+                       s +=QString("%1, ").arg( int_array[(((n*depth + d)*height + h)*width + w)*channels + c] );
+                    }
+                   s+= " ";
+                }
+                out << s; s="";
+            }
+        }
+    }
+
+    Tensor tensor2(tensorflow::DT_FLOAT, tensorflow::TensorShape({4,5}));
+    float *idata = TensorConversion<float,2>::AccessDataPointer(tensor2);
+    for (int i=0;i<20;++i)
+        idata[i] = i;
+    out << " **** ";
+    auto my_map = tensor2.tensor<float, 2>();
+    out << QString("%1 - %2").arg(my_map(0,0)).arg(my_map(0,4));
+
+
     return out.join("\n");
+}
+
+template<typename T>
+class TensorWrap2d
+{
+public:
+    TensorWrap2d(size_t batch_size, size_t n) {
+        mBatchSize = batch_size; mN=n;
+        tensorflow::DataType dt = tensorflow::DT_FLOAT;
+        if (typeid(T)==typeid(float)) dt=tensorflow::DT_FLOAT;
+        if (typeid(T)==typeid(int)) dt=tensorflow::DT_INT64;
+        if (typeid(T)==typeid(unsigned short)) dt=tensorflow::DT_UINT16;
+        if (typeid(T)==typeid(short int)) dt=tensorflow::DT_INT16;
+
+        mT = new Tensor(dt, tensorflow::TensorShape({ static_cast<int>(mBatchSize), static_cast<int>(mN)}));
+        mData = TensorConversion<T,2>::AccessDataPointer(*mT);
+        mPrivateTensor=true;
+    }
+    TensorWrap2d(Tensor &tensor) {
+        mBatchSize = tensor.dim_size(0);
+        mN = tensor.dim_size(1);
+        mT = &tensor;
+        mData = TensorConversion<T,2>::AccessDataPointer(tensor);
+        mPrivateTensor=false;
+    }
+    Tensor &tensor() const { return *mT; }
+    size_t n() const  { return mN; }
+    T *example(size_t element) { return mData + element*mN; }
+
+    ~TensorWrap2d() { if (mPrivateTensor) delete mT; }
+private:
+    bool mPrivateTensor;
+    Tensor *mT;
+    T *mData;
+    size_t mBatchSize;
+    size_t mN;
+};
+
+template<typename T>
+class TensorWrap3d
+{
+public:
+    TensorWrap3d(size_t batch_size, size_t nx, size_t ny) {
+        mBatchSize = batch_size; mNx=nx; mNy=ny;
+        tensorflow::DataType dt = tensorflow::DT_FLOAT;
+        if (typeid(T)==typeid(float)) dt=tensorflow::DT_FLOAT;
+        if (typeid(T)==typeid(int)) dt=tensorflow::DT_INT64;
+        if (typeid(T)==typeid(unsigned short)) dt=tensorflow::DT_UINT16;
+
+        mT = new Tensor(dt, tensorflow::TensorShape({ static_cast<int>(mBatchSize), static_cast<int>(mNx), static_cast<int>(mNy)}));
+        mData = TensorConversion<T,3>::AccessDataPointer(*mT);
+    }
+    Tensor &tensor() const { return *mT; }
+    size_t nx() const { return mNx; }
+    size_t ny() const {return mNy; }
+    T *example(size_t element) { return mData + element*mNx*mNy; }
+    T *row(size_t element, size_t x) { return mData + element*mNx*mNy+x*mNx; }
+
+    ~TensorWrap3d() { delete mT; }
+private:
+    Tensor *mT;
+    T *mData;
+    size_t mBatchSize;
+    size_t mNx;
+    size_t mNy;
+};
+
+
+QString Predictor::runModel()
+{
+    const int batchsize=5;
+    const int timesteps=10;
+    const int Nneighbors=62;
+    const int top_n = 10;
+
+    TensorWrap2d<short int> state(batchsize, 1);
+    TensorWrap2d<float> time(batchsize, 1);
+    TensorWrap3d<float> climate(batchsize, timesteps, 40);
+    TensorWrap2d<float> neighbors(batchsize, Nneighbors);
+    TensorWrap2d<float> site(batchsize, 2);
+
+    for (int i=0;i<batchsize;++i) {
+        *state.example(i) = i;
+        float *d = climate.example(i);
+        for (int j=0;j<climate.nx()*climate.ny();++j)
+            d[j] = 0.f + j / 10.;
+        site.example(i)[0]=32.3f;
+        site.example(i)[1]=44.2f;
+        for (int j=0;j<Nneighbors;++j)
+            neighbors.example(i)[j] = 0.f;
+
+        *time.example(i) = 1;
+    }
+
+    /*return( {'state_input': state,
+            'site_input': sitedata,
+            'time_input': restime,
+            'neighbor_input': neighbors,
+            'clim_input': cdat},
+            { 'out': labs,
+             'time_out': labs_time })
+sinput, climinput, siteinput, neighborinput, timeinput
+
+Blas GEMM launch failed --> close python session with active tensorflow!!
+*/
+    Tensor learning_phase(tensorflow::DT_BOOL, tensorflow::TensorShape());
+    learning_phase.scalar<bool>()()=0.f;
+
+
+    std::vector<Tensor> outputs;
+
+    std::vector<std::pair<string, Tensor> > inputs = {{"state_input", state.tensor()},
+                                                      {"clim_input", climate.tensor()},
+                                                      {"site_input", site.tensor()},
+                                                      {"neighbor_input", neighbors.tensor()},
+                                                      {"time_input", time.tensor()},
+                                                      {"dropout_1/keras_learning_phase", learning_phase}
+                                                     };
+    Status run_status = session->Run(inputs, {"out/Softmax", "time_out/Softmax"}, {}, &outputs);
+    if (!run_status.ok()) {
+        qWarning() << "Running model failed: " << run_status.error_message().data();
+        return QString::fromStdString(run_status.error_message());
+    }
+
+    QStringList out;
+    // now analyze the resulting tensors
+    qDebug() << outputs.size() << "output tensors";
+    qDebug() << QString::fromStdString(outputs[0].DebugString());
+    qDebug() << QString::fromStdString(outputs[1].DebugString());
+    // output tensors: 2dim; 1x batch, 1x data
+    qDebug() << outputs[1].dim_size(0) << " x " << outputs[1].dim_size(1);
+
+    // dump
+    TensorWrap2d<float> out_time(outputs[1]);
+    for (int i=0;i<batchsize;++i) {
+        QString line = QString("Example %1: ").arg(i);
+        for (int j=0;j<out_time.n();j++)
+            line+=QString("%1,").arg(out_time.example(i)[j]);
+        out << line;
+    }
+
+
+    // top labels
+
+    Tensor indices;
+    Tensor scores;
+    run_status = getTopClasses(outputs[0], top_n, &indices, &scores);
+    if (!run_status.ok()) {
+        qWarning() << "Running top-k failed: " << run_status.error_message().data();
+        return QString::fromStdString(run_status.error_message());
+    }
+
+    out << "Classifcation Results";
+    TensorWrap2d<float> scores_flat(scores);
+    TensorWrap2d<int32> indicies_flat(indices);
+    for (int i=0;i<batchsize;++i) {
+        out << QString("**** Example %1 ***** ").arg(i);
+        for (int j=0;j<out_time.n();j++)
+            out << QString("State: %1 prob: %2").arg( indicies_flat.example(i)[j] ).arg( scores_flat.example(i)[j] );
+    }
+
+
+
+
+
+
+    for (int i=0;i<batchsize;++i) {
+        out << QString("Example %1").arg(i);
+        out << QString("state: %1 site 1: %2 site 2: %3").arg(*state.example(i)).arg(site.example(i)[0]).arg(site.example(i)[1]);
+        out << QString("climate: v1: %1 v40/1: %2 v40/10 %3").arg(climate.example(i)[0]).arg(climate.example(i)[climate.nx()-1]).arg(climate.row(i,9)[climate.nx()-1]);
+    }
+
+    return out.join("\n");
+
+}
+
+Status Predictor::getTopClasses(const Tensor &classes, const int n_top, Tensor *indices, Tensor *scores)
+{
+    auto root = tensorflow::Scope::NewRootScope();
+    using namespace ::tensorflow::ops;  // NOLINT(build/namespaces)
+
+    string output_name = "top_k";
+    TopK(root.WithOpName(output_name), classes, n_top);
+    // This runs the GraphDef network definition that we've just constructed, and
+    // returns the results in the output tensors.
+    tensorflow::GraphDef graph;
+    TF_RETURN_IF_ERROR(root.ToGraphDef(&graph));
+
+    std::unique_ptr<tensorflow::Session> session(
+        tensorflow::NewSession(tensorflow::SessionOptions()));
+    TF_RETURN_IF_ERROR(session->Create(graph));
+    // The TopK node returns two outputs, the scores and their original indices,
+    // so we have to append :0 and :1 to specify them both.
+    std::vector<Tensor> out_tensors;
+    TF_RETURN_IF_ERROR(session->Run({}, {output_name + ":0", output_name + ":1"},
+                                    {}, &out_tensors));
+    *scores = out_tensors[0];
+    *indices = out_tensors[1];
+
+    return Status::OK();
+
+
+
 }
