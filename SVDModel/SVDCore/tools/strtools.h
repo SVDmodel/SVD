@@ -86,3 +86,9 @@ template <typename T> void delete_and_clear(std::vector<T*> &v)
 }
 #endif
  
+
+template <class Container>
+const bool contains(Container& container, const typename Container::value_type& element)
+{
+    return std::find(container.begin(), container.end(), element) != container.end();
+}

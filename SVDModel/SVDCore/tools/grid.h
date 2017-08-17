@@ -20,14 +20,59 @@
 #ifndef GRID_H
 #define GRID_H
 
-#include <QtCore>
 
+#include <vector>
+#include <algorithm>
 
 #include <stdexcept>
 #include <limits>
-#include <cstring>
+#include <string>
 
-#include "global.h"
+class Point {
+public:
+    Point() : mX(0), mY(0) {}
+    Point (int x, int y) { mX=x; mY=y; }
+    int x() const { return mX; }
+    int y() const { return mY; }
+private:
+    int mX;
+    int mY;
+};
+class PointF {
+public:
+    PointF() : mX(0), mY(0) {}
+    PointF (double x, double y) { mX=x; mY=y; }
+    double x() const { return mX; }
+    double y() const { return mY; }
+    // setters
+    void setX(const double x) {mX = x; }
+    void setY(const double y) {mY = y; }
+private:
+    double mX;
+    double mY;
+};
+class Rect {
+
+};
+class RectF {
+public:
+    RectF() : mTop(-1.), mBottom(-1.), mLeft(-1.), mRight(-1.) {}
+    RectF(double left, double top, double right, double bottom) {mLeft=left; mTop=top; mRight=right; mBottom=bottom;}
+    double top() const { return mTop; }
+    double bottom() const { return mBottom; }
+    double left() const { return mLeft; }
+    double right() const { return mRight; }
+    void setCoords(double left, double top, double right, double bottom) {mLeft=left; mTop=top; mRight=right; mBottom=bottom; }
+    bool isNull() const { return mTop==-1. && mBottom==-1. && mLeft==-1. && mRight==-1.; }
+    bool contains(double x, double y) const { return x>=mLeft && x<=mRight && y>=mTop && y<=mBottom; }
+private:
+    double mTop;
+    double mBottom;
+    double mLeft;
+    double mRight;
+};
+
+
 
 /** Grid class (template).
 @ingroup tools
@@ -45,16 +90,16 @@ class Grid {
 public:
 
     Grid();
-    Grid(float cellsize, int sizex, int sizey) { mData=0; setup(cellsize, sizex, sizey); }
+    Grid(double cellsize, int sizex, int sizey) { mData=0; setup(cellsize, sizex, sizey); }
     /// create from a metric rect
-    Grid(const QRectF rect_metric, const float cellsize) { mData=0; setup(rect_metric,cellsize); }
+    Grid(const RectF rect_metric, const double cellsize) { mData=0; setup(rect_metric,cellsize); }
     // copy ctor
     Grid(const Grid<T>& toCopy);
     ~Grid() { clear(); }
     void clear() { if (mData) delete[] mData; mData=0; }
 
-    bool setup(const float cellsize, const int sizex, const int sizey);
-    bool setup(const QRectF& rect, const double cellsize);
+    bool setup(const double cellsize, const int sizex, const int sizey);
+    bool setup(const RectF& rect, const double cellsize);
     bool setup(const Grid<T>& source) { clear();  mRect = source.mRect; return setup(source.mRect, source.mCellsize); }
     void initialize(const T& value) {for( T *p = begin();p!=end(); ++p) *p=value; }
     void wipe(); ///< write 0-bytes with memcpy to the whole area
@@ -65,60 +110,62 @@ public:
     /// create a double grid (same size as this grid) and convert this grid to double values.
     /// NOTE: caller is responsible for freeing memory!
     Grid<double> *toDouble() const;
+    /// copies from values to the internal memory. Return false if sizes are not the same.
+    bool setValues(const std::vector<T> &values) { if (values.size() != count()) return false; T*p=begin(); for (const T& i: values) *p++=i; }
 
     // get the number of cells in x and y direction
     int sizeX() const { return mSizeX; }
     int sizeY() const { return mSizeY; }
     // get the size of the grid in metric coordinates (x and y direction)
-    float metricSizeX() const { return mSizeX*mCellsize; }
-    float metricSizeY() const { return mSizeY*mCellsize; }
+    double metricSizeX() const { return mSizeX*mCellsize; }
+    double metricSizeY() const { return mSizeY*mCellsize; }
     /// get the metric rectangle of the grid
-    QRectF metricRect() const { return mRect; }
+    RectF metricRect() const { return mRect; }
     /// get the rectangle of the grid in terms of indices
-    QRect rectangle() const { return QRect(QPoint(0,0), QPoint(sizeX(), sizeY())); }
+    Rect rectangle() const { return Rect(Point(0,0), Point(sizeX(), sizeY())); }
     /// get the length of one pixel of the grid
-    float cellsize() const { return mCellsize; }
+    double cellsize() const { return mCellsize; }
     int count() const { return mCount; } ///< returns the number of elements of the grid
     bool isEmpty() const { return mData==NULL; } ///< returns false if the grid was not setup
     // operations
     // query
     /// access (const) with index variables. use int.
     inline const T& operator()(const int ix, const int iy) const { return constValueAtIndex(ix, iy); }
-    /// access (const) using metric variables. use float.
-    inline const T& operator()(const float x, const float y) const { return constValueAt(x, y); }
-    /// access value of grid with a QPoint
-    inline const T& operator[](const QPoint &p) const { return constValueAtIndex(p); }
+    /// access (const) using metric variables. use double.
+    inline const T& operator()(const double x, const double y) const { return constValueAt(x, y); }
+    /// access value of grid with a Point
+    inline const T& operator[](const Point &p) const { return constValueAtIndex(p); }
     /// use the square brackets to access by index
     inline T& operator[](const int idx) const { return mData[idx]; }
-    /// use the square bracket to access by QPointF
-    inline T& operator[] (const QPointF &p) { return valueAt(p); }
+    /// use the square bracket to access by PointF
+    inline T& operator[] (const PointF &p) { return valueAt(p); }
 
-    inline T& valueAtIndex(const QPoint& pos) {return valueAtIndex(pos.x(), pos.y());}  ///< value at position defined by a QPoint defining the two indices (x,y)
+    inline T& valueAtIndex(const Point& pos) {return valueAtIndex(pos.x(), pos.y());}  ///< value at position defined by a Point defining the two indices (x,y)
     T& valueAtIndex(const int ix, const int iy) { return mData[iy*mSizeX + ix];  } ///< const value at position defined by indices (x,y)
     T& valueAtIndex(const int index) {return mData[index]; } ///< get a ref ot value at (one-dimensional) index 'index'.
     inline int index(const int ix, const int iy) { return iy*mSizeX + ix; } ///< get the 0-based index of the cell with indices ix and iy.
-    inline int index(const QPoint &pos) { return pos.y()*mSizeX + pos.x(); } ///< get the 0-based index of the cell at 'pos'.
-    /// value at position defined by a (integer) QPoint
-    inline const T& constValueAtIndex(const QPoint& pos) const {return constValueAtIndex(pos.x(), pos.y()); }
+    inline int index(const Point &pos) { return pos.y()*mSizeX + pos.x(); } ///< get the 0-based index of the cell at 'pos'.
+    /// value at position defined by a (integer) Point
+    inline const T& constValueAtIndex(const Point& pos) const {return constValueAtIndex(pos.x(), pos.y()); }
     /// value at position defined by a pair of integer coordinates
     inline const T& constValueAtIndex(const int ix, const int iy) const { return mData[iy*mSizeX + ix];  }
     /// value at position defined by the index within the grid
     const T& constValueAtIndex(const int index) const {return mData[index]; } ///< get a ref ot value at (one-dimensional) index 'index'.
 
-    T& valueAt(const QPointF& posf); ///< value at position defined by metric coordinates (QPointF)
-    const T& constValueAt(const QPointF& posf) const; ///< value at position defined by metric coordinates (QPointF)
+    T& valueAt(const PointF& posf); ///< value at position defined by metric coordinates (PointF)
+    const T& constValueAt(const PointF& posf) const; ///< value at position defined by metric coordinates (PointF)
 
-    T& valueAt(const float x, const float y); ///< value at position defined by metric coordinates (x,y)
-    const T& constValueAt(const float x, const float y) const; ///< value at position defined by metric coordinates (x,y)
+    T& valueAt(const double x, const double y); ///< value at position defined by metric coordinates (x,y)
+    const T& constValueAt(const double x, const double y) const; ///< value at position defined by metric coordinates (x,y)
 
 
-    bool coordValid(const float x, const float y) const { return x>=mRect.left() && x<mRect.right()  && y>=mRect.top() && y<mRect.bottom(); }
-    bool coordValid(const QPointF &pos) const { return coordValid(pos.x(), pos.y()); }
+    bool coordValid(const double x, const double y) const { return x>=mRect.left() && x<mRect.right()  && y>=mRect.top() && y<mRect.bottom(); }
+    bool coordValid(const PointF &pos) const { return coordValid(pos.x(), pos.y()); }
 
-    QPoint indexAt(const QPointF& pos) const { return QPoint(int((pos.x()-mRect.left()) / mCellsize),  int((pos.y()-mRect.top())/mCellsize)); } ///< get index of value at position pos (metric)
+    Point indexAt(const PointF& pos) const { return Point(int((pos.x()-mRect.left()) / mCellsize),  int((pos.y()-mRect.top())/mCellsize)); } ///< get index of value at position pos (metric)
     /// get index (x/y) of the (linear) index 'index' (0..count-1)
-    QPoint indexOf(const int index) const {return QPoint(index % mSizeX,  index / mSizeX); }
-    bool isIndexValid(const QPoint& pos) const { return (pos.x()>=0 && pos.x()<mSizeX && pos.y()>=0 && pos.y()<mSizeY); } ///< return true, if position is within the grid
+    Point indexOf(const int index) const {return Point(index % mSizeX,  index / mSizeX); }
+    bool isIndexValid(const Point& pos) const { return (pos.x()>=0 && pos.x()<mSizeX && pos.y()>=0 && pos.y()<mSizeY); } ///< return true, if position is within the grid
     bool isIndexValid(const int x, const int y) const {return (x>=0 && x<mSizeX && y>=0 && y<mSizeY); } ///< return true, if index is within the grid
 
     /// returns the index of an aligned grid (with the same size and matching origin) with the double cell size (e.g. to scale from a 10m grid to a 20m grid)
@@ -129,18 +176,18 @@ public:
     int index10(int idx) const {return ((idx/mSizeX)/10)*(mSizeX/10) + (idx%mSizeX)/10; }
 
     /// force @param pos to contain valid indices with respect to this grid.
-    void validate(QPoint &pos) const{ pos.setX( qMax(qMin(pos.x(), mSizeX-1), 0) );  pos.setY( qMax(qMin(pos.y(), mSizeY-1), 0) );} ///< ensure that "pos" is a valid key. if out of range, pos is set to minimum/maximum values.
+    void validate(Point &pos) const{ pos.setX( qMax(qMin(pos.x(), mSizeX-1), 0) );  pos.setY( qMax(qMin(pos.y(), mSizeY-1), 0) );} ///< ensure that "pos" is a valid key. if out of range, pos is set to minimum/maximum values.
     /// get the (metric) centerpoint of cell with index @p pos
-    QPointF cellCenterPoint(const QPoint &pos) const { return QPointF( (pos.x()+0.5)*mCellsize+mRect.left(), (pos.y()+0.5)*mCellsize + mRect.top());} ///< get metric coordinates of the cells center
+    PointF cellCenterPoint(const Point &pos) const { return PointF( (pos.x()+0.5)*mCellsize+mRect.left(), (pos.y()+0.5)*mCellsize + mRect.top());} ///< get metric coordinates of the cells center
     /// get the metric cell center point of the cell given by index 'index'
-    QPointF cellCenterPoint(const int &index) const { QPoint pos=indexOf(index); return QPointF( (pos.x()+0.5)*mCellsize+mRect.left(), (pos.y()+0.5)*mCellsize + mRect.top());}
+    PointF cellCenterPoint(const int &index) const { Point pos=indexOf(index); return PointF( (pos.x()+0.5)*mCellsize+mRect.left(), (pos.y()+0.5)*mCellsize + mRect.top());}
     /// get the metric rectangle of the cell with index @pos
-    QRectF cellRect(const QPoint &pos) const { QRectF r( QPointF(mRect.left() + mCellsize*pos.x(), mRect.top() + pos.y()*mCellsize),
+    RectF cellRect(const Point &pos) const { RectF r( PointF(mRect.left() + mCellsize*pos.x(), mRect.top() + pos.y()*mCellsize),
                                                    QSizeF(mCellsize, mCellsize)); return r; } ///< return coordinates of rect given by @param pos.
 
     inline  T* begin() const { return mData; } ///< get "iterator" pointer
     inline  T* end() const { return mEnd; } ///< get iterator end-pointer
-    inline QPoint indexOf(const T* element) const; ///< retrieve index (x/y) of the pointer element. returns -1/-1 if element is not valid.
+    inline Point indexOf(const T* element) const; ///< retrieve index (x/y) of the pointer element. returns -1/-1 if element is not valid.
     // special queries
     T max() const; ///< retrieve the maximum value of a grid
     T sum() const; ///< retrieve the sum of the grid
@@ -160,21 +207,21 @@ public:
     /// if the grid is empty or the sum is 0, no modifications are performed.
     Grid<T> normalized(const T targetvalue) const;
     T* ptr(int x, int y) { return &(mData[y*mSizeX + x]); } ///< get a pointer to the element indexed by "x" and "y"
-    inline double distance(const QPoint &p1, const QPoint &p2); ///< distance (metric) between p1 and p2
-    const QPoint randomPosition() const; ///< returns a (valid) random position within the grid
+    inline double distance(const Point &p1, const Point &p2); ///< distance (metric) between p1 and p2
+    const Point randomPosition() const; ///< returns a (valid) random position within the grid
 private:
 
     T* mData;
     T* mEnd; ///< pointer to 1 element behind the last
-    QRectF mRect;
-    float mCellsize; ///< size of a cell in meter
+    RectF mRect;
+    double mCellsize; ///< size of a cell in meter
     int mSizeX; ///< count of cells in x-direction
     int mSizeY; ///< count of cells in y-direction
     int mCount; ///< total number of cells in the grid
 };
 
 
-typedef Grid<float> FloatGrid;
+typedef Grid<double> DoubleGrid;
 
 enum GridViewType { GridViewRainbow=0, GridViewRainbowReverse=1, GridViewGray=2, GridViewGrayReverse=3, GridViewHeat=4,
                     GridViewGreens=5, GridViewReds=6, GridViewBlues=7,
@@ -185,14 +232,14 @@ enum GridViewType { GridViewRainbow=0, GridViewRainbowReverse=1, GridViewGray=2,
 template <class T>
 class GridRunner {
 public:
-    // constructors with a QRectF (metric coordinates)
-    GridRunner(Grid<T> &target_grid, const QRectF &rectangle) {setup(&target_grid, rectangle);}
-    GridRunner(const Grid<T> &target_grid, const QRectF &rectangle) {setup(&target_grid, rectangle);}
-    GridRunner(Grid<T> *target_grid, const QRectF &rectangle) {setup(target_grid, rectangle);}
-    // constructors with a QRect (indices within the grid)
-    GridRunner(Grid<T> &target_grid, const QRect &rectangle) {setup(&target_grid, rectangle);}
-    GridRunner(const Grid<T> &target_grid, const QRect &rectangle) {setup(&target_grid, rectangle);}
-    GridRunner(Grid<T> *target_grid, const QRect &rectangle) {setup(target_grid, rectangle);}
+    // constructors with a RectF (metric coordinates)
+    GridRunner(Grid<T> &target_grid, const RectF &rectangle) {setup(&target_grid, rectangle);}
+    GridRunner(const Grid<T> &target_grid, const RectF &rectangle) {setup(&target_grid, rectangle);}
+    GridRunner(Grid<T> *target_grid, const RectF &rectangle) {setup(target_grid, rectangle);}
+    // constructors with a Rect (indices within the grid)
+    GridRunner(Grid<T> &target_grid, const Rect &rectangle) {setup(&target_grid, rectangle);}
+    GridRunner(const Grid<T> &target_grid, const Rect &rectangle) {setup(&target_grid, rectangle);}
+    GridRunner(Grid<T> *target_grid, const Rect &rectangle) {setup(target_grid, rectangle);}
     GridRunner(Grid<T> *target_grid) {setup(target_grid, target_grid->rectangle()); }
     T* next(); ///< to to next element, return NULL if finished
     /// return the current element, or NULL
@@ -204,12 +251,12 @@ public:
     /// checks if the state of the GridRunner is valid, returns false if out of scope
     bool isValid() const {return mCurrent>=mFirst && mCurrent<=mLast; }
     /// return the (index) - coordinates of the current position in the grid
-    QPoint currentIndex() const { return mGrid->indexOf(mCurrent); }
+    Point currentIndex() const { return mGrid->indexOf(mCurrent); }
     /// return the coordinates of the cell center point of the current position in the grid.
-    QPointF currentCoord() const {return mGrid->cellCenterPoint(mGrid->indexOf(mCurrent));}
+    PointF currentCoord() const {return mGrid->cellCenterPoint(mGrid->indexOf(mCurrent));}
     void reset() { mCurrent = mFirst-1; mCurrentCol = -1; }
     /// set the internal pointer to the pixel at index 'new_index'. The index is relative to the base grid!
-    void setPosition(QPoint new_index) { if (mGrid->isIndexValid(new_index)) mCurrent = const_cast<Grid<T> *>(mGrid)->ptr(new_index.x(), new_index.y()); else mCurrent=0; }
+    void setPosition(Point new_index) { if (mGrid->isIndexValid(new_index)) mCurrent = const_cast<Grid<T> *>(mGrid)->ptr(new_index.x(), new_index.y()); else mCurrent=0; }
     // helpers
     /// fill array with pointers to neighbors (north, east, west, south)
     /// or Null-pointers if out of range.
@@ -217,8 +264,8 @@ public:
     void neighbors4(T** rArray);
     void neighbors8(T** rArray);
 private:
-    void setup(const Grid<T> *target_grid, const QRectF &rectangle);
-    void setup(const Grid<T> *target_grid, const QRect &rectangle);
+    void setup(const Grid<T> *target_grid, const RectF &rectangle);
+    void setup(const Grid<T> *target_grid, const Rect &rectangle);
     const Grid<T> *mGrid;
     T* mFirst; // points to the first element of the grid
     T* mLast; // points to the last element of the grid
@@ -302,25 +349,25 @@ Grid<T> Grid<T>::averaged(const int factor, const int offsetx, const int offsety
 
 
 template <class T>
-T&  Grid<T>::valueAt(const float x, const float y)
+T&  Grid<T>::valueAt(const double x, const double y)
 {
-    return valueAtIndex( indexAt(QPointF(x,y)) );
+    return valueAtIndex( indexAt(PointF(x,y)) );
 }
 
 template <class T>
-const T&  Grid<T>::constValueAt(const float x, const float y) const
+const T&  Grid<T>::constValueAt(const double x, const double y) const
 {
-    return constValueAtIndex( indexAt(QPointF(x,y)) );
+    return constValueAtIndex( indexAt(PointF(x,y)) );
 }
 
 template <class T>
-T&  Grid<T>::valueAt(const QPointF& posf)
+T&  Grid<T>::valueAt(const PointF& posf)
 {
     return valueAtIndex( indexAt(posf) );
 }
 
 template <class T>
-const T&  Grid<T>::constValueAt(const QPointF& posf) const
+const T&  Grid<T>::constValueAt(const PointF& posf) const
 {
     return constValueAtIndex( indexAt(posf) );
 }
@@ -334,10 +381,10 @@ Grid<T>::Grid()
 }
 
 template <class T>
-bool Grid<T>::setup(const float cellsize, const int sizex, const int sizey)
+bool Grid<T>::setup(const double cellsize, const int sizex, const int sizey)
 {
     mSizeX=sizex; mSizeY=sizey;
-    if (mRect.isNull()) // only set rect if not set before (e.g. by call to setup(QRectF, double))
+    if (mRect.isNull()) // only set rect if not set before (e.g. by call to setup(RectF, double))
         mRect.setCoords(0., 0., cellsize*sizex, cellsize*sizey);
 
     if (mData) {
@@ -358,7 +405,7 @@ bool Grid<T>::setup(const float cellsize, const int sizex, const int sizey)
 }
 
 template <class T>
-bool Grid<T>::setup(const QRectF& rect, const double cellsize)
+bool Grid<T>::setup(const RectF& rect, const double cellsize)
 {
     mRect = rect;
     int dx = int(rect.width()/cellsize);
@@ -377,13 +424,13 @@ bool Grid<T>::setup(const QRectF& rect, const double cellsize)
 12 13 14 15 16 17
 Note: north and south are reversed, thus the item with index 0 is located in the south-western edge of the grid! */
 template <class T> inline
-QPoint Grid<T>::indexOf(const T* element) const
+Point Grid<T>::indexOf(const T* element) const
 {
-//    QPoint result(-1,-1);
+//    Point result(-1,-1);
     if (element==NULL || element<mData || element>=end())
-        return QPoint(-1, -1);
+        return Point(-1, -1);
     int idx = element - mData;
-    return QPoint(idx % mSizeX,  idx / mSizeX);
+    return Point(idx % mSizeX,  idx / mSizeX);
 //    result.setX( idx % mSizeX);
 //    result.setY( idx / mSizeX);
 //    return result;
@@ -454,8 +501,8 @@ void  Grid<T>::wipe(const T value)
 {
     /* this does not work properly !!! */
     if (sizeof(T)==sizeof(int)) {
-        float temp = value;
-        float *pf = &temp;
+        double temp = value;
+        double *pf = &temp;
 
         memset(mData, *((int*)pf), mCount*sizeof(T));
     } else
@@ -476,29 +523,29 @@ Grid<double> *Grid<T>::toDouble() const
 }
 
 template <class T>
-double Grid<T>::distance(const QPoint &p1, const QPoint &p2)
+double Grid<T>::distance(const Point &p1, const Point &p2)
 {
-    QPointF fp1=cellCenterPoint(p1);
-    QPointF fp2=cellCenterPoint(p2);
+    PointF fp1=cellCenterPoint(p1);
+    PointF fp2=cellCenterPoint(p2);
     double distance = sqrt( (fp1.x()-fp2.x())*(fp1.x()-fp2.x()) + (fp1.y()-fp2.y())*(fp1.y()-fp2.y()));
     return distance;
 }
 
 template <class T>
-const QPoint Grid<T>::randomPosition() const
+const Point Grid<T>::randomPosition() const
 {
-    return QPoint(irandom(0,mSizeX), irandom(0, mSizeY));
+    return Point(irandom(0,mSizeX), irandom(0, mSizeY));
 }
 
 ////////////////////////////////////////////////////////////
 // grid runner
 ////////////////////////////////////////////////////////////
 template <class T>
-void GridRunner<T>::setup(const Grid<T> *target_grid, const QRect &rectangle)
+void GridRunner<T>::setup(const Grid<T> *target_grid, const Rect &rectangle)
 {
-    QPoint upper_left = rectangle.topLeft();
-    // due to the strange behavior of QRect::bottom() and right():
-    QPoint lower_right = rectangle.bottomRight();
+    Point upper_left = rectangle.topLeft();
+    // due to the strange behavior of Rect::bottom() and right():
+    Point lower_right = rectangle.bottomRight();
     mCurrent = const_cast<Grid<T> *>(target_grid)->ptr(upper_left.x(), upper_left.y());
     mFirst = mCurrent;
     mCurrent--; // point to first element -1
@@ -513,9 +560,9 @@ void GridRunner<T>::setup(const Grid<T> *target_grid, const QRect &rectangle)
 }
 
 template <class T>
-void GridRunner<T>::setup(const Grid<T> *target_grid, const QRectF &rectangle_metric)
+void GridRunner<T>::setup(const Grid<T> *target_grid, const RectF &rectangle_metric)
 {
-    QRect rect(target_grid->indexAt(rectangle_metric.topLeft()),
+    Rect rect(target_grid->indexAt(rectangle_metric.topLeft()),
                target_grid->indexAt(rectangle_metric.bottomRight()) );
     setup (target_grid, rect);
 }
@@ -575,58 +622,59 @@ void GridRunner<T>::neighbors8(T** rArray)
 // global functions
 ////////////////////////////////////////////////////////////
 
-/// dumps a FloatGrid to a String.
+/// dumps a DoubleGrid to a String.
 /// rows will be y-lines, columns x-values. (see grid.cpp)
-QString gridToString(const FloatGrid &grid, const QChar sep=QChar(';'), const int newline_after=-1);
+std::string gridToString(const DoubleGrid &grid, const char sep=';', const int newline_after=-1);
 
 /// creates and return a QImage from Grid-Data.
 /// @param black_white true: max_value = white, min_value = black, false: color-mode: uses a HSV-color model from blue (min_value) to red (max_value), default: color mode (false)
 /// @param min_value, max_value min/max bounds for color calcuations. values outside bounds are limited to these values. defaults: min=0, max=1
 /// @param reverse if true, color ramps are inversed (to: min_value = white (black and white mode) or red (color mode). default = false.
 /// @return a QImage with the Grids size of pixels. Pixel coordinates relate to the index values of the grid.
-QImage gridToImage(const FloatGrid &grid,
+/*QImage gridToImage(const doubleGrid &grid,
                    bool black_white=false,
                    double min_value=0., double max_value=1.,
-                   bool reverse=false);
+                   bool reverse=false); */
 
 
 /** load into 'rGrid' the content of the image pointed at by 'fileName'.
     Pixels are converted to grey-scale and then transformend to a value ranging from 0..1 (black..white).
   */
-bool loadGridFromImage(const QString &fileName, FloatGrid &rGrid);
+/*bool loadGridFromImage(const QString &fileName, doubleGrid &rGrid); */
 
-/// template version for non-float grids (see also version for FloatGrid)
+/// template version for non-double grids (see also version for DoubleGrid)
 /// @param sep string separator
 /// @param newline_after if <>-1 a newline is added after every 'newline_after' data values
 template <class T>
-        QString gridToString(const Grid<T> &grid, const QChar sep=QChar(';'), const int newline_after=-1)
+        std::string gridToString(const Grid<T> &grid, const char sep=';', const int newline_after=-1)
 {
-    QString res;
-    QTextStream ts(&res);
 
-    int newl_counter = newline_after;
-    for (int y=grid.sizeY()-1;y>=0;--y){
-        for (int x=0;x<grid.sizeX();x++){
-            ts << grid.constValueAtIndex(x,y) << sep;
-            if (--newl_counter==0) {
-                ts << "\r\n";
-                newl_counter = newline_after;
-            }
-        }
-        ts << "\r\n";
-    }
+       std::string res;
 
-    return res;
+       int newl_counter = newline_after;
+       for (int y=grid.sizeY()-1;y>=0;--y) {
+            for (int x=0;x<grid.sizeX();x++) {
+
+                res+= std::to_string(grid(x,y)) + sep;
+               if (--newl_counter==0) {
+                   res += "\n";
+                   newl_counter = newline_after;
+               }
+           }
+           res+="\r\n";
+       }
+       return res;
 }
 
-/// template version for non-float grids (see also version for FloatGrid)
+/// template version for non-double grids (see also version for DoubleGrid)
 /// @param valueFunction pointer to a function with the signature: QString func(const T&) : this should return a QString
 /// @param sep string separator
 /// @param newline_after if <>-1 a newline is added after every 'newline_after' data values
 template <class T>
-        QString gridToString(const Grid<T> &grid, QString (*valueFunction)(const T& value), const QChar sep=QChar(';'), const int newline_after=-1 )
+        std::string gridToString(const Grid<T> &grid, std::string (*valueFunction)(const T& value), const char sep=';', const int newline_after=-1 )
         {
-            QString res;
+            std::string res="not implemented";
+/*            QString res;
             QTextStream ts(&res);
 
             int newl_counter = newline_after;
@@ -640,39 +688,45 @@ template <class T>
                     }
                 }
                 ts << "\r\n";
-            }
+            }*/
 
             return res;
         }
 void modelToWorld(const Vector3D &From, Vector3D &To);
 
 template <class T>
-    QString gridToESRIRaster(const Grid<T> &grid, QString (*valueFunction)(const T& value) )
+    std::string gridToESRIRaster(const Grid<T> &grid, std::string (*valueFunction)(const T& value) )
 {
         Vector3D model(grid.metricRect().left(), grid.metricRect().top(), 0.);
         Vector3D world;
         modelToWorld(model, world);
+        std::string result = "not implemented";
+        std::string line = ", sorry";
+        /*
         QString result = QString("ncols %1\r\nnrows %2\r\nxllcorner %3\r\nyllcorner %4\r\ncellsize %5\r\nNODATA_value %6\r\n")
                                 .arg(grid.sizeX())
                                 .arg(grid.sizeY())
                                 .arg(world.x(),0,'f').arg(world.y(),0,'f')
                                 .arg(grid.cellsize()).arg(-9999);
-        QString line =  gridToString(grid, valueFunction, QChar(' ')); // for special grids
+        QString line =  gridToString(grid, valueFunction, QChar(' ')); // for special grids */
         return result + line;
 }
 
     template <class T>
-        QString gridToESRIRaster(const Grid<T> &grid )
+        std::string gridToESRIRaster(const Grid<T> &grid )
 {
             Vector3D model(grid.metricRect().left(), grid.metricRect().top(), 0.);
             Vector3D world;
             modelToWorld(model, world);
+            std::string result = "not implemented";
+            std::string line = ", sorry";
+/*
             QString result = QString("ncols %1\r\nnrows %2\r\nxllcorner %3\r\nyllcorner %4\r\ncellsize %5\r\nNODATA_value %6\r\n")
                     .arg(grid.sizeX())
                     .arg(grid.sizeY())
                     .arg(world.x(),0,'f').arg(world.y(),0,'f')
                     .arg(grid.cellsize()).arg(-9999);
-            QString line = gridToString(grid, QChar(' ')); // for normal grids (e.g. float)
+            QString line = gridToString(grid, QChar(' ')); // for normal grids (e.g. double) */
             return result + line;
 }
 

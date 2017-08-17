@@ -2,7 +2,6 @@
 
 #ifndef FileReaderH
 #define FileReaderH
-//#include "coreinclude.h"
 /*  FileReader reads potentially large files as a stream, line by line
     it automatically parses the first line and detects appropriate column delimiters.
     Possible delimiters are: tab, ';', ',' and (multiple) space
@@ -18,21 +17,10 @@ while (!reader.next()) {
 }
 
 */
-
-// QT-Version *********
-#ifdef USEQT
-#define ASSERT Q_ASSERT
-#include <QtGlobal>
 #include <string>
-#include <fstream>
 #include <vector>
-#include <stdexcept>
-#include <cstring>
-#include <algorithm>
-#endif
-
-#include "coreinclude.h"
-
+#include <fstream>
+#include <cassert>
 
 
 #define FRBUFSIZE 10000
@@ -62,12 +50,12 @@ public:
    void first(); ///< reset to first line
    /// number of columns
    int columnCount() {return mColCount; }
-   const std::string &columnName(const int columnIndex) {ASSERT(columnIndex<mColCount); return mFields[columnIndex];}
+   const std::string &columnName(const int columnIndex) {assert(columnIndex<mColCount); return mFields[columnIndex];}
    /// retrieve the index of a given column or -1 if the column is not found.
    /// @sa indexOf
    int columnIndex(const char *columnName);
    const char *currentLine() {return mBuffer; }
-   double value(const int columnIndex) { ASSERT(columnIndex<mColCount); return mValues[columnIndex]; }
+   double value(const int columnIndex) { assert(columnIndex<mColCount); return mValues[columnIndex]; }
    double value(const char *columnName) { return value(indexOf(columnName)); }
    std::string valueString(const int columnIndex);
    std::string valueString(const char* columnName) { return valueString(indexOf(columnName)); }
@@ -75,6 +63,10 @@ public:
    /// the functions throws an error if the column is not present.
    /// @sa colummnIndex
    int indexOf(const char *columnName);
+
+   /// check if *all* columns provided in 'cols' are in the file.
+   /// throws an exception if not.
+   bool requiredColumns(const std::vector<std::string> &cols);
 private:
    void readHeader(); ///< scan the headers
    bool scanSection();

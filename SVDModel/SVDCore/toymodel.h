@@ -15,6 +15,10 @@ struct InferenceItem {
     std::vector<double> data;
 };
 
+namespace spdlog {
+class logger; // forward
+}
+
 class ToyInference: public QObject
 {
     Q_OBJECT
@@ -51,6 +55,9 @@ private:
     std::vector<int> data;
     std::vector<int> to_process;
     std::list< std::list<InferenceItem*>* > for_inference;
+
+    // logging
+    std::shared_ptr<spdlog::logger> lg;
 public slots:
     void processedPackage(std::list<InferenceItem*>*package);
     void allPackagesBuilt();

@@ -1,8 +1,14 @@
 //---------------------------------------------------------------------------
 
 
-#include "FileReader.h"
+#include "filereader.h"
 #include "strtools.h" // for lowercase functions
+
+#include <string>
+#include <vector>
+#include <stdexcept>
+#include <cstring>
+#include <algorithm>
 
 
 
@@ -62,7 +68,7 @@ void FileReader::loadFile(const std::string &fileName)
     mFileName = fileName;
     mInStream.open(fileName.c_str(), std::ifstream::in);
     if (!mInStream.is_open())
-        throw std::logic_error("FileReader:: cannot open file" + fileName);
+        throw std::logic_error("FileReader:: cannot open file: " + fileName);
     // read first line...
     while (!mInStream.eof()) {
        mInStream.getline(mBuffer, FRBUFSIZE);
@@ -164,6 +170,17 @@ int FileReader::indexOf(const char *columnName)
     if (it==mFields.end())
         throw std::logic_error("FileReader:: invalid column:" + std::string(columnName) + "\nin:" + mFileName);
     return (it - mFields.begin());
+}
+
+bool FileReader::requiredColumns(const std::vector<std::string> &cols)
+{
+    std::string msg;
+    for (auto s : cols)
+        if (!contains(mFields, s))
+            msg += s + ", ";
+    if (msg.size()==0)
+        return true;
+    throw std::logic_error("Required column(s) not in File '" + mFileName + "': " + msg);
 }
 
 /// the same as indexOf but does not throw an error

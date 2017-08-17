@@ -1,7 +1,7 @@
-#include "coreinclude.h"
-#pragma hdrstop
+
 #include "strtools.h"
 #include <fstream>
+#include <algorithm>
 
 // to-lower/ to-upper function
 void toLowercase(std::string &str)

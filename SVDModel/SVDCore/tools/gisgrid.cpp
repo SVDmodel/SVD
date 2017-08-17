@@ -19,10 +19,9 @@
 
 #include "gisgrid.h"
 #include <stdexcept>
-#include "helper.h"
 
-#include "globalsettings.h"
-#include "model.h"
+
+
 
 /** @class GisGrid
   @ingroup tools
@@ -61,53 +60,52 @@ void modelToWorld(const Vector3D &From, Vector3D &To)
 }
 
 
-GisGrid::GisGrid()
+
+
+
+
+
+
+
+GisGrid2::GisGrid2()
 {
     mData=0;
     mNRows=0; mNCols=0;
     mCellSize = 1; // default value (for line mode)
 }
 
-GisGrid::~GisGrid()
+GisGrid2::~GisGrid2()
 {
     if (mData)
         delete[] mData;
 }
 
-bool GisGrid::loadFromFile(const QString &fileName)
+bool GisGrid2::loadFromFile(const std::string &fileName)
 {
-    min_value = 1000000000;
-    max_value = -1000000000;
+    min_value = std::numeric_limits<double>::max();
+    max_value = std::numeric_limits<double>::min();
 
-    // loads from a ESRI-Grid [RasterToFile] File.
-    QByteArray file_content = Helper::loadTextFile(fileName).toLatin1();
-    if (file_content.isEmpty()) {
-        qDebug() << "GISGrid: file" << fileName << "not present or empty.";
-        return false;
-    }
-    QList<QByteArray> lines = file_content.split('\n');
+    std::vector<std::string> lines = readFile(fileName);
+    std::vector<std::string>::iterator l = lines.begin();
 
-    // processing of header-data
-    bool header=true;
-    int pos=0;
-    QString line;
-    QString key;
+    bool in_header=true;
+    std::string key;
+    std::string strValue;
     double value;
     do {
-        if (pos>lines.count())
-            throw std::logic_error("GISGrid: unexpected end of file ");
-        line=lines[pos].simplified();
-        if (line.length()==0 || line.at(0)=='#') {
-            pos++; // skip comments
-            continue;
-        }
-        key=line.left(line.indexOf(' ')).toLower();
-        if (key.length()>0 && (key.at(0).isNumber() || key.at(0)=='-')) {
-            header=false;
+        if (l == lines.end())
+            throw std::logic_error(std::string("GisGrid: unexpected end of file ") + fileName);
+
+        size_t str_pos = (*l).find(" ");
+        key = (*l).substr(0, str_pos);
+
+        if (!isalpha(key[0])) {
+            in_header=false; // we reachted datalines
         } else {
-            value = line.mid(line.indexOf(' ')).toDouble();
+            strValue = (*l).substr(str_pos+1);
+            value = atof(strValue.c_str());
             if (key=="ncols")
-                mNCols=(int)value;
+                mNCols=int(value);
             else if (key=="nrows")
                 mNRows=int(value);
             else if (key=="xllcorner")
@@ -116,63 +114,65 @@ bool GisGrid::loadFromFile(const QString &fileName)
                 mOrigin.setY(value);
             else if (key=="cellsize")
                 mCellSize = value;
-            else if (key=="nodata_value")
+            else if (key=="NODATA_value")
                 mNODATAValue=value;
             else
-                throw IException( QString("GISGrid: invalid key %1.").arg(key));
-            pos++;
+                throw std::logic_error(std::string("TGisGrid: invalid key ") + key);
+            ++l;
         }
-    } while (header);
-
+    } while (in_header);
     // create data
-    if (mData)
-        delete[] mData;
+    if (mData) {
+        delete[]mData;
+    }
     mDataSize = mNRows * mNCols;
-    mData = new double[mDataSize];
 
+    mData = new double[mDataSize];
 
     // loop thru datalines
     int i,j;
-    char *p=0;
-    char *p2;
-    pos--;
-    for (i=mNRows-1;i>=0;i--)
+    const char *p=0;
+    const char *p2;
+
+    --l;
+    for (i=1;i<=mNRows;++i)
         for (j=0;j<mNCols;j++) {
-        // copy next value to buffer, change "," to "."
-        if (!p || *p==0) {
-            pos++;
-            if (pos>=lines.count())
-                throw std::logic_error("GISGrid: Unexpected End of File!");
-            p=lines[pos].data();
-            // replace chars
-            p2=p;
-            while (*p2) {
-                if (*p2==',')
-                    *p2='.';
-                p2++;
+            // copy next value to buffer, change "," to "."
+            if (!p || *p==0) {
+                ++l;
+                if (l==lines.end())
+                    throw std::logic_error("TGisGrid: Unexpected End of File!");
+                p=(*l).c_str();
+                // replace chars
+                p2=p;
+                while (*p2) {
+                    if (*p2==',')
+                        *const_cast<char*>(p2)='.';
+                    p2++;
+                }
             }
-        }
-        // skip spaces
-        while (*p && strchr(" \r\n\t", *p))
-            p++;
-        if (*p) {
-            value = atof(p);
-            if (value!=mNODATAValue) {
-                min_value=std::min(min_value, value);
-                max_value=std::max(max_value, value);
-            }
-            mData[i*mNCols + j] = value;
-            // skip text...
-            while (*p && !strchr(" \r\n\t", *p))
+            // skip spaces
+            while (*p && strchr(" \r\n\t", *p))
                 p++;
-        } else
-            j--;
-    }
+            if (*p) {
+                value = atof(p);
+                if (value!=mNODATAValue) {
+                    min_value=std::min(min_value, value);
+                    max_value=std::max(max_value, value);
+                }
+                mData[(mNRows-i)*mNCols + j] = value;
+                // skip text...
+                while (*p && !strchr(" \r\n\t", *p))
+                    p++;
+            } else
+                j--;
+        }
+
 
     return true;
 }
 
-QList<double> GisGrid::distinctValues()
+/*QList<double> GisGrid::distinctValues()
 {
     if (!mData)
         return QList<double>();
@@ -181,20 +181,20 @@ QList<double> GisGrid::distinctValues()
         temp_map[mData[i]] = 1.;
     temp_map.remove(mNODATAValue);
     return temp_map.keys();
-}
+} */
 
-QPointF GisGrid::modelToWorld(QPointF model_coordinates)
+PointF GisGrid2::modelToWorld(PointF model_coordinates)
 {
     Vector3D to;
     ::modelToWorld(Vector3D(model_coordinates.x(), model_coordinates.y(), 0.), to);
-    return QPointF(to.x(), to.y());
+    return PointF(to.x(), to.y());
 }
 
-QPointF GisGrid::worldToModel(QPointF world_coordinates)
+PointF GisGrid2::worldToModel(PointF world_coordinates)
 {
     Vector3D to;
     ::worldToModel(Vector3D(world_coordinates.x(), world_coordinates.y(), 0.), to);
-    return QPointF(to.x(), to.y());
+    return PointF(to.x(), to.y());
 
 }
 
@@ -225,7 +225,7 @@ void GISGrid::GetDistinctValues(TStringList *ResultList, double x_m, double y_m)
 }*/
 
 /// get value of grid at index positions
-double GisGrid::value(const int indexx, const int indexy) const
+double GisGrid2::value(const int indexx, const int indexy) const
 {
     if (indexx>=0 && indexx < mNCols && indexy>=0 && indexy<mNRows)
         return mData[indexy*mNCols + indexx];
@@ -233,14 +233,14 @@ double GisGrid::value(const int indexx, const int indexy) const
 }
 
 /// get value of grid at index positions
-double GisGrid::value(const int Index) const
+double GisGrid2::value(const int Index) const
 {
     if (Index>=0 && Index<mDataSize)
         return mData[Index];
     return -1.;  // out of scope
 }
 
-double GisGrid::value(const double X, const double Y) const
+double GisGrid2::value(const double X, const double Y) const
 {
 
     Vector3D model;
@@ -270,7 +270,7 @@ double GisGrid::value(const double X, const double Y) const
     return -1.; // the ultimate NODATA- or ErrorValue
 }
 
-Vector3D GisGrid::coord(const int indexx, const int indexy) const
+Vector3D GisGrid2::coord(const int indexx, const int indexy) const
 {
     Vector3D world((indexx+0.5)*mCellSize + mOrigin.x(),
                     (indexy+0.5)*mCellSize + mOrigin.y(),
@@ -280,21 +280,21 @@ Vector3D GisGrid::coord(const int indexx, const int indexy) const
     return model;
 }
 
-QRectF GisGrid::rectangle(const int indexx, const int indexy) const
+RectF GisGrid2::rectangle(const int indexx, const int indexy) const
 {
     Vector3D world(indexx*mCellSize + mOrigin.x(),
                     indexy*mCellSize + mOrigin.y(),
                     0.);
     Vector3D model;
     ::worldToModel(world, model);
-    QRectF rect(model.x(), // left
+    RectF rect(model.x(), // left
                 model.y(), // top
-                mCellSize, // width
-                mCellSize); // height
+                model.x()+mCellSize, // width !! Now (RectF instead QRectF): right
+                model.y()+mCellSize); // height !! now bottom
     return rect;
 }
 
-Vector3D GisGrid::coord(const int Index) const
+Vector3D GisGrid2::coord(const int Index) const
 {
     if (Index<0 || Index>=mDataSize)
         throw std::logic_error("gisgrid:coord: invalid index.");
@@ -307,7 +307,7 @@ Vector3D GisGrid::coord(const int Index) const
 
 /*
 
-void GISGrid::CountOccurence(int intID, int & Count, int & left, int & upper, int &right, int &lower, QRectF *OuterBox)
+void GISGrid::CountOccurence(int intID, int & Count, int & left, int & upper, int &right, int &lower, RectF *OuterBox)
 {
         // zaehlt, wie of intID im Grid vorkommt,
         // ausserdem das rectangle, in dem es vorkommt.
@@ -362,7 +362,7 @@ QVector3D GISGrid::GetNthOccurence(int ID, int N, int left, int upper, int right
 }
 */
 /*
-bool GISGrid::GetBoundingBox(int LookFor, QRectF &Result, double x_m, double y_m)
+bool GISGrid::GetBoundingBox(int LookFor, RectF &Result, double x_m, double y_m)
 {
      // alle "distinct" values in einem rechteck (picus-koordinaten)
      // herauslesen. geht nur mit integers.
@@ -391,7 +391,7 @@ bool GISGrid::GetBoundingBox(int LookFor, QRectF &Result, double x_m, double y_m
 }
 */
 
-void GisGrid::clip(const QRectF & box)
+void GisGrid2::clip(const RectF & box)
 {
     // auf das angegebene Rechteck zuschneiden, alle
     // werte draussen auf -1 setzen.

@@ -11,6 +11,8 @@ TARGET = SVDCore
 TEMPLATE = lib
 CONFIG += staticlib
 
+INCLUDEPATH += third_party
+
 CONFIG += c++14
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked as deprecated (the exact warnings
@@ -26,12 +28,22 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         svdcore.cpp \
     modelshell.cpp \
-    toymodel.cpp
+    toymodel.cpp \
+    tools/gisgrid.cpp \
+    tools/grid.cpp \
+    tools/strtools.cpp \
+    tools/filereader.cpp \
+    tools/settings.cpp
 
 HEADERS += \
         svdcore.h \
     modelshell.h \
-    toymodel.h
+    toymodel.h \
+    tools/gisgrid.h \
+    tools/grid.h \
+    tools/strtools.h \
+    tools/filereader.h \
+    tools/settings.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

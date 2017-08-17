@@ -6,6 +6,7 @@
 #include <QMutex>
 #include <QMutexLocker>
 
+#include "spdlog/spdlog.h"
 
 ToyModel::ToyModel()
 {
@@ -16,26 +17,28 @@ ToyModel::ToyModel()
     connect(&packageWatcher, SIGNAL(finished()), this, SLOT(allPackagesBuilt()));
     packageWatcher.setFuture(packageFuture);
 
+    // logging
+    lg = spdlog::get("main");
 }
 
 void ToyModel::run()
 {
     // the main steps:
     // 1) find issues to process
-    std::cout << "Model run started" << std::endl;
-    std::cout << "***************************" << std::endl;
+    lg->info("Model run started");
+    lg->info("*****************");
     to_process.clear();
 
     for (int i=0;i<data.size();++i)
         if (data[i] == 0)
             to_process.push_back(i);
 
-    std::cout << to_process.size() << " items in list" << std::endl;
+    lg->debug("{} items in list", to_process.size());
 
     // 2) now prepare the data
     packageFuture = QtConcurrent::map(to_process, [this](int idx){ this->buildDataPackage(idx); });
     packageWatcher.setFuture(packageFuture);
-    std::cout << ".... prepara data packages running ...." << std::endl;
+    lg->debug(".... prepara data packages running ....");
 
 }
 
@@ -93,12 +96,12 @@ void ToyModel::startInference()
     // Call inference machine: route to DNN thread
     while (mLivePackages>3 && !isCancel()) {
         // wait some time...
-        std::cout << "... wait until <=3 .... #packages=" << mLivePackages << std::endl;
+        lg->debug("... wait until <=3 .... #packages= {}", mLivePackages);
         QThread::msleep(1000);
         QCoreApplication::processEvents(); // allow receiving of packages...
 
     }
-    std::cout << "sending package to Inference... (now " << mLivePackages << ")" << std::endl;
+    lg->debug("sending package to Inference... (now {})", mLivePackages);
     emit newPackage(inf_list);
 
 }
@@ -111,7 +114,7 @@ void ToyModel::finalizeState()
         item = std::max(item-1, 0);
         if (item==0) zeros++;
     }
-    std::cout << "Zeros:" << zeros << std::endl;
+    lg->debug("Zeros: {}", zeros);
     emit finished();
 }
 
@@ -119,13 +122,13 @@ QMutex lock_processed_package;
 void ToyModel::processedPackage(std::list<InferenceItem *> *package)
 {
     // DNN delivered processed package....
-    std::cout << "Model: DNN package received!" << std::endl;
+    lg->debug("Model: DNN package received!");
 
     // write back to data.....
     for (InferenceItem * &ii : *package) {
         data[ii->index] = ii->next_value;
     }
-    std::cout << "Model: Wrote back!" << std::endl;
+    lg->debug( "Model: Wrote back!" );
 
     // now the data can be freed:
     {
@@ -136,10 +139,10 @@ void ToyModel::processedPackage(std::list<InferenceItem *> *package)
 
     if (mLivePackages==0) {
         finalizeState();
-        std::cout << "Model: processsed Last Package!" << std::endl;
-        std::cout << "************************" << std::endl;
+        lg->info( "Model: processsed Last Package!" );
+        lg->info("********************************");
     } else {
-        std::cout << "Model: #packages: " << mLivePackages << std::endl;
+        lg->debug( "Model: #packages: {}", mLivePackages);
     }
 
 
@@ -148,7 +151,7 @@ void ToyModel::processedPackage(std::list<InferenceItem *> *package)
 
 void ToyModel::allPackagesBuilt()
 {
-    std::cout << "all data preparations are finished... building last batch" << std::endl;
+    lg->debug( "all data preparations are finished... building last batch");
     startInference(); // start last batch (even if < than batch size)
 
 }
@@ -156,7 +159,7 @@ void ToyModel::allPackagesBuilt()
 void ToyInference::doWork(std::list<InferenceItem *> *package)
 {
     // package received!
-    std::cout << "Inference: package received!" << std::endl;
+    spdlog::get("dnn")->debug( "Inference: package received!" );
 
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()

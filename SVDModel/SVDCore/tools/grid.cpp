@@ -17,18 +17,22 @@
 **    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************************************/
 #include "grid.h"
-#include "exception.h"
-#include "global.h"
+//#include "exception.h"
+//#include "global.h"
+#include <string>
 
-QString gridToString(const FloatGrid &grid, const QChar sep, const int newline_after)
+std::string gridToString(const DoubleGrid &grid, const char sep, const int newline_after)
 {
-    QString res;
+
+    std::string res;
+
     int newl_counter = newline_after;
     for (int y=grid.sizeY()-1;y>=0;--y) {
          for (int x=0;x<grid.sizeX();x++) {
-            res+=QString::number(grid.constValueAtIndex(QPoint(x,y))) + sep;
+
+             res+= std::to_string(grid(x,y)) + sep;
             if (--newl_counter==0) {
-                res += "\r\n";
+                res += "\n";
                 newl_counter = newline_after;
             }
         }
@@ -94,10 +98,10 @@ bool loadGridFromImage(const QString &fileName, FloatGrid &rGrid)
 //{
 //}
 
-bool loadGridFromImage(const QString &fileName, FloatGrid &rGrid) {
-    Q_UNUSED(fileName); Q_UNUSED(rGrid);
-    throw IException("Error: trying to load a grid from an image in the console version (GUI version only!)");
-    return false;
-}
+//bool loadGridFromImage(const QString &fileName, FloatGrid &rGrid) {
+//    Q_UNUSED(fileName); Q_UNUSED(rGrid);
+//    throw IException("Error: trying to load a grid from an image in the console version (GUI version only!)");
+//    return false;
+//}
 #endif
 
