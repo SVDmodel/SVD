@@ -1,2 +1,3 @@
 # directories
 /build-*
+*.pro.user
