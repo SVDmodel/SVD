@@ -33,7 +33,8 @@ SOURCES += \
     tools/grid.cpp \
     tools/strtools.cpp \
     tools/filereader.cpp \
-    tools/settings.cpp
+    tools/settings.cpp \
+    tools/randomgen.cpp
 
 HEADERS += \
         svdcore.h \
@@ -43,7 +44,8 @@ HEADERS += \
     tools/grid.h \
     tools/strtools.h \
     tools/filereader.h \
-    tools/settings.h
+    tools/settings.h \
+    tools/randomgen.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

@@ -26,6 +26,15 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+
+    auto l = spdlog::get("main");
+    if (l)
+        l->info("Shutdown of the application.");
+    spdlog::apply_all([&](std::shared_ptr<spdlog::logger> l)
+    {
+        l->flush();
+    });
+    //spdlog::drop_all();
     delete ui;
 }
 
@@ -136,12 +145,22 @@ void MainWindow::initiateLogging()
     sinks.push_back(std::make_shared<my_threaded_sink>(ui->lLog));
     auto combined_logger = spdlog::create("main", sinks.begin(), sinks.end());
     combined_logger->set_level(spdlog::level::debug);
+    combined_logger->flush_on(spdlog::level::err);
+
     combined_logger=spdlog::create("dnn", sinks.begin(), sinks.end());
     combined_logger->set_level(spdlog::level::debug);
+    combined_logger->flush_on(spdlog::level::err);
+
     //auto combined_logger = std::make_shared<spdlog::logger>("console", begin(sinks), end(sinks));
 
     //register it if you need to access it globally
     //spdlog::register_logger(combined_logger);
 
     combined_logger->info("Started logging");
+}
+
+void MainWindow::on_pushButton_4_clicked()
+{
+    IntegrateTest it;
+    it.testRandom();
 }

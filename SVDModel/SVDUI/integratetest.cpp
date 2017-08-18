@@ -2,6 +2,7 @@
 #include "../SVDCore/tools/gisgrid.h"
 #include "../SVDCore/tools/filereader.h"
 #include "../SVDCore/tools/settings.h"
+#include "../SVDCore/tools/randomgen.h"
 
 #include "spdlog/spdlog.h"
 
@@ -121,5 +122,50 @@ void IntegrateTest::testLogging()
 
 
     spdlog::get("main")->info("loggers can be retrieved from a global registry using the spdlog::get(logger_name) function");
+
+}
+
+void IntegrateTest::testRandom()
+{
+    auto console = spdlog::get("main");
+
+    console->debug("Rnd-number 0-1: {}, rnd-number: 0-10: {}, rnd-int: 3-5: {}", drandom(), nrandom(0.,10.), irandom(3,5));
+    std::vector<int> buckets(6,0);
+    for (int i=0;i<1000000;++i)
+        buckets[irandom(3,5)]++;
+    std::for_each(buckets.begin(), buckets.end(), [=](int n) { console->debug("N={}", n);});
+
+    //char *p=0;
+    //*p=1;
+    console->warn("check the flush ;) ");
+
+    buckets = {0,0};
+    for (int i=0;i<10000000000;++i)
+        buckets[drandom()]++;
+    console->debug("N<0: {}, N=1: {}", buckets[0], buckets[1]);
+    console->warn("check the flush 2 ;) ");
+
+    buckets = {0,0,0,0,0,0};
+    for (int i=0;i<1000000;++i)
+        buckets[nrandom(3.0,5.0)]++;
+    std::for_each(buckets.begin(), buckets.end(), [=](int n) { console->debug("N={}", n);});
+
+    // test random generator for small numbers
+    buckets = {0,0,0,0,0};
+    for (int i=0;i<1000000000;++i) {
+        double x = drandom();
+        if (x<0.0001) buckets[0]++;
+        if (x<0.00001) buckets[1]++;
+        if (x<0.000001) buckets[2]++;
+        if (x<0.0000001) buckets[3]++;
+        if (x<0.00000001) buckets[4]++;
+    }
+    console->debug("Test for small probabilities: factors of 10:");
+    std::for_each(buckets.begin(), buckets.end(), [=](int n) { console->debug("N={}", n);});
+
+    double x2;
+    for (int i=0;i<1000000000;++i)
+        x2 += drandom();
+    console->debug("Drawn 1'000'000'000 random numbers");
 
 }

@@ -10,6 +10,7 @@ public:
     void testGrid();
     void testSettings();
     void testLogging();
+    void testRandom();
 };
 
 #endif // INTEGRATETEST_H
