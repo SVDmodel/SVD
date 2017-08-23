@@ -84,7 +84,6 @@ template <typename T> void delete_and_clear(std::vector<T*> &v)
        delete (*it);
     v.clear();
 }
-#endif
  
 
 template <class Container>
@@ -92,3 +91,11 @@ const bool contains(Container& container, const typename Container::value_type& 
 {
     return std::find(container.begin(), container.end(), element) != container.end();
 }
+
+/// splits the full path 'fileName' into a pair with the path as first and the filename as second.
+std::pair<std::string, std::string> splitPath (const std::string& fileName);
+
+
+
+
+#endif

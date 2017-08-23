@@ -227,3 +227,12 @@ bool writeFile(const std::string &file_name, const std::string &content)
     return true;
 }
 
+std::pair<std::string, std::string> splitPath (const std::string& fileName)
+{
+  std::pair<std::string, std::string> parts;
+  std::size_t found = fileName.find_last_of("/\\");
+
+  parts.first =  fileName.substr(0,found);
+  parts.second = fileName.substr(found+1);
+  return parts;
+}

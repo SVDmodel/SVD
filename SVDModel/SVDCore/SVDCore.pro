@@ -11,7 +11,7 @@ TARGET = SVDCore
 TEMPLATE = lib
 CONFIG += staticlib
 
-INCLUDEPATH += third_party
+INCLUDEPATH += third_party tools core ../core ../tools
 
 CONFIG += c++14
 # The following define makes your compiler emit warnings if you use
@@ -34,7 +34,13 @@ SOURCES += \
     tools/strtools.cpp \
     tools/filereader.cpp \
     tools/settings.cpp \
-    tools/randomgen.cpp
+    tools/randomgen.cpp \
+    core/model.cpp \
+    core/landscape.cpp \
+    core/cell.cpp \
+    core/states.cpp \
+    core/climate.cpp \
+    tools/tools.cpp
 
 HEADERS += \
         svdcore.h \
@@ -45,7 +51,13 @@ HEADERS += \
     tools/strtools.h \
     tools/filereader.h \
     tools/settings.h \
-    tools/randomgen.h
+    tools/randomgen.h \
+    core/model.h \
+    core/landscape.h \
+    core/cell.h \
+    core/states.h \
+    core/climate.h \
+    tools/tools.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

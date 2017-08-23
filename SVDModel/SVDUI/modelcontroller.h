@@ -3,8 +3,32 @@
 
 #include <QObject>
 #include <QThread>
+#include "modelshell.h"
 
-class ModelShell; // forward
+
+class ToyModelShell; // forward
+
+class ToyModelController : public QObject
+{
+    Q_OBJECT
+    QThread *modelThread;
+    QThread *dnnThread;
+public:
+    explicit ToyModelController(QObject *parent = nullptr);
+    ~ToyModelController();
+
+signals:
+    void log(const QString &s);
+
+public slots:
+    void run();
+    void abort();
+    void finishedRun();
+private:
+    ToyModelShell *mModel;
+
+};
+
 
 class ModelController : public QObject
 {
@@ -17,13 +41,17 @@ public:
 
 signals:
     void log(const QString &s);
+    void stateChanged(QString s);
 
 public slots:
-    void run();
-    void abort();
-    void finishedRun();
+    void setup(QString fileName);
+    void shutdown();
+
+    void run(int n_years);
+    //void abort();
+    //void finishedRun();
 private:
-    ModelShell *mModel;
+    ModelShell *mModelShell;
 
 };
 

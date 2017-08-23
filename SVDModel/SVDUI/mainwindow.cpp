@@ -12,7 +12,7 @@
 #include "spdlog/spdlog.h"
 
 
-ModelController *mc=0;
+ToyModelController *mc=0;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -20,7 +20,13 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     // start basic logging
-    initiateLogging();
+    //initiateLogging();
+
+    // start up the model shell
+    mMC = std::unique_ptr<ModelController>(new ModelController());
+    initiateModelController();
+
+
 }
 
 
@@ -51,8 +57,8 @@ void MainWindow::on_pbStart_clicked()
 {
     if (!mc) {
         ui->lLog->appendPlainText("Starting ModelController...");
-        mc = new ModelController(this);
-        connect(mc, &ModelController::log, ui->lLog, &QPlainTextEdit::appendPlainText);
+        mc = new ToyModelController(this);
+        connect(mc, &ToyModelController::log, ui->lLog, &QPlainTextEdit::appendPlainText);
     }
 }
 
@@ -159,8 +165,33 @@ void MainWindow::initiateLogging()
     combined_logger->info("Started logging");
 }
 
+void MainWindow::initiateModelController()
+{
+    // bookkeeping, signal - slot connections
+    connect(mMC.get(), &ModelController::stateChanged, [this](QString s) {ui->statusBar->showMessage(s);});
+
+    //connect(mMC.get(), &ModelController::stateChanged, ui->statusBar, &QStatusBar::showMessage);
+    //QObject::connect(mMC.get(), SIGNAL(modelState(QString)), ui->statusBar, SLOT(showMessage(QString,int)));
+}
+
 void MainWindow::on_pushButton_4_clicked()
 {
     IntegrateTest it;
     it.testRandom();
+}
+
+void MainWindow::on_pbLoad_clicked()
+{
+    // create & load model
+    mMC->setup(ui->lConfigFile->text());
+}
+
+void MainWindow::on_pbDeleteModel_clicked()
+{
+    mMC->shutdown();
+}
+
+void MainWindow::on_pbRunModel_clicked()
+{
+    mMC->run( ui->sYears->value() );
 }
