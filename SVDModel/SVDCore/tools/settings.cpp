@@ -16,8 +16,8 @@ bool Settings::loadFromFile(const std::string &fileName)
         // remove comments starting with # characters
         line ++;
         if (s.size()>0 && s[0]!='#') {
-            int p = s.find('=');
-            if (p!=-1) {
+            size_t p = s.find('=');
+            if (p!=std::string::npos) {
                 std::string key = trimmed(s.substr(0,p));
                 std::string value = trimmed(s.substr(p+1, s.size()));
                 if (mValues.find(key)!=mValues.end())
@@ -27,6 +27,7 @@ bool Settings::loadFromFile(const std::string &fileName)
 
         }
     }
+    return true;
 }
 
 void Settings::dump()
@@ -72,4 +73,18 @@ double Settings::valueDouble(const std::string &key, double default_value) const
         throw std::logic_error("Error in Settings: The value of '" + key + "': '" + s + "' is not a valid (double) number.");
     }
     return result;
+}
+
+
+bool Settings::requiredKeys(std::string praefix, const std::vector<std::string> &keys) const
+{
+    std::string msg;
+    if (praefix.size()>0)
+        praefix = praefix + ".";
+    for (auto &s : keys)
+        if (!hasKey(praefix + s))
+            msg += praefix + s + ", ";
+    if (msg.size()==0)
+        return true;
+    throw std::logic_error("Error: Required column(s) not in settings: " + msg);
 }

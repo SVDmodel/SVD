@@ -13,7 +13,7 @@ int iy = reader.indexOf("year");
 while (!reader.next()) {
    reader.value("year"); // access by column name
    reader.value(iy); // double
-   reader.valueString(iy); // result as std::string  :: note implemented yet ;)
+   reader.valueString(iy); // result as std::string
 }
 
 */
@@ -49,20 +49,20 @@ public:
    bool next(); ///< go to next line, return "false" if end of file reached
    void first(); ///< reset to first line
    /// number of columns
-   int columnCount() {return mColCount; }
-   const std::string &columnName(const int columnIndex) {assert(columnIndex<mColCount); return mFields[columnIndex];}
+   size_t columnCount() {return mColCount; }
+   const std::string &columnName(const size_t columnIndex) {assert(columnIndex<mColCount); return mFields[columnIndex];}
    /// retrieve the index of a given column or -1 if the column is not found.
    /// @sa indexOf
-   int columnIndex(const char *columnName);
+   size_t columnIndex(const char *columnName);
    const char *currentLine() {return mBuffer; }
-   double value(const int columnIndex) { assert(columnIndex<mColCount); return mValues[columnIndex]; }
-   double value(const char *columnName) { return value(indexOf(columnName)); }
-   std::string valueString(const int columnIndex);
-   std::string valueString(const char* columnName) { return valueString(indexOf(columnName)); }
+   double value(const size_t columnIndex) { assert(columnIndex<mColCount); return mValues[columnIndex]; }
+   double value(const std::string &columnName) { return value(indexOf(columnName)); }
+   std::string valueString(const size_t columnIndex);
+   std::string valueString(const std::string &columnName) { return valueString(indexOf(columnName)); }
    /// retrieve the index of a column name.
    /// the functions throws an error if the column is not present.
    /// @sa colummnIndex
-   int indexOf(const char *columnName);
+   size_t indexOf(const std::string &columnName);
 
    /// check if *all* columns provided in 'cols' are in the file.
    /// throws an exception if not.
@@ -81,7 +81,7 @@ private:
    std::ifstream mInStream;
    size_t count_occ(const char* s, char c);
    char mDelimiter;
-   int mColCount; // number of columns
+   size_t mColCount; // number of columns
    bool mCaseSensitive;
 };
 

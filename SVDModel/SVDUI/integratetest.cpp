@@ -163,7 +163,7 @@ void IntegrateTest::testRandom()
     console->debug("Test for small probabilities: factors of 10:");
     std::for_each(buckets.begin(), buckets.end(), [=](int n) { console->debug("N={}", n);});
 
-    double x2;
+    double x2=0.;
     for (int i=0;i<1000000000;++i)
         x2 += drandom();
     console->debug("Drawn 1'000'000'000 random numbers");

@@ -115,7 +115,7 @@ bool GisGrid2::loadFromFile(const std::string &fileName)
             else if (key=="cellsize")
                 mCellSize = value;
             else if (key=="NODATA_value")
-                mNODATAValue=value;
+                mNODATAValue=static_cast<int>(value);
             else
                 throw std::logic_error(std::string("TGisGrid: invalid key ") + key);
             ++l;
@@ -260,8 +260,8 @@ double GisGrid2::value(const double X, const double Y) const
     // double ry = Origin.y + X * xAxis.y + Y * yAxis.y;
     if (world.x()<0. || world.y()<0.)
         return -1.;
-    int ix = world.x() / mCellSize;
-    int iy = world.y() / mCellSize;
+    int ix = static_cast<int>( world.x() / mCellSize );
+    int iy = static_cast<int>( world.y() / mCellSize );
     if (ix>=0 && ix<mNCols && iy>=0 && iy<mNRows) {
         double value = mData[iy*mNCols + ix];
         if (value!=mNODATAValue)

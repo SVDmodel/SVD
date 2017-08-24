@@ -109,7 +109,7 @@ ModelController::~ModelController()
 {
     if (mModelShell)
         delete mModelShell;
-    spdlog::get("main")->info("Model controller destroyed.");
+
 }
 
 void ModelController::setup(QString fileName)

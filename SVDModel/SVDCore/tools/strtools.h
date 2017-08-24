@@ -37,12 +37,32 @@ std::vector<std::string> &split(const std::string &s, char delim, std::vector<st
 // split a string and return a new vector
 std::vector<std::string> split(const std::string &s, char delim);
 
+// split a string and return a new vector, each element is trimmed
+std::vector<std::string> split_and_trim(const std::string &s, char delim);
+
+
 // split a string into substrings and return as a vector. Other than split(),
 // tokenize recognizes and handles quote-characters (")
 std::vector<std::string> tokenize(const std::string& str, const char delimiters = ' ');
 
 // join the elements of "vec" together
 std::string join(const std::vector<std::string> &vec, const char delim='\n');
+
+template <typename Iter>
+std::string join(Iter it, Iter end, const std::string &delim="\n", int print_max=1000 ) {
+    std::string result;
+
+    for (int n=0; it!=end; ++it,++n) {
+        if (n>print_max) {
+            result+=" <truncated>...";
+            return result;
+        }
+        if (n>0) result+=delim;
+        result+= std::to_string( *it );
+    }
+    return result;
+}
+
 
 // return true if fullString ends with 'ending'
 bool has_ending(std::string const &fullString, std::string const &ending);
@@ -91,6 +111,18 @@ const bool contains(Container& container, const typename Container::value_type& 
 {
     return std::find(container.begin(), container.end(), element) != container.end();
 }
+
+/// returns the index of 'element' in the container 'container'. If 'element' is not in the container
+/// the function returns -1.
+template <class Container>
+const int indexOf(Container& container, const typename Container::value_type& element)
+{
+    auto it = std::find(container.begin(), container.end(), element);
+    if (it == container.end())
+        return -1;
+    return std::distance(container.begin(), it);
+}
+
 
 /// splits the full path 'fileName' into a pair with the path as first and the filename as second.
 std::pair<std::string, std::string> splitPath (const std::string& fileName);

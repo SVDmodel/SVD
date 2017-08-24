@@ -159,16 +159,16 @@ size_t FileReader::count_occ(const char* s, char c)
   return n;
 }
 
-int FileReader::indexOf(const char *columnName)
+size_t FileReader::indexOf(const std::string &columnName)
 {
     std::vector<std::string>::iterator it;
     if (!mCaseSensitive)
         it = std::find(mFields.begin(), mFields.end(), lowercase(columnName));
     else
-        it = std::find(mFields.begin(), mFields.end(),std::string(columnName));
+        it = std::find(mFields.begin(), mFields.end(),columnName);
 
     if (it==mFields.end())
-        throw std::logic_error("FileReader:: invalid column:" + std::string(columnName) + "\nin:" + mFileName);
+        throw std::logic_error("FileReader:: invalid column:" + columnName + "\nin:" + mFileName);
     return (it - mFields.begin());
 }
 
@@ -184,7 +184,7 @@ bool FileReader::requiredColumns(const std::vector<std::string> &cols)
 }
 
 /// the same as indexOf but does not throw an error
-int FileReader::columnIndex(const char *columnName)
+size_t FileReader::columnIndex(const char *columnName)
 {
     std::vector<std::string>::iterator it;
     if (!mCaseSensitive)
@@ -192,7 +192,7 @@ int FileReader::columnIndex(const char *columnName)
     else
         it = std::find(mFields.begin(), mFields.end(),std::string(columnName));
     if (it==mFields.end())
-        return -1;
+        return std::string::npos; // =-1
     return (it - mFields.begin());
 }
 void FileReader::first()
@@ -209,7 +209,7 @@ bool FileReader::next()
     if (eof())
         return false;
 
-    int line_len;
+    size_t line_len;
     while (!eof()) {
         mInStream.getline(mBuffer, FRBUFSIZE);
         // skip empty lines (unless we are in section mode - then a empty line signals end of section)
@@ -243,7 +243,7 @@ bool FileReader::next()
 
 
 /// read the column at 'columnIndex' and return the content as a string....
-std::string FileReader::valueString(const int columnIndex)
+std::string FileReader::valueString(const size_t columnIndex)
 {
     // we assume, the current line is in "mBuffer"
     // so seek for the n-th delimiter

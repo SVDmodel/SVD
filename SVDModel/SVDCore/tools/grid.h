@@ -111,7 +111,7 @@ public:
     /// NOTE: caller is responsible for freeing memory!
     Grid<double> *toDouble() const;
     /// copies from values to the internal memory. Return false if sizes are not the same.
-    bool setValues(const std::vector<T> &values) { if (values.size() != count()) return false; T*p=begin(); for (const T& i: values) *p++=i; }
+    bool setValues(const std::vector<T> &values) { if (values.size() != count()) return false; T*p=begin(); for (const T& i: values) *p++=i; return true; }
 
     // get the number of cells in x and y direction
     int sizeX() const { return mSizeX; }

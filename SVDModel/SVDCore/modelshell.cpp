@@ -61,6 +61,7 @@ void ToyModelShell::abort()
 
 ModelShell::ModelShell(QObject *parent)
 {
+    Q_UNUSED(parent);
     mAbort = false;
     mState = Invalid;
     mModel = 0;
@@ -128,8 +129,13 @@ void ModelShell::run(int n_steps)
         spdlog::get("main")->info("Run one step.");
         // run the model...
         for (int i=0;i<n_steps;++i) {
+            QCoreApplication::processEvents();
             spdlog::get("main")->info("Run step {} of {}.", i+1, n_steps);
             setState(Running, QString("year %1 of %2.").arg(i+1).arg(n_steps));
+            if (mAbort) {
+                setState(Canceled);
+                return;
+            }
 
             QThread::msleep(1000);
 

@@ -96,6 +96,15 @@ std::vector<std::string> split(const std::string &s, char delim) {
     return split(s, delim, elems);
 }
 
+// split a string and return a new vector
+std::vector<std::string> split_and_trim(const std::string &s, char delim) {
+    std::vector<std::string> elems;
+    split(s, delim, elems); // split in elements
+    for (auto &s : elems)
+        s = trimmed(s);
+    return elems;
+}
+
 
 std::vector<std::string> tokenize(const std::string& str, const char delimiters)
 {
@@ -164,8 +173,8 @@ std::map<std::string, std::string> split_name_value_pairs(const std::string sour
     std::map<std::string, std::string> result;
     std::vector<std::string> lines = split(source, delimiter);
     for (size_t i=0;i<lines.size(); ++i) {
-       int p = lines[i].find('=');
-       if (p!=-1)
+       size_t p = lines[i].find('=');
+       if (p!=std::string::npos)
            result[lines[i].substr(0,p)] = lines[i].substr(p+1, 100);
     }
     return result;

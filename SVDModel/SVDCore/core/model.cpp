@@ -2,15 +2,19 @@
 #include "tools.h"
 #include "strtools.h"
 
+Model *Model::mInstance = 0;
 
 Model::Model()
 {
-
+    if (mInstance!=nullptr)
+        throw std::logic_error("Creation of model: model instance ptr is not 0.");
+    mInstance = this;
 }
 
 Model::~Model()
 {
     shutdownLogging();
+    mInstance = nullptr;
 }
 
 bool Model::setup(const std::string &fileName)
@@ -23,12 +27,22 @@ bool Model::setup(const std::string &fileName)
     // set up logging
     inititeLogging();
 
+    // set up model components
+    setupSpecies();
+    mStates = std::shared_ptr<States>(new States());
+    mStates->setup();
+
+    mClimate = std::shared_ptr<Climate>(new Climate());
+    mClimate->setup();
+
     return true;
 
 }
 
 void Model::inititeLogging()
 {
+    settings().requiredKeys("logging", {"file", "setup.level", "model.level", "dnn.level"});
+
     std::string log_file = Tools::path(settings().valueString("logging.file"));
 
 
@@ -41,19 +55,31 @@ void Model::inititeLogging()
     sinks.push_back(std::make_shared<spdlog::sinks::simple_file_sink_mt>(log_file));
 
     //sinks.push_back(std::make_shared<my_threaded_sink>(ui->lLog));
+    std::vector<std::string> levels = SPDLOG_LEVEL_NAMES; // trace, debug, info, ...
 
     auto combined_logger = spdlog::create("main", sinks.begin(), sinks.end());
-    combined_logger->set_level(spdlog::level::debug);
     combined_logger->flush_on(spdlog::level::err);
 
+    int idx = indexOf(levels, settings().valueString("logging.model.level"));
+    if (idx==-1)
+        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.model.level") + "' is not a valid logging level. Valid are: " + join(levels, ',') );
+    combined_logger->set_level(spdlog::level::level_enum(idx) );
+
     combined_logger=spdlog::create("setup", sinks.begin(), sinks.end());
-    combined_logger->set_level(spdlog::level::debug);
     combined_logger->flush_on(spdlog::level::err);
+    idx = indexOf(levels, settings().valueString("logging.setup.level"));
+    if (idx==-1)
+        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.setup.level") + "' is not a valid logging level. Valid are: " + join(levels, ',') );
+    combined_logger->set_level(spdlog::level::level_enum(idx) );
 
 
     combined_logger=spdlog::create("dnn", sinks.begin(), sinks.end());
-    combined_logger->set_level(spdlog::level::debug);
     combined_logger->flush_on(spdlog::level::err);
+    idx = indexOf(levels, settings().valueString("logging.dnn.level"));
+    if (idx==-1)
+        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.dnn.level") + "' is not a valid logging level. Valid are: " + join(levels, ',') );
+    combined_logger->set_level(spdlog::level::level_enum(idx) );
+
 
     //auto combined_logger = std::make_shared<spdlog::logger>("console", begin(sinks), end(sinks));
 
@@ -62,7 +88,7 @@ void Model::inititeLogging()
     lg_main = spdlog::get("main");
     lg_setup = spdlog::get("setup");
 
-    lg_main->info("Started logging");
+    lg_main->info("Started logging. Log levels: main: {}, setup: {}, dnn: {}", levels[lg_main->level()], levels[lg_setup->level()], levels[spdlog::get("dnn")->level()]);
 
 }
 
@@ -77,5 +103,22 @@ void Model::shutdownLogging()
     });
     spdlog::drop_all();
 
+
+}
+
+void Model::setupSpecies()
+{
+    std::string species_list = settings().valueString("model.species");
+    mSpeciesList = split(species_list, ',');
+    for (std::string &s : mSpeciesList)
+        s = trimmed(s);
+
+    lg_setup->debug("Setup of species: N={}.", mSpeciesList.size());
+
+    if (lg_setup->should_log(spdlog::level::trace)) {
+        lg_setup->trace("************");
+        lg_setup->trace("Species: {}", join(mSpeciesList, ','));
+        lg_setup->trace("************");
+    }
 
 }
