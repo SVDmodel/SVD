@@ -35,6 +35,9 @@ bool Model::setup(const std::string &fileName)
     mClimate = std::shared_ptr<Climate>(new Climate());
     mClimate->setup();
 
+    mLandscape = std::shared_ptr<Landscape>(new Landscape());
+    mLandscape->setup();
+
     return true;
 
 }

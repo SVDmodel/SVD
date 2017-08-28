@@ -4,15 +4,17 @@
 #include <string>
 #include <vector>
 
+typedef short int statetype;
+
 class State {
 public:
-    State(int id, std::string composition, int structure, int function);
-    int id() const { return mId; }
+    State(statetype id, std::string composition, int structure, int function);
+    statetype id() const { return mId; }
     const std::string &compositionString() const { return mComposition; }
     int function() const { return mFunction; }
     int structure() const {return mStructure; }
 private:
-    int mId;
+    statetype mId;
     std::string mComposition;
     int mStructure;
     int mFunction;

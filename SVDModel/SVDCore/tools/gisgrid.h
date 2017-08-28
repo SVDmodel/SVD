@@ -21,6 +21,7 @@
 #ifndef GISGRID_H
 #define GISGRID_H
 
+#include <set>
 
 #include "grid.h"
 #include "math.h"
@@ -75,6 +76,15 @@ public:
     static PointF modelToWorld(PointF model_coordinates);
     /// convert world (i.e. GIS) to model coordinates (metric) (with 0/0 at lower left edge of project area)
     static PointF worldToModel(PointF world_coordinates);
+
+    // special properties
+    T minValue() const { return mMinValue; }
+    T maxValue() const { return mMaxValue; }
+    /// retrieve all unique non-null values
+    std::set<T> uniqueValues() const;
+    /// count of cells which are not null
+    int countNotNull();
+
 
 private:
     T mMaxValue;
@@ -193,7 +203,9 @@ bool GisGrid<T>::loadFromFile(const std::string &fileName)
 
     // create the underlying grid
 
-    setup(cell_size, n_cols, n_rows);
+    RectF rect(mOrigin.x(), mOrigin.y(), mOrigin.x() + n_cols*cell_size, mOrigin.y() + n_rows*cell_size );
+    setup(rect, cell_size);
+    //setup(cell_size, n_cols, n_rows);
 
 
     // loop thru datalines
@@ -237,6 +249,28 @@ bool GisGrid<T>::loadFromFile(const std::string &fileName)
 
 
     return true;
+}
+
+template<typename T>
+std::set<T> GisGrid<T>::uniqueValues() const
+{
+    std::set<T> unique_values;
+    for (T* p=begin(); p!=end(); ++p) {
+        if (*p != mNODATAValue)
+            unique_values.insert(*p);
+    }
+    return unique_values;
+}
+
+template<typename T>
+int GisGrid<T>::countNotNull()
+{
+    int result = 0;
+    for (T* p=begin(); p!=end(); ++p)
+        if (*p != mNODATAValue)
+            ++result;
+
+    return result;
 }
 
 

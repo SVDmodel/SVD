@@ -29,7 +29,7 @@ void States::setup()
 
 }
 
-State::State(int id, std::string composition, int structure, int function)
+State::State(statetype id, std::string composition, int structure, int function)
 {
     mId = id;
     mComposition = trimmed(composition);

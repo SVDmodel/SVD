@@ -7,6 +7,7 @@
 #include "settings.h"
 #include "states.h"
 #include "climate.h"
+#include "landscape.h"
 
 
 class Model
@@ -45,6 +46,7 @@ private:
     std::vector<std::string> mSpeciesList;
     std::shared_ptr<States> mStates;
     std::shared_ptr<Climate> mClimate;
+    std::shared_ptr<Landscape> mLandscape;
     // loggers
     std::shared_ptr<spdlog::logger> lg_main;
     std::shared_ptr<spdlog::logger> lg_setup;

@@ -62,6 +62,8 @@ public:
     double bottom() const { return mBottom; }
     double left() const { return mLeft; }
     double right() const { return mRight; }
+    double width() const { return mRight-mLeft; }
+    double height() const { return mBottom-mTop; }
     void setCoords(double left, double top, double right, double bottom) {mLeft=left; mTop=top; mRight=right; mBottom=bottom; }
     bool isNull() const { return mTop==-1. && mBottom==-1. && mLeft==-1. && mRight==-1.; }
     bool contains(double x, double y) const { return x>=mLeft && x<=mRight && y>=mTop && y<=mBottom; }
