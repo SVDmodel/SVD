@@ -29,6 +29,7 @@ private:
 
 };
 
+class ModelInterface; // forward
 
 class ModelController : public QObject
 {
@@ -38,6 +39,8 @@ class ModelController : public QObject
 public:
     explicit ModelController(QObject *parent = nullptr);
     ~ModelController();
+    ModelShell *shell() const { return mModelShell; }
+    ModelInterface *dnnInterface() const { return mModelInterface; }
 
 signals:
     void log(const QString &s);
@@ -49,9 +52,10 @@ public slots:
 
     void run(int n_years);
     //void abort();
-    //void finishedRun();
+    void finishedRun();
 private:
-    ModelShell *mModelShell;
+    ModelShell *mModelShell; // lives in main thread
+    ModelInterface *mModelInterface; // lives in DNN thread
 
 };
 

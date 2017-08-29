@@ -1,6 +1,9 @@
 #include "cell.h"
+#include "model.h"
 
-Cell::Cell()
+bool Cell::needsUpdate() const
 {
-
+    if (Model::instance()->year() >= mNextUpdateTime)
+        return true;
+    return false;
 }

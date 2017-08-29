@@ -10,6 +10,7 @@
 #include "integratetest.h"
 
 #include "spdlog/spdlog.h"
+#include "strtools.h"
 
 
 ToyModelController *mc=0;
@@ -194,4 +195,11 @@ void MainWindow::on_pbDeleteModel_clicked()
 void MainWindow::on_pbRunModel_clicked()
 {
     mMC->run( ui->sYears->value() );
+}
+
+void MainWindow::on_pbRun_clicked()
+{
+    std::string s = mMC->shell()->run_test_op(ui->cbOption->currentText().toStdString());
+    writeFile(ui->lParam->text().toStdString(), s);
+
 }

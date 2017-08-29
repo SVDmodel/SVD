@@ -4,11 +4,24 @@
 
 Model *Model::mInstance = 0;
 
-Model::Model()
+Model::Model(const std::string &fileName)
 {
     if (mInstance!=nullptr)
         throw std::logic_error("Creation of model: model instance ptr is not 0.");
     mInstance = this;
+    mYear = -1; // not set up
+
+    if (!Tools::fileExists(fileName))
+        throw std::logic_error("Error: The configuration file '" + fileName + "' does not exist.");
+    mSettings.loadFromFile(fileName);
+    auto split_path = splitPath(fileName);
+    Tools::setProjectDir( split_path.first );
+
+    // set up logging
+    inititeLogging();
+
+    lg_setup->info("Model Setup, config file: '{}', project root folder: '{}'", fileName, split_path.first);
+
 }
 
 Model::~Model()
@@ -17,15 +30,8 @@ Model::~Model()
     mInstance = nullptr;
 }
 
-bool Model::setup(const std::string &fileName)
+bool Model::setup()
 {
-    if (!Tools::fileExists(fileName))
-        throw std::logic_error("Error: The configuration file '" + fileName + "' does not exist.");
-    mSettings.loadFromFile(fileName);
-    auto split_path = splitPath(fileName);
-    Tools::setProjectDir( split_path.first );
-    // set up logging
-    inititeLogging();
 
     // set up model components
     setupSpecies();
@@ -38,8 +44,24 @@ bool Model::setup(const std::string &fileName)
     mLandscape = std::shared_ptr<Landscape>(new Landscape());
     mLandscape->setup();
 
+    mYear = 0; // model is set up, ready to run
     return true;
 
+}
+
+void Model::finalizeYear()
+{
+    landscape()->switchStates();
+    stats.NPackagesTotalSent += stats.NPackagesSent;
+    stats.NPackagesTotalDNN += stats.NPackagesDNN;
+}
+
+void Model::newYear()
+{
+    stats.NPackagesSent = stats.NPackagesDNN = 0;
+    // increment the counter
+    mYear = mYear + 1;
+    // other initialization ....
 }
 
 void Model::inititeLogging()
@@ -65,14 +87,14 @@ void Model::inititeLogging()
 
     int idx = indexOf(levels, settings().valueString("logging.model.level"));
     if (idx==-1)
-        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.model.level") + "' is not a valid logging level. Valid are: " + join(levels, ',') );
+        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.model.level") + "' is not a valid logging level. Valid are: " + join(levels) );
     combined_logger->set_level(spdlog::level::level_enum(idx) );
 
     combined_logger=spdlog::create("setup", sinks.begin(), sinks.end());
     combined_logger->flush_on(spdlog::level::err);
     idx = indexOf(levels, settings().valueString("logging.setup.level"));
     if (idx==-1)
-        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.setup.level") + "' is not a valid logging level. Valid are: " + join(levels, ',') );
+        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.setup.level") + "' is not a valid logging level. Valid are: " + join(levels) );
     combined_logger->set_level(spdlog::level::level_enum(idx) );
 
 
@@ -80,7 +102,7 @@ void Model::inititeLogging()
     combined_logger->flush_on(spdlog::level::err);
     idx = indexOf(levels, settings().valueString("logging.dnn.level"));
     if (idx==-1)
-        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.dnn.level") + "' is not a valid logging level. Valid are: " + join(levels, ',') );
+        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.dnn.level") + "' is not a valid logging level. Valid are: " + join(levels) );
     combined_logger->set_level(spdlog::level::level_enum(idx) );
 
 
@@ -120,7 +142,7 @@ void Model::setupSpecies()
 
     if (lg_setup->should_log(spdlog::level::trace)) {
         lg_setup->trace("************");
-        lg_setup->trace("Species: {}", join(mSpeciesList, ','));
+        lg_setup->trace("Species: {}", join(mSpeciesList));
         lg_setup->trace("************");
     }
 

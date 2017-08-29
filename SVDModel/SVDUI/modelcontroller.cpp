@@ -1,6 +1,9 @@
 #include "modelcontroller.h"
 #include "modelshell.h"
 #include "toymodel.h"
+#include "model.h"
+
+#include "../Predictor/modelinterface.h"
 
 ToyModelController::ToyModelController(QObject *parent) : QObject(parent)
 {
@@ -78,18 +81,16 @@ ModelController::ModelController(QObject *parent)
 
     connect(mModelShell, &ModelShell::stateChanged, this, &ModelController::stateChanged);
 
-    //connect(this, &ModelController::operate, model_shell, &ModelShell::doWork);
-    //connect(model_shell, &ModelShell::resultReady, this, &ModelController::handleResults);
 
     dnnThread = new QThread();
-    ToyInference *ti = new ToyInference;
-    ti->moveToThread(dnnThread);
-    connect(dnnThread, &QThread::finished, ti, &QObject::deleteLater);
+    mModelInterface = new ModelInterface;
+    mModelInterface->moveToThread(dnnThread);
+    connect(dnnThread, &QThread::finished, mModelInterface, &QObject::deleteLater);
 
     // connection between main model and DNN:
-    //connect(&mModel->model(), &Model::newPackage, ti, &Inference::doWork);
-    //connect(ti, &ToyInference::workDone, &mModel->model(), &Model::processedPackage);
-    //connect(&mModel->model(), &Model::finished, this, &ModelController::finishedRun);
+    connect(mModelShell, &ModelShell::newPackage, mModelInterface, &ModelInterface::doWork);
+    connect(mModelInterface, &ModelInterface::workDone, mModelShell, &ModelShell::processedPackage);
+    connect(mModelShell, &ModelShell::finished, this, &ModelController::finishedRun);
 
     // logging
     connect(mModelShell, &ModelShell::log, this, &ModelController::log);
@@ -114,8 +115,17 @@ ModelController::~ModelController()
 
 void ModelController::setup(QString fileName)
 {
-    QMetaObject::invokeMethod(mModelShell, "setup", Qt::QueuedConnection,
+    // use a blocking connection for initial creation (logging, etc.)
+    QMetaObject::invokeMethod(mModelShell, "createModel", Qt::BlockingQueuedConnection,
                               Q_ARG(QString, fileName)) ;
+
+
+
+    QMetaObject::invokeMethod(mModelShell, "setup", Qt::QueuedConnection) ;
+
+    QMetaObject::invokeMethod(mModelInterface, "setup", Qt::QueuedConnection,
+                              Q_ARG(QString, fileName)) ;
+
 }
 
 void ModelController::shutdown()
@@ -126,5 +136,10 @@ void ModelController::shutdown()
 void ModelController::run(int n_years)
 {
     QMetaObject::invokeMethod(mModelShell, "run", Qt::QueuedConnection, Q_ARG(int,n_years));
+}
+
+void ModelController::finishedRun()
+{
+
 }
 

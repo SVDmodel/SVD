@@ -2,8 +2,12 @@
 #include "toymodel.h"
 #include "model.h"
 
+#include "grid.h"
+
 #include <QThread>
 #include <QCoreApplication>
+#include <QtConcurrent>
+
 
 ToyModelShell::ToyModelShell(QObject *parent) : QObject(parent)
 {
@@ -65,6 +69,13 @@ ModelShell::ModelShell(QObject *parent)
     mAbort = false;
     mState = Invalid;
     mModel = 0;
+    mLivePackages = 0;
+    mPackageId = 0;
+
+    connect(&packageWatcher, SIGNAL(finished()), this, SLOT(allPackagesBuilt()));
+    //packageWatcher.setFuture(packageFuture);
+
+
 }
 
 ModelShell::~ModelShell()
@@ -75,26 +86,73 @@ ModelShell::~ModelShell()
 void ModelShell::destroyModel()
 {
     if (mModel) {
+        lg.reset(); // delete link to the logging stream
         Model *m = mModel;
         mModel = nullptr;
         delete m;
     }
 }
 
-void ModelShell::setup(QString fileName)
+std::string ModelShell::run_test_op(std::string what)
+{
+    if (what=="grid_state") {
+        auto &grid = Model::instance()->landscape()->currentGrid();
+        std::string result = gridToESRIRaster<Cell>(grid, [](const Cell &c) { if (c.isNull()) return std::string("-9999"); else return std::to_string(c.state()); });
+        return result;
+    }
+    if (what=="grid_restime") {
+        auto &grid = Model::instance()->landscape()->currentGrid();
+        std::string result = gridToESRIRaster<Cell>(grid, [](const Cell &c)
+        { if (c.isNull())
+                return std::string("-9999");
+            else
+                return std::to_string(c.residenceTime()); }
+        );
+        return result;
+    }
+    if (what=="grid_N") {
+        auto &grid = Model::instance()->landscape()->environment();
+        std::string result = gridToESRIRaster<EnvironmentCell*>(grid, [](EnvironmentCell *c)
+        { if (!c)
+                return std::string("-9999");
+            else
+                return std::to_string(c->value("availableNitrogen")); }
+        );
+        return result;
+    }
+
+
+    return "invalid method";
+}
+void ModelShell::createModel(QString fileName)
 {
     try {
         setState(Creating);
-        if (!model()) {
-            mModel = new Model();
-        }
-        if (model()->setup( fileName.toStdString() )) {
+        if (model())
+            destroyModel();
+
+        mModel = new Model(fileName.toStdString());
+
+    } catch (const std::exception &e) {
+        if (spdlog::get("main"))
+            spdlog::get("main")->error("An error occured: {}", e.what());
+        setState( ErrorDuringSetup, QString(e.what()));
+    }
+}
+
+void ModelShell::setup()
+{
+    try {
+        if (!model())
+            throw std::logic_error("ModelShell::setup: model is NULL");
+
+        setState(Creating);
+
+        if (model()->setup(  )) {
             // setup successful
-            auto lg = spdlog::get("main");
+            lg = spdlog::get("main");
             lg->info("Model successfully set up in Thread {}.", QThread::currentThread()->objectName().toStdString());
 
-            // just wait a little... 3secs
-            QThread::msleep(3000);
             setState(ReadyToRun);
         }
 
@@ -112,9 +170,9 @@ void ModelShell::runOneStep()
     try {
         spdlog::get("main")->info("Run one step.");
         // run the model...
-        QThread::msleep( 2000 );
+        internalRun();
 
-        setState(ReadyToRun);
+
 
     } catch (const std::exception &e) {
         spdlog::get("main")->error("An error occured: {}", e.what());
@@ -124,9 +182,13 @@ void ModelShell::runOneStep()
 
 void ModelShell::run(int n_steps)
 {
+
+    runOneStep();
+    return;
+
     setState(Running);
     try {
-        spdlog::get("main")->info("Run one step.");
+        spdlog::get("main")->info("Run {} steps.", n_steps);
         // run the model...
         for (int i=0;i<n_steps;++i) {
             QCoreApplication::processEvents();
@@ -137,7 +199,7 @@ void ModelShell::run(int n_steps)
                 return;
             }
 
-            QThread::msleep(1000);
+            internalRun();
 
 
         }
@@ -179,6 +241,135 @@ QString ModelShell::stateString(ModelRunState s)
     }
 
 }
+
+QMutex lock_processed_package;
+void ModelShell::processedPackage(std::list<InferenceData *> *package, int packageId)
+{
+    // DNN delivered processed package....
+    lg->debug("Model: DNN package {} received!", packageId);
+
+    // write back to data.....
+    for (InferenceData * ii : *package) {
+        ii->writeResult();
+    }
+
+
+    // now the data can be freed:
+    {
+    QMutexLocker locker(&lock_processed_package);
+    mModel->stats.NPackagesDNN += package->size();
+
+    mLivePackages--;
+    delete package;
+    }
+
+    if (mLivePackages==0) {
+        lg->info( "Model: processsed Last Package! [NSent: {} NReceived: {}]", mModel->stats.NPackagesSent, mModel->stats.NPackagesDNN );
+        finalizeCycle();
+    } else {
+        lg->debug( "Model: #packages: {} [NSent: {} NReceived: {}]", mLivePackages, mModel->stats.NPackagesSent, mModel->stats.NPackagesDNN);
+    }
+
+}
+
+void ModelShell::allPackagesBuilt()
+{
+    //lg->debug("** all packages built, starting the last package");
+    sendInferencePackage(); // start last batch (even if < than batch size)
+}
+
+void ModelShell::internalRun()
+{
+    // increment the time step of the model
+    mModel->newYear();
+
+    // Test for which cells we need to do something
+    packageFuture = QtConcurrent::map(mModel->landscape()->currentGrid(), [this](Cell &cell){ this->buildInferenceData(&cell); });
+    packageWatcher.setFuture(packageFuture);
+
+}
+
+void ModelShell::buildInferenceData(Cell *cell)
+{
+    // this function is called from multiple threads....
+    if (cell->isNull())
+        return;
+    if (cell->needsUpdate()==false)
+        return;
+
+    // create an InferenceData item and populate it with the required data
+    // the c'tor requests all the information from the model
+    InferenceData *item = new InferenceData(cell);
+
+    // add to processing chain
+    addDataPackage(item);
+
+}
+
+
+QMutex lock_inference_list;
+/// addDataPackage adds the data package 'item' to
+/// the internal list. If the batch_size is reached,
+/// a package is sent to the DNN thread.
+void ModelShell::addDataPackage(InferenceData *item)
+{
+    const int batch_size = 128;
+    QMutexLocker locker(&lock_inference_list);
+    if (mInferenceData.size()==0) {
+        mInferenceData.push_back( new std::list<InferenceData*>() );
+        mLivePackages++;
+    }
+
+    std::list<InferenceData*> *list = mInferenceData.back();
+    if (list->size()>=batch_size) {
+        sendInferencePackage();
+
+        mInferenceData.push_back( new std::list<InferenceData*>() );
+        mLivePackages++;
+        list = mInferenceData.back();
+        // std::cout << "created new data list, #=" << for_inference.size() << std::endl;
+    }
+    list->push_back(item);
+
+}
+
+
+/// sendInferencePackage() takes the next batch of items and emits a signal
+/// to the DNN thread that a new batch is ready to process
+/// Note that this code is still protected by the 'lock_inference_list' mutex
+void ModelShell::sendInferencePackage()
+{
+    if (mInferenceData.size()==0)
+        return;
+
+    // take the first element of the list:
+    std::list<InferenceData*> *inf_list = mInferenceData.front();
+    mInferenceData.pop_front();
+
+    // Call inference machine: route to DNN thread
+    while (mLivePackages>3 && mAbort==false) {
+        // wait some time...
+        lg->debug("... wait until <=3 .... #packages= {}", mLivePackages);
+        QThread::msleep(1000);
+        QCoreApplication::processEvents(); // allow receiving of packages...
+
+    }
+    mPackageId++;
+    mModel->stats.NPackagesSent += inf_list->size();
+    lg->debug("sending package to Inference id={} (now in queue {})", mPackageId, mLivePackages);
+    emit newPackage(inf_list, mPackageId);
+
+}
+
+void ModelShell::finalizeCycle()
+{
+    // everything is
+    mModel->finalizeYear();
+    lg->info("Year {} finished.", mModel->year());
+
+    setState(ReadyToRun);
+}
+
 
 void ModelShell::setState(ModelShell::ModelRunState new_state, QString msg)
 {

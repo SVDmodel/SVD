@@ -149,7 +149,7 @@ bool has_ending (std::string const &fullString, std::string const &ending)
     }
 }
 
-std::string join(const std::vector<std::string> &vec, const char delim)
+std::string join(const std::vector<std::string> &vec, const std::string &delim)
 {
     std::string result;
     for (size_t i=0;i<vec.size(); ++i) {
@@ -211,7 +211,7 @@ std::string readFileStr(const std::string &file_name)
         result.push_back(s);
     }
     infile.close();
-    return join(result);
+    return join(result, "\n");
 }
 
 // write a string or a string list to a file

@@ -23,10 +23,12 @@
 
 #include <vector>
 #include <algorithm>
+#include <functional>
 
 #include <stdexcept>
 #include <limits>
 #include <string>
+
 
 class Point {
 public:
@@ -108,7 +110,7 @@ public:
     void wipe(const T value); ///< overwrite the whole area with "value" size of T must be the size of "int" ERRORNOUS!!!
     /// copies the content of the source grid to this grid.
     /// no operation, if the grids are not of the same size.
-    void copy(const Grid<T> source) { if (source.count()==count()) memcpy(mData, source.mData, count()*sizeof(T)); }
+    void copy(const Grid<T> &source) { if (source.count()==count()) memcpy(mData, source.mData, count()*sizeof(T)); }
     /// create a double grid (same size as this grid) and convert this grid to double values.
     /// NOTE: caller is responsible for freeing memory!
     Grid<double> *toDouble() const;
@@ -431,7 +433,7 @@ Point Grid<T>::indexOf(const T* element) const
 //    Point result(-1,-1);
     if (element==NULL || element<mData || element>=end())
         return Point(-1, -1);
-    int idx = element - mData;
+    int idx = static_cast<int>( element - mData );
     return Point(idx % mSizeX,  idx / mSizeX);
 //    result.setX( idx % mSizeX);
 //    result.setY( idx / mSizeX);
@@ -673,16 +675,14 @@ template <class T>
 /// @param sep string separator
 /// @param newline_after if <>-1 a newline is added after every 'newline_after' data values
 template <class T>
-        std::string gridToString(const Grid<T> &grid, std::string (*valueFunction)(const T& value), const char sep=';', const int newline_after=-1 )
+        std::string gridToString(const Grid<T> &grid, std::function<std::string(const T&)> valueFunction, const char sep=';', const int newline_after=-1 )
         {
-            std::string res="not implemented";
-/*            QString res;
-            QTextStream ts(&res);
+            std::ostringstream ts;
 
             int newl_counter = newline_after;
             for (int y=grid.sizeY()-1;y>=0;--y){
                 for (int x=0;x<grid.sizeX();x++){
-                    ts << (*valueFunction)(grid.constValueAtIndex(x,y)) << sep;
+                    ts << valueFunction(grid.constValueAtIndex(x,y)) << sep;
 
                     if (--newl_counter==0) {
                         ts << "\r\n";
@@ -690,20 +690,27 @@ template <class T>
                     }
                 }
                 ts << "\r\n";
-            }*/
+            }
 
-            return res;
+            return ts.str();
         }
 void modelToWorld(const Vector3D &From, Vector3D &To);
 
 template <class T>
-    std::string gridToESRIRaster(const Grid<T> &grid, std::string (*valueFunction)(const T& value) )
+    std::string gridToESRIRaster(const Grid<T> &grid, std::function<std::string(const T&)>  valueFunction )
 {
         Vector3D model(grid.metricRect().left(), grid.metricRect().top(), 0.);
         Vector3D world;
         modelToWorld(model, world);
-        std::string result = "not implemented";
-        std::string line = ", sorry";
+        std::ostringstream oss;
+        oss << "ncols " << grid.sizeX() << std::endl
+            << "nrows " << grid.sizeY() << std::endl
+            << "xllcorner " << world.x() << std::endl
+            << "yllcorner " << world.y() << std::endl
+            << "cellsize " << grid.cellsize() << std::endl
+            << "NODATA_value -9999" << std::endl;
+        oss << gridToString(grid, valueFunction, ' ');
+        return oss.str();
         /*
         QString result = QString("ncols %1\r\nnrows %2\r\nxllcorner %3\r\nyllcorner %4\r\ncellsize %5\r\nNODATA_value %6\r\n")
                                 .arg(grid.sizeX())
@@ -711,7 +718,6 @@ template <class T>
                                 .arg(world.x(),0,'f').arg(world.y(),0,'f')
                                 .arg(grid.cellsize()).arg(-9999);
         QString line =  gridToString(grid, valueFunction, QChar(' ')); // for special grids */
-        return result + line;
 }
 
     template <class T>

@@ -4,6 +4,7 @@
 #include "tools.h"
 #include "strtools.h"
 #include "filereader.h"
+#include "randomgen.h"
 
 States::States()
 {
@@ -18,18 +19,26 @@ void States::setup()
 
     while (rdr.next()) {
         // read line
-        mStates.push_back( State(rdr.value("stateId"),
+        state_t id = state_t( rdr.value("stateId") );
+        mStates.push_back( State(id,
                 rdr.valueString("composition"),
                 int(rdr.value("structure")),
-                int(rdr.value("fct")))
+                int(state_t(rdr.value("fct"))))
                            );
+        mStateSet.insert(id);
 
     }
     spdlog::get("setup")->debug("Loaded {} states from file '{}'", mStates.size(), file_name);
 
 }
 
-State::State(statetype id, std::string composition, int structure, int function)
+const State &States::randomState() const
+{
+    int i = irandom(0, mStates.size());
+    return mStates[i];
+}
+
+State::State(state_t id, std::string composition, int structure, int function)
 {
     mId = id;
     mComposition = trimmed(composition);

@@ -3,18 +3,20 @@
 
 #include <string>
 #include <vector>
+#include <unordered_set>
 
-typedef short int statetype;
+typedef short int state_t;
+typedef short int restime_t;
 
 class State {
 public:
-    State(statetype id, std::string composition, int structure, int function);
-    statetype id() const { return mId; }
+    State(state_t id, std::string composition, int structure, int function);
+    state_t id() const { return mId; }
     const std::string &compositionString() const { return mComposition; }
     int function() const { return mFunction; }
     int structure() const {return mStructure; }
 private:
-    statetype mId;
+    state_t mId;
     std::string mComposition;
     int mStructure;
     int mFunction;
@@ -28,10 +30,13 @@ public:
     void setup();
 
     // members
+    bool isValid(state_t state) const { return mStateSet.find(state) != mStateSet.end(); }
+    const State &randomState() const;
     const std::vector<State> &states() { return mStates; }
 
 private:
     std::vector<State> mStates;
+    std::unordered_set<state_t> mStateSet;
 
 };
 

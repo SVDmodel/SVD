@@ -61,11 +61,11 @@ void ToyModel::buildDataPackage(int point_index)
     addDataPackage(item);
 }
 
-QMutex lock_inference_list;
+QMutex toy_lock_inference_list;
 void ToyModel::addDataPackage(InferenceItem *item)
 {
     const int batch_size = 128;
-    QMutexLocker locker(&lock_inference_list);
+    QMutexLocker locker(&toy_lock_inference_list);
     if (for_inference.size()==0) {
         for_inference.push_back( new std::list<InferenceItem*>() );
         mLivePackages++;
@@ -118,7 +118,7 @@ void ToyModel::finalizeState()
     emit finished();
 }
 
-QMutex lock_processed_package;
+QMutex toy_lock_processed_package;
 void ToyModel::processedPackage(std::list<InferenceItem *> *package)
 {
     // DNN delivered processed package....
@@ -132,7 +132,7 @@ void ToyModel::processedPackage(std::list<InferenceItem *> *package)
 
     // now the data can be freed:
     {
-    QMutexLocker locker(&lock_processed_package);
+    QMutexLocker locker(&toy_lock_processed_package);
     mLivePackages--;
     delete package;
     }

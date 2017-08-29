@@ -46,10 +46,10 @@ std::vector<std::string> split_and_trim(const std::string &s, char delim);
 std::vector<std::string> tokenize(const std::string& str, const char delimiters = ' ');
 
 // join the elements of "vec" together
-std::string join(const std::vector<std::string> &vec, const char delim='\n');
+std::string join(const std::vector<std::string> &vec, const std::string &delim=", ");
 
 template <typename Iter>
-std::string join(Iter it, Iter end, const std::string &delim="\n", int print_max=1000 ) {
+std::string join(Iter it, Iter end, const std::string &delim=", ", int print_max=1000 ) {
     std::string result;
 
     for (int n=0; it!=end; ++it,++n) {
@@ -120,7 +120,7 @@ const int indexOf(Container& container, const typename Container::value_type& el
     auto it = std::find(container.begin(), container.end(), element);
     if (it == container.end())
         return -1;
-    return std::distance(container.begin(), it);
+    return static_cast<int>(std::distance(container.begin(), it));
 }
 
 

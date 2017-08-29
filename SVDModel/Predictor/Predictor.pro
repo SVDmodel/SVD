@@ -13,6 +13,7 @@ CONFIG += staticlib
 ### tensorflow compiled locally
 INCLUDEPATH += e:/dev/tensorflow e:/dev/tensorflow/tensorflow/contrib/cmake/build  e:/dev/tensorflow/tensorflow/contrib/cmake/build/external/eigen_archive
 INCLUDEPATH += e:/dev/tensorflow/third_party/eigen3 e:/dev/tensorflow/tensorflow/contrib/cmake/build/protobuf/src/protobuf/src
+INCLUDEPATH += ../SVDCore ../SVDCore/core ../SVDCore/tools ../SVDCore/third_party
 
 # https://joe-antognini.github.io/machine-learning/windows-tf-project
 DEFINES +=  COMPILER_MSVC
@@ -50,10 +51,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-        predictor.cpp
+        predictor.cpp \
+    modelinterface.cpp
 
 HEADERS += \
-        predictor.h
+        predictor.h \
+    modelinterface.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

@@ -13,11 +13,15 @@
 class Model
 {
 public:
-    Model();
+    Model(const std::string &fileName);
     ~Model();
     /// sets up the model components (such as states, climate, landscape) from the config file 'fileName'
     /// returns true on success
-    bool setup(const std::string &fileName);
+    bool setup();
+
+    void newYear();
+    void finalizeYear();
+
     // access
     /// access to the currently avaialable global model
     /// this allows accessing the model with Model::instance()->....
@@ -25,12 +29,25 @@ public:
         assert(mInstance!=nullptr);
         return mInstance; }
 
+    /// the current time step of the simulation
+    /// year=0 after setup, and incremented whenever a new step starts, i.e. first sim. year=1, 2nd year=2, ...
+    int year() const { return mYear; }
+
     /// return the available states
     std::shared_ptr<States> states() const { return mStates; }
     const std::vector<std::string> &species() { return mSpeciesList; }
+    std::shared_ptr<Landscape> &landscape() { return mLandscape; }
+
 
     /// access to the model configuration
     const Settings &settings() const { return mSettings; }
+    struct SystemStats {
+        SystemStats(): NPackagesDNN(0), NPackagesSent(0), NPackagesTotalDNN(0), NPackagesTotalSent(0) {}
+        int NPackagesSent;
+        int NPackagesDNN;
+        int NPackagesTotalSent;
+        int NPackagesTotalDNN;
+    } stats;
 private:
     // actions
     void inititeLogging();
@@ -42,6 +59,8 @@ private:
     // helpers
     Settings mSettings;
 
+    // model state
+    int mYear;
     // model components
     std::vector<std::string> mSpeciesList;
     std::shared_ptr<States> mStates;

@@ -45,6 +45,8 @@ private slots:
 
     void on_pbRunModel_clicked();
 
+    void on_pbRun_clicked();
+
 private:
     Ui::MainWindow *ui;
     std::unique_ptr<ModelController> mMC;

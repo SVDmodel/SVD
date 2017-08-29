@@ -3,28 +3,36 @@
 
 #include "grid.h"
 #include "cell.h"
+#include "environmentcell.h"
 
-class LandscapeState {
-public:
-private:
-    std::vector<Cell> mCells;
-    Grid<Cell*> mGrid;
-friend class Landscape;
-};
 
 class Landscape
 {
 public:
     Landscape();
     void setup();
-    LandscapeState &currentState() const { return *mCurrentState; }
-    LandscapeState &futureState() const { return *mFutureState; }
-private:
+
+
+    // access
+    /// get the grid of Cells. Cells outside the project area are marked
+    /// by cells where isNull() is true.
+    Grid<Cell> &currentGrid() const { return *mCurrentGrid; }
+    Grid<Cell> &futureGrid() const { return *mFutureGrid; }
+    /// environment-grid: pointer to EnvironmentCell, nullptr if invalid.
+    Grid<EnvironmentCell*> &environment()  { return mEnvironmentGrid; }
+
     void switchStates();
-    LandscapeState mStateA;
-    LandscapeState mStateB;
-    LandscapeState *mCurrentState;
-    LandscapeState *mFutureState;
+
+private:
+    void setupInitialState();
+    Grid<Cell> mGridA;
+    Grid<Cell> mGridB;
+    Grid<Cell> *mCurrentGrid;
+    Grid<Cell> *mFutureGrid;
+
+    Grid<EnvironmentCell*> mEnvironmentGrid;
+    std::vector<EnvironmentCell> mEnvironmentCells;
+
 
 };
 

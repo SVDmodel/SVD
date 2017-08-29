@@ -84,6 +84,7 @@ public:
     std::set<T> uniqueValues() const;
     /// count of cells which are not null
     int countNotNull();
+    bool isNull(const T &value) const {return value==mNODATAValue; }
 
 
 private:
@@ -182,7 +183,7 @@ bool GisGrid<T>::loadFromFile(const std::string &fileName)
             in_header=false; // we reachted datalines
         } else {
             strValue = (*l).substr(str_pos+1);
-            value = atof(strValue.c_str());
+            value = static_cast<T>(atof(strValue.c_str()));
             if (key=="ncols")
                 n_cols=int(value);
             else if (key=="nrows")
@@ -234,7 +235,7 @@ bool GisGrid<T>::loadFromFile(const std::string &fileName)
             while (*p && strchr(" \r\n\t", *p))
                 p++;
             if (*p) {
-                value = atof(p);
+                value = static_cast<T>(atof(p));
                 if (value!=mNODATAValue) {
                     mMinValue=std::min(mMinValue, value);
                     mMaxValue=std::max(mMaxValue, value);
