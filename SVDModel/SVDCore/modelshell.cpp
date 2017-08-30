@@ -110,6 +110,17 @@ std::string ModelShell::run_test_op(std::string what)
         );
         return result;
     }
+    if (what=="grid_next") {
+        auto &grid = Model::instance()->landscape()->currentGrid();
+        std::string result = gridToESRIRaster<Cell>(grid, [](const Cell &c)
+        { if (c.isNull())
+                return std::string("-9999");
+            else
+                return std::to_string(c.nextUpdate()); }
+        );
+        return result;
+    }
+
     if (what=="grid_N") {
         auto &grid = Model::instance()->landscape()->environment();
         std::string result = gridToESRIRaster<EnvironmentCell*>(grid, [](EnvironmentCell *c)

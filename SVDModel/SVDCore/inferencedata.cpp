@@ -12,8 +12,9 @@ InferenceData::InferenceData(Cell *cell)
 void InferenceData::writeResult()
 {
     // write back:
-    Cell &cell = Model::instance()->landscape()->futureGrid()[mIndex];
+    Cell &cell = Model::instance()->landscape()->futureGrid()[size_t(mIndex)];
     cell.setState(mNextState);
-    cell.setResidenceTime(mNextTime);
+    cell.setNextUpdateTime(mNextTime);
+    cell.setResidenceTime(0);
 
 }

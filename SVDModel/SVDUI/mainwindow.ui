@@ -130,6 +130,16 @@
            </item>
            <item>
             <property name="text">
+             <string>grid_restime</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>grid_next</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
              <string>grid_N</string>
             </property>
            </item>

@@ -43,10 +43,10 @@ public:
     const Settings &settings() const { return mSettings; }
     struct SystemStats {
         SystemStats(): NPackagesDNN(0), NPackagesSent(0), NPackagesTotalDNN(0), NPackagesTotalSent(0) {}
-        int NPackagesSent;
-        int NPackagesDNN;
-        int NPackagesTotalSent;
-        int NPackagesTotalDNN;
+        size_t NPackagesSent;
+        size_t NPackagesDNN;
+        size_t NPackagesTotalSent;
+        size_t NPackagesTotalDNN;
     } stats;
 private:
     // actions

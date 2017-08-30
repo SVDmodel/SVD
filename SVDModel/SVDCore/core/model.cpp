@@ -51,6 +51,13 @@ bool Model::setup()
 
 void Model::finalizeYear()
 {
+    // increment residence time for all pixels (updated pixels go from 0 -> 1)
+    for (Cell &c : landscape()->futureGrid()) {
+        if (!c.isNull())
+            c.setResidenceTime( c.residenceTime() + 1);
+    }
+
+
     landscape()->switchStates();
     stats.NPackagesTotalSent += stats.NPackagesSent;
     stats.NPackagesTotalDNN += stats.NPackagesDNN;
@@ -58,6 +65,11 @@ void Model::finalizeYear()
 
 void Model::newYear()
 {
+    if (mYear == 0) {
+        // first year of the simulation: copy the current to the modifyable landscape:
+        landscape()->futureGrid().copy(landscape()->currentGrid());
+    }
+
     stats.NPackagesSent = stats.NPackagesDNN = 0;
     // increment the counter
     mYear = mYear + 1;

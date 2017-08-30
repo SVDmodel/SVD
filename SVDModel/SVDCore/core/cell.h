@@ -14,12 +14,15 @@ public:
     state_t state() const { return mState; }
     /// the time (number of years) the cell is already in the current state
     restime_t residenceTime() const { return mResidenceTime; }
+    /// get the year for which the next update is scheduled
+    int nextUpdate() const {return mNextUpdateTime; }
 
     bool needsUpdate() const;
 
     // actions
     void setState(state_t new_state) { mState = new_state; }
     void setResidenceTime(restime_t res_time) { mResidenceTime = res_time; }
+    void setNextUpdateTime(int next_year) { mNextUpdateTime = next_year; }
     void setInvalid() { mState=0; mResidenceTime=0; }
 private:
     state_t mState; ///< the numeric ID of the state the cell is in
