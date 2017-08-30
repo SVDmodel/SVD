@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QTimer>
 #include <memory>
 
 #include "modelcontroller.h"
@@ -20,6 +21,8 @@ public:
     void initiateModelController();
     ~MainWindow();
 private slots:
+    void modelStateChanged(QString s);
+    void modelUpdate();
 
     void on_actionTest_DNN_triggered();
 
@@ -50,6 +53,7 @@ private slots:
 private:
     Ui::MainWindow *ui;
     std::unique_ptr<ModelController> mMC;
+    QTimer mUpdateModelTimer;
 };
 
 #endif // MAINWINDOW_H

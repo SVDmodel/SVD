@@ -93,6 +93,11 @@ void ModelShell::destroyModel()
     }
 }
 
+bool ModelShell::isModelRunning() const
+{
+    return (mState == Creating || mState==Stopping || mState==Running);
+}
+
 std::string ModelShell::run_test_op(std::string what)
 {
     if (what=="grid_state") {
@@ -253,6 +258,18 @@ QString ModelShell::stateString(ModelRunState s)
 
 }
 
+void ModelShell::setState(ModelShell::ModelRunState new_state, QString msg)
+{
+    mState = new_state;
+    QString text = stateString(mState);
+    if (msg.isEmpty())
+        emit stateChanged(text);
+    else
+        emit stateChanged(text + " - " + msg);
+}
+
+
+
 QMutex lock_processed_package;
 void ModelShell::processedPackage(std::list<InferenceData *> *package, int packageId)
 {
@@ -382,12 +399,3 @@ void ModelShell::finalizeCycle()
 }
 
 
-void ModelShell::setState(ModelShell::ModelRunState new_state, QString msg)
-{
-    mState = new_state;
-    QString text = stateString(mState);
-    if (msg.isEmpty())
-        emit stateChanged(text);
-    else
-        emit stateChanged(text + " - " + msg);
-}

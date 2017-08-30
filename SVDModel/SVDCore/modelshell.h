@@ -48,6 +48,8 @@ public:
 
     Model *model() { return mModel; }
 
+    bool isModelRunning() const;
+
     // test function
     std::string run_test_op(std::string what);
 

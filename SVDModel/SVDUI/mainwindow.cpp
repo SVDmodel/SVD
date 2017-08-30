@@ -2,10 +2,13 @@
 #include "ui_mainwindow.h"
 #include <QDebug>
 #include <QFileDialog>
+#include <QTimer>
+#include <QTime>
 
 #include "testdnn.h"
 
 #include "modelcontroller.h"
+#include "model.h"
 
 #include "integratetest.h"
 
@@ -43,6 +46,19 @@ MainWindow::~MainWindow()
     });
     //spdlog::drop_all();
     delete ui;
+}
+
+void MainWindow::modelStateChanged(QString s)
+{
+    // stop the update timer...
+    if (!mMC->shell()->isModelRunning())
+        mUpdateModelTimer.stop();
+
+}
+
+void MainWindow::modelUpdate()
+{
+    ui->lLog->appendPlainText(QString("%1 - %2").arg( QTime::currentTime().toString(Qt::ISODate) ).arg(mMC->shell()->stateString(mMC->shell()->state())));
 }
 
 
@@ -170,6 +186,9 @@ void MainWindow::initiateModelController()
 {
     // bookkeeping, signal - slot connections
     connect(mMC.get(), &ModelController::stateChanged, [this](QString s) {ui->statusBar->showMessage(s);});
+    connect(mMC.get(), &ModelController::stateChanged, this, &MainWindow::modelStateChanged);
+
+    connect(&mUpdateModelTimer, &QTimer::timeout, this, &MainWindow::modelUpdate);
 
     //connect(mMC.get(), &ModelController::stateChanged, ui->statusBar, &QStatusBar::showMessage);
     //QObject::connect(mMC.get(), SIGNAL(modelState(QString)), ui->statusBar, SLOT(showMessage(QString,int)));
@@ -185,6 +204,7 @@ void MainWindow::on_pbLoad_clicked()
 {
     // create & load model
     mMC->setup(ui->lConfigFile->text());
+    mUpdateModelTimer.start(20);
 }
 
 void MainWindow::on_pbDeleteModel_clicked()
@@ -195,6 +215,7 @@ void MainWindow::on_pbDeleteModel_clicked()
 void MainWindow::on_pbRunModel_clicked()
 {
     mMC->run( ui->sYears->value() );
+    mUpdateModelTimer.start(20);
 }
 
 void MainWindow::on_pbRun_clicked()

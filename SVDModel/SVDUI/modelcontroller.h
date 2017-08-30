@@ -31,6 +31,7 @@ private:
 
 class ModelInterface; // forward
 
+
 class ModelController : public QObject
 {
     Q_OBJECT
@@ -40,6 +41,7 @@ public:
     explicit ModelController(QObject *parent = nullptr);
     ~ModelController();
     ModelShell *shell() const { return mModelShell; }
+    const Model *model() const { return mModelShell->model(); }
     ModelInterface *dnnInterface() const { return mModelInterface; }
 
 signals:
