@@ -4,9 +4,9 @@
 #include <QDebug>
 #include <QFileDialog>
 
-#include "../Predictor/predictor.h"
+#include "../Predictor/predictortest.h"
 
-Predictor model;
+PredictorTest model;
 
 TestDNN::TestDNN(QWidget *parent) :
     QWidget(parent),

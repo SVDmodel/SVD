@@ -4,6 +4,8 @@
 #include <QObject>
 #include "spdlog/spdlog.h"
 
+#include "batchmanager.h"
+
 class InferenceData; // forward
 
 class ModelInterface: public QObject
@@ -26,6 +28,8 @@ private:
     void dummyDNN(std::list<InferenceData *> *package);
     // loggers
     std::shared_ptr<spdlog::logger> lg;
+
+    std::unique_ptr<BatchManager> mBatchManager;
 
 };
 

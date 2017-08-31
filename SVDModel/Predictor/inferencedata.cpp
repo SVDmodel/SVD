@@ -1,5 +1,7 @@
 #include "inferencedata.h"
 #include "model.h"
+//#include "../Predictor/batch.h"
+//#include "../Predictor/batchmanager.h"
 
 InferenceData::InferenceData(Cell *cell)
 {

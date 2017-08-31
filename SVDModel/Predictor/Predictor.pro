@@ -51,12 +51,19 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-        predictor.cpp \
-    modelinterface.cpp
+    modelinterface.cpp \
+    predictortest.cpp \
+    batchmanager.cpp \
+    batch.cpp \
+    inferencedata.cpp
 
 HEADERS += \
-        predictor.h \
-    modelinterface.h
+    modelinterface.h \
+    predictortest.h \
+    batchmanager.h \
+    batch.h \
+    tensorhelper.h \
+    inferencedata.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

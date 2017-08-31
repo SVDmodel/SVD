@@ -18,6 +18,8 @@ void ModelInterface::setup(QString fileName)
     if (lg)
         lg->info("DNN Setup, config file: {}", fileName.toStdString());
 
+    mBatchManager = std::unique_ptr<BatchManager>(new BatchManager());
+
 }
 
 void ModelInterface::doWork(std::list<InferenceData *> *package, int packageId)

@@ -1,4 +1,4 @@
-#include "predictor.h"
+#include "predictortest.h"
 
 //  from inception demo
 #include <fstream>
@@ -239,13 +239,13 @@ Predictor::Predictor()
 } */
 
 
-Predictor::Predictor()
+PredictorTest::PredictorTest()
 {
 
     session=0;
 }
 
-Predictor::~Predictor()
+PredictorTest::~PredictorTest()
 {
     if (session) {
         session->Close();
@@ -253,7 +253,7 @@ Predictor::~Predictor()
     }
 }
 
-bool Predictor::setup(QString model_path)
+bool PredictorTest::setup(QString model_path)
 {
 
     if (session) {
@@ -289,7 +289,7 @@ bool Predictor::setup(QString model_path)
     return true;
 }
 
-QString Predictor::classifyImage(QString image_path)
+QString PredictorTest::classifyImage(QString image_path)
 {
     // wraps the inception logic... and returns a text description...
     // Get the image from disk as a float array of numbers, resized and normalized
@@ -336,7 +336,7 @@ QString Predictor::classifyImage(QString image_path)
 
 }
 
-QString Predictor::insight()
+QString PredictorTest::insight()
 {
 
     //# https://joe-antognini.github.io/machine-learning/windows-tf-project
@@ -526,7 +526,7 @@ private:
 };
 
 
-QString Predictor::runModel()
+QString PredictorTest::runModel()
 {
     const int batchsize=5;
     const int timesteps=10;
@@ -634,7 +634,7 @@ Blas GEMM launch failed --> close python session with active tensorflow!!
 
 }
 
-Status Predictor::getTopClasses(const Tensor &classes, const int n_top, Tensor *indices, Tensor *scores)
+Status PredictorTest::getTopClasses(const Tensor &classes, const int n_top, Tensor *indices, Tensor *scores)
 {
     auto root = tensorflow::Scope::NewRootScope();
     using namespace ::tensorflow::ops;  // NOLINT(build/namespaces)

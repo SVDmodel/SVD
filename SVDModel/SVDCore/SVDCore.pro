@@ -41,8 +41,7 @@ SOURCES += \
     core/states.cpp \
     core/climate.cpp \
     tools/tools.cpp \
-    core/environmentcell.cpp \
-    inferencedata.cpp
+    core/environmentcell.cpp
 
 HEADERS += \
         svdcore.h \
@@ -60,8 +59,7 @@ HEADERS += \
     core/states.h \
     core/climate.h \
     tools/tools.h \
-    core/environmentcell.h \
-    inferencedata.h
+    core/environmentcell.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

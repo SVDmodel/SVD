@@ -1,5 +1,5 @@
-#ifndef PREDICTOR_H
-#define PREDICTOR_H
+#ifndef PREDICTORTEST_H
+#define PREDICTORTEST_H
 #include <QString>
 
 namespace tensorflow {
@@ -8,12 +8,12 @@ class Tensor;
 class Status;
 }
 
-class Predictor
+class PredictorTest
 {
 
 public:
-    Predictor();
-    ~Predictor();
+    PredictorTest();
+    ~PredictorTest();
     bool setup(QString model_path);
     // inception
     QString classifyImage(QString image_path);
@@ -28,4 +28,4 @@ private:
 
 };
 
-#endif // PREDICTOR_H
+#endif // PREDICTORTEST_H
