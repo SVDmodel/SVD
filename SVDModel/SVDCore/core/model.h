@@ -37,6 +37,7 @@ public:
     std::shared_ptr<States> states() const { return mStates; }
     const std::vector<std::string> &species() { return mSpeciesList; }
     std::shared_ptr<Landscape> &landscape() { return mLandscape; }
+    std::shared_ptr<Climate> &climate() { return mClimate; }
 
 
     /// access to the model configuration

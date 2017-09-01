@@ -19,6 +19,7 @@ void ModelInterface::setup(QString fileName)
         lg->info("DNN Setup, config file: {}", fileName.toStdString());
 
     mBatchManager = std::unique_ptr<BatchManager>(new BatchManager());
+    mBatchManager->setup();
 
 }
 

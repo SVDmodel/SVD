@@ -59,15 +59,29 @@ void Climate::setup()
                 throw std::logic_error("climate.sequence: the year '" + to_string(key) + "' is not valid!");
             mSequence.push_back( key );
         }
+        lg->debug("climate sequence enabled, length={}", mSequence.size());
     }
     if (lg->should_log(spdlog::level::trace)) {
         // print the first and last elements...
         //std::vector<float> &vec = mData[*mAllYears.begin()][*mAllIds.begin()];
-        const std::vector<float> &vec = series(*mAllYears.begin(), *mAllIds.begin());
+        const std::vector<float> &vec = singleSeries(*mAllYears.begin(), *mAllIds.begin());
         lg->trace("First entry: year={}, climateId={}: {}", *mAllYears.begin(), *mAllIds.begin(), join(vec.begin(), vec.end(), ", "));
         //const std::vector<float> &vec2 = series(*(mAllYears.end()--),*(mAllIds.end()--));
         //lg->trace("Last entry: year={}, climateId={}: ", *(mAllYears.end()--), *(mAllIds.end()--), join(vec2.begin(), vec2.end(), ", "));
 
         lg->trace("************");
     }
+}
+
+std::vector<const std::vector<float> *> Climate::series(int start_year, int series_length, int climateId) const
+{
+    int istart = start_year - 1;
+    if (istart<0 || istart+series_length >= mSequence.size())
+        throw std::logic_error("Climate-series: start year "+ to_string(start_year) +" is out of range (min: 1, max: "+ to_string(mSequence.size()-series_length)+")");
+    std::vector<const std::vector<float> *> set(series_length);
+    for (int i=0;i<series_length;++i)  {
+        int year = mSequence[ istart + i ];
+        set[i] = &singleSeries(year, climateId);
+    }
+    return set;
 }

@@ -4,12 +4,13 @@
 #include <QObject>
 #include <QFuture>
 #include <QFutureWatcher>
+#include <QtConcurrent>
 
 #include "spdlog/spdlog.h"
 #include "toymodel.h"
 //#include "core/model.h"
 
-#include "inferencedata.h"
+
 
 class ToyModelShell : public QObject
 {
@@ -32,8 +33,20 @@ private:
 };
 
 
+class ThreadSafeException : public QtConcurrent::Exception
+{
+public:
+    ThreadSafeException(QString msg) { mMsg = msg; }
+    char const * what() const {return mMsg.toStdString().c_str(); }
+    void raise() const { throw *this; }
+    ThreadSafeException *clone() const { return new ThreadSafeException(*this); }
+private:
+    QString mMsg;
+};
+
 class Model; // forward
 class Cell;
+class InferenceData;
 
 
 class ModelShell: public QObject

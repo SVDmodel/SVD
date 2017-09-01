@@ -51,7 +51,8 @@ int main(int argc, char *argv[])
     return retval;
     } catch(...) {
         auto l = spdlog::get("main");
-        l->critical("Unhandled exception in main!");
+        if (l)
+            l->critical("Unhandled exception in main!");
         shutdownLogging();
     }
 }

@@ -2,6 +2,7 @@
 #include "toymodel.h"
 #include "model.h"
 
+#include "../Predictor/inferencedata.h"
 #include "grid.h"
 
 #include <QThread>
@@ -308,29 +309,44 @@ void ModelShell::allPackagesBuilt()
 
 void ModelShell::internalRun()
 {
-    // increment the time step of the model
-    mModel->newYear();
 
-    // Test for which cells we need to do something
-    packageFuture = QtConcurrent::map(mModel->landscape()->currentGrid(), [this](Cell &cell){ this->buildInferenceData(&cell); });
-    packageWatcher.setFuture(packageFuture);
+    try {
+        // increment the time step of the model
+        mModel->newYear();
+
+        // Test for which cells we need to do something
+        packageFuture = QtConcurrent::map(mModel->landscape()->currentGrid(), [this](Cell &cell){ this->buildInferenceData(&cell); });
+        packageWatcher.setFuture(packageFuture);
+
+    } catch (const ThreadSafeException &e) {
+        // if an exception occures during the execution of the QtConcurrent function, then a thread safe exception is created,
+        // and catched here in the main thread.
+        lg->error("An error occured: {}", e.what());
+        throw std::logic_error(e.what());
+    }
 
 }
 
 void ModelShell::buildInferenceData(Cell *cell)
 {
-    // this function is called from multiple threads....
-    if (cell->isNull())
-        return;
-    if (cell->needsUpdate()==false)
-        return;
+    try {
+        // this function is called from multiple threads....
+        if (cell->isNull())
+            return;
+        if (cell->needsUpdate()==false)
+            return;
 
-    // create an InferenceData item and populate it with the required data
-    // the c'tor requests all the information from the model
-    InferenceData *item = new InferenceData(cell);
+        // create an InferenceData item and populate it with the required data
+        // the c'tor requests all the information from the model
+        InferenceData *item = new InferenceData(cell);
 
-    // add to processing chain
-    addDataPackage(item);
+        // add to processing chain
+        addDataPackage(item);
+
+    } catch (const std::exception &e) {
+        lg->error("An error occured: {}", e.what());
+        throw ThreadSafeException(QString(e.what()));
+    }
 
 }
 

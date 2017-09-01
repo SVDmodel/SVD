@@ -1,6 +1,8 @@
 #ifndef LANDSCAPE_H
 #define LANDSCAPE_H
 
+#include <cassert>
+
 #include "grid.h"
 #include "cell.h"
 #include "environmentcell.h"
@@ -14,6 +16,14 @@ public:
 
 
     // access
+    // access single cells
+    Cell &cell(int index) { assert((*mCurrentGrid).isIndexValid(index));
+                            return (*mCurrentGrid)[index]; }
+    EnvironmentCell &environmentCell(int index) { assert(mEnvironmentGrid.isIndexValid(index));
+                                                assert(mEnvironmentGrid[index] != nullptr);
+                                                return *mEnvironmentGrid[index]; }
+
+    // access whole grids
     /// get the grid of Cells. Cells outside the project area are marked
     /// by cells where isNull() is true.
     Grid<Cell> &currentGrid() const { return *mCurrentGrid; }

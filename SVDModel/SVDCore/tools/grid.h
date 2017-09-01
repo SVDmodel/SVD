@@ -171,6 +171,7 @@ public:
     Point indexOf(const int index) const {return Point(index % mSizeX,  index / mSizeX); }
     bool isIndexValid(const Point& pos) const { return (pos.x()>=0 && pos.x()<mSizeX && pos.y()>=0 && pos.y()<mSizeY); } ///< return true, if position is within the grid
     bool isIndexValid(const int x, const int y) const {return (x>=0 && x<mSizeX && y>=0 && y<mSizeY); } ///< return true, if index is within the grid
+    bool isIndexValid(const int index) {return index>=0 && index<mCount; } ///< return true if the integer index is valid
 
     /// returns the index of an aligned grid (with the same size and matching origin) with the double cell size (e.g. to scale from a 10m grid to a 20m grid)
     int index2(int idx) const {return ((idx/mSizeX)/2)*(mSizeX/2) + (idx%mSizeX)/2; }
