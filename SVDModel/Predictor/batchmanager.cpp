@@ -47,6 +47,10 @@ BatchManager::BatchManager()
 
 BatchManager::~BatchManager()
 {
+    // delete all batches and free memory
+    for (auto b : mBatches)
+        delete b;
+
     if (spdlog::get("dnn"))
         spdlog::get("dnn")->debug("Batch manager destroyed: {0:x}", (void*)this);
 

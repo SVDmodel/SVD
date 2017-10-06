@@ -20,8 +20,9 @@ public:
     TensorWrapper *tensor(int index) {return mTensors[index]; }
 
 private:
+    /// the tensors associated with this batch of data
     std::vector<TensorWrapper*> mTensors;
-    std::atomic<int> mCurrentSlot;
+    std::atomic<int> mCurrentSlot; ///< atomic access
     int mBatchSize;
     friend class BatchManager;
 };

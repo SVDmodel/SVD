@@ -2,6 +2,8 @@
 #include "tools.h"
 #include "strtools.h"
 
+#include <QThreadPool>
+
 Model *Model::mInstance = 0;
 
 Model::Model(const std::string &fileName)
@@ -32,6 +34,12 @@ Model::~Model()
 
 bool Model::setup()
 {
+    // general setup
+    bool mt = settings().valueBool("model.multithreading",true);
+    if (mt)
+        QThreadPool::globalInstance()->setMaxThreadCount( QThread::idealThreadCount() );
+    else
+        QThreadPool::globalInstance()->setMaxThreadCount( 1 );
 
     // set up model components
     setupSpecies();

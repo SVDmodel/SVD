@@ -289,6 +289,10 @@ void ModelShell::processedPackage(std::list<InferenceData *> *package, int packa
     mModel->stats.NPackagesDNN += package->size();
 
     mLivePackages--;
+
+    for (auto p : *package)
+        delete p;
+
     delete package;
     }
 
@@ -314,7 +318,8 @@ void ModelShell::internalRun()
         // increment the time step of the model
         mModel->newYear();
 
-        // Test for which cells we need to do something
+        // check for each cell if we need to do something; if yes, then
+        // create a InferenceData item (and eventually add it to a 'package')
         packageFuture = QtConcurrent::map(mModel->landscape()->currentGrid(), [this](Cell &cell){ this->buildInferenceData(&cell); });
         packageWatcher.setFuture(packageFuture);
 

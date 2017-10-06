@@ -12,6 +12,7 @@ CONFIG += staticlib
 
 ### tensorflow compiled locally
 INCLUDEPATH += e:/dev/tensorflow e:/dev/tensorflow/tensorflow/contrib/cmake/build  e:/dev/tensorflow/tensorflow/contrib/cmake/build/external/eigen_archive
+INCLUDEPATH += e:/dev/tensorflow/tensorflow/contrib/cmake/build/external/nsync/public
 INCLUDEPATH += e:/dev/tensorflow/third_party/eigen3 e:/dev/tensorflow/tensorflow/contrib/cmake/build/protobuf/src/protobuf/src
 INCLUDEPATH += ../SVDCore ../SVDCore/core ../SVDCore/tools ../SVDCore/third_party
 
