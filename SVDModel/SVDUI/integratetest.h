@@ -11,6 +11,8 @@ public:
     void testSettings();
     void testLogging();
     void testRandom();
+    void testTensor();
+
 };
 
 #endif // INTEGRATETEST_H

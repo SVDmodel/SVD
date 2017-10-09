@@ -3,6 +3,7 @@
 #include "../SVDCore/tools/filereader.h"
 #include "../SVDCore/tools/settings.h"
 #include "../SVDCore/tools/randomgen.h"
+#include "../Predictor/predictortest.h"
 
 #include "spdlog/spdlog.h"
 
@@ -167,5 +168,13 @@ void IntegrateTest::testRandom()
     for (int i=0;i<1000000000;++i)
         x2 += drandom();
     console->debug("Drawn 1'000'000'000 random numbers");
+
+}
+
+void IntegrateTest::testTensor()
+{
+
+    PredictorTest pt;
+    pt.tensorTest();
 
 }

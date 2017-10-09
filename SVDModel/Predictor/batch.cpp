@@ -8,6 +8,8 @@ Batch::Batch(int batch_size)
 
     mCurrentSlot = 0;
     mBatchSize = batch_size;
+    mInferenceData.resize(mBatchSize);
+    mState=Fill;
 }
 
 Batch::~Batch()
@@ -17,6 +19,15 @@ Batch::~Batch()
     for (auto p : mTensors) {
         delete p;
     }
+}
+
+Batch::BatchState Batch::changeState(Batch::BatchState newState)
+{
+    if (newState==Fill) {
+        mCurrentSlot = 0;
+        mState = newState;
+    }
+    return mState;
 }
 
 int Batch::acquireSlot()

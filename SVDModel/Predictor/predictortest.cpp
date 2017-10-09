@@ -3,6 +3,7 @@
 //  from inception demo
 #include <fstream>
 #include <vector>
+#include <iomanip>
 
 #include "tensorflow/cc/ops/const_op.h"
 #include "tensorflow/cc/ops/image_ops.h"
@@ -27,6 +28,8 @@
 #include <QFileInfo>
 #include <QDebug>
 #include <QDir>
+
+#include "spdlog/spdlog.h"
 
 // These are all common classes it's handy to reference with no namespace.
 using tensorflow::Flag;
@@ -461,10 +464,10 @@ QString PredictorTest::insight()
 }
 
 template<typename T>
-class TensorWrap2d
+class PTensorWrap2d
 {
 public:
-    TensorWrap2d(size_t batch_size, size_t n) {
+    PTensorWrap2d(size_t batch_size, size_t n) {
         mBatchSize = batch_size; mN=n;
         tensorflow::DataType dt = tensorflow::DT_FLOAT;
         if (typeid(T)==typeid(float)) dt=tensorflow::DT_FLOAT;
@@ -476,7 +479,7 @@ public:
         mData = TensorConversion<T,2>::AccessDataPointer(*mT);
         mPrivateTensor=true;
     }
-    TensorWrap2d(Tensor &tensor) {
+    PTensorWrap2d(Tensor &tensor) {
         mBatchSize = tensor.dim_size(0);
         mN = tensor.dim_size(1);
         mT = &tensor;
@@ -487,7 +490,7 @@ public:
     size_t n() const  { return mN; }
     T *example(size_t element) { return mData + element*mN; }
 
-    ~TensorWrap2d() { if (mPrivateTensor) delete mT; }
+    ~PTensorWrap2d() { if (mPrivateTensor) delete mT; }
 private:
     bool mPrivateTensor;
     Tensor *mT;
@@ -497,10 +500,10 @@ private:
 };
 
 template<typename T>
-class TensorWrap3d
+class PTensorWrap3d
 {
 public:
-    TensorWrap3d(size_t batch_size, size_t nx, size_t ny) {
+    PTensorWrap3d(size_t batch_size, size_t nx, size_t ny) {
         mBatchSize = batch_size; mNx=nx; mNy=ny;
         tensorflow::DataType dt = tensorflow::DT_FLOAT;
         if (typeid(T)==typeid(float)) dt=tensorflow::DT_FLOAT;
@@ -516,7 +519,7 @@ public:
     T *example(size_t element) { return mData + element*mNx*mNy; }
     T *row(size_t element, size_t x) { return mData + element*mNx*mNy+x*mNx; }
 
-    ~TensorWrap3d() { delete mT; }
+    ~PTensorWrap3d() { delete mT; }
 private:
     Tensor *mT;
     T *mData;
@@ -533,11 +536,11 @@ QString PredictorTest::runModel()
     const int Nneighbors=62;
     const int top_n = 10;
 
-    TensorWrap2d<short int> state(batchsize, 1);
-    TensorWrap2d<float> time(batchsize, 1);
-    TensorWrap3d<float> climate(batchsize, timesteps, 40);
-    TensorWrap2d<float> neighbors(batchsize, Nneighbors);
-    TensorWrap2d<float> site(batchsize, 2);
+    PTensorWrap2d<short int> state(batchsize, 1);
+    PTensorWrap2d<float> time(batchsize, 1);
+    PTensorWrap3d<float> climate(batchsize, timesteps, 40);
+    PTensorWrap2d<float> neighbors(batchsize, Nneighbors);
+    PTensorWrap2d<float> site(batchsize, 2);
 
     for (int i=0;i<batchsize;++i) {
         *state.example(i) = i;
@@ -591,7 +594,7 @@ Blas GEMM launch failed --> close python session with active tensorflow!!
     qDebug() << outputs[1].dim_size(0) << " x " << outputs[1].dim_size(1);
 
     // dump
-    TensorWrap2d<float> out_time(outputs[1]);
+    PTensorWrap2d<float> out_time(outputs[1]);
     for (int i=0;i<batchsize;++i) {
         QString line = QString("Example %1: ").arg(i);
         for (int j=0;j<out_time.n();j++)
@@ -611,8 +614,8 @@ Blas GEMM launch failed --> close python session with active tensorflow!!
     }
 
     out << "Classifcation Results";
-    TensorWrap2d<float> scores_flat(scores);
-    TensorWrap2d<int32> indicies_flat(indices);
+    PTensorWrap2d<float> scores_flat(scores);
+    PTensorWrap2d<int32> indicies_flat(indices);
     for (int i=0;i<batchsize;++i) {
         out << QString("**** Example %1 ***** ").arg(i);
         for (int j=0;j<out_time.n();j++)
@@ -631,6 +634,27 @@ Blas GEMM launch failed --> close python session with active tensorflow!!
     }
 
     return out.join("\n");
+
+}
+
+void PredictorTest::tensorTest()
+{
+
+    auto console = spdlog::get("main");
+
+    PTensorWrap2d<float> *tw = new PTensorWrap2d<float>(6, 4);
+    for (int i=0;i<6;++i) {
+        for (int j=0;j<4;++j)
+            tw->example(i)[j] = i*100 + j;
+    }
+    std::stringstream ss;
+    for (int i=0;i<6;++i) {
+        ss << "Example " << i << ": ";
+        for (int j=0;j<4;++j)
+            ss << std::setw(8) << tw->example(i)[j];
+        ss << std::endl;
+    }
+    console->debug("{}", ss.str());
 
 }
 

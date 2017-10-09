@@ -20,6 +20,8 @@ public:
     //
     QString insight();
     QString runModel();
+    // tensortest:
+    void tensorTest();
 private:
     tensorflow::Status getTopClasses(const tensorflow::Tensor &classes, const int n_top, tensorflow::Tensor *indices, tensorflow::Tensor *scores);
     tensorflow::Session *session;

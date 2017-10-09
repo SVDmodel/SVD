@@ -1,22 +1,20 @@
 #include "inferencedata.h"
 #include "model.h"
 #include "batch.h"
+#include "tensorhelper.h"
 
-InferenceData::InferenceData(Cell *cell)
+void InferenceData::fetchData(Cell *cell, Batch *batch, int slot)
 {
     mOldState = cell->state();
     mNextState = 0;
     mNextTime = 0;
     mIndex = cell - Model::instance()->landscape()->currentGrid().begin();
 
-    // get a batch to store the data to:
-    assert(BatchManager::instance()!=nullptr);
-    std::pair<Batch*, int> newslot = BatchManager::instance()->batch();
-    mBatch = newslot.first;
-    mSlot = newslot.second;
+    mBatch = batch;
+    mSlot = slot;
 
     // now pull all the data
-    fetchData();
+    internalFetchData();
 }
 
 void InferenceData::writeResult()
@@ -29,7 +27,7 @@ void InferenceData::writeResult()
 
 }
 
-void InferenceData::fetchData()
+void InferenceData::internalFetchData()
 {
     const std::list<InputTensorItem> &tdef = BatchManager::instance()->tensorDefinition();
     for (const auto &def : tdef) {
@@ -52,17 +50,19 @@ void InferenceData::fetchData()
 
 void InferenceData::fetchClimate(const InputTensorItem &def)
 {
+
     // the climate data
-    auto ec = Model::instance()->landscape()->environmentCell(mIndex);
+    auto &ec = Model::instance()->landscape()->environmentCell(mIndex);
     auto climate_series = Model::instance()->climate()->series(Model::instance()->year(),
                                                                def.sizeY,
                                                                ec.climateId());
     TensorWrapper *t = mBatch->tensor(def.index);
     TensorWrap3d<float> *tw = static_cast<TensorWrap3d<float>*>(t);
 
+    //return;
     // copy the climate data to the tensors
     size_t i = 0;
-    for (auto p : climate_series) {
+    for (const std::vector<float> *p : climate_series) {
         float *d = tw->row(mSlot, i++);
         memcpy(d, p->data(), sizeof(float) * p->size());
     }
@@ -73,8 +73,11 @@ void InferenceData::fetchState(const InputTensorItem &def)
 {
     // the current state
     TensorWrapper *t = mBatch->tensor(def.index);
-    TensorWrap2d<unsigned int> *tw = static_cast<TensorWrap2d<unsigned int>*>(t);
-    unsigned int *p = tw->example(mSlot);
+    TensorWrap2d<short unsigned int> *tw = static_cast<TensorWrap2d<short unsigned int>*>(t);
+    short unsigned int *p = tw->example(mSlot);
+    //return;
+    if (p - tw->example(0) >= tw->batchSize())
+        throw std::logic_error("fetchState!");
     *p = mOldState;
 
 }

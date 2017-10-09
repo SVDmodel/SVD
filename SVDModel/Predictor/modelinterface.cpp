@@ -1,14 +1,17 @@
 #include "modelinterface.h"
 
 #include <QThread>
+#include <QMetaType>
 
 #include "inferencedata.h"
 #include "randomgen.h"
 #include "model.h"
+#include "batch.h"
+
+
 
 ModelInterface::ModelInterface()
 {
-
 }
 
 void ModelInterface::setup(QString fileName)
@@ -23,26 +26,33 @@ void ModelInterface::setup(QString fileName)
 
 }
 
-void ModelInterface::doWork(std::list<InferenceData *> *package, int packageId)
+void ModelInterface::doWork(Batch *batch, int packageId)
 {
 
     // do the processing with DNN....
+    batch->changeState(Batch::DNN);
     // now just fake:
-    dummyDNN(package);
+    dummyDNN(batch);
 
-    lg->debug("finished data package {} (size={})", packageId, package->size());
+    batch->changeState(Batch::Finished);
 
-    emit workDone(package, packageId);
+    lg->debug("finished data package {} (size={})", packageId, batch->usedSlots());
+
+    emit workDone(batch, packageId);
 }
 
-void ModelInterface::dummyDNN(std::list<InferenceData *> *package)
+void ModelInterface::dummyDNN(Batch *batch)
 {
-    for (InferenceData *d : *package) {
+    for (int i=0;i<batch->usedSlots();++i) {
+        InferenceData &id=batch->inferenceData(i);
         // just random ....
         const State &s = Model::instance()->states()->randomState();
         restime_t rt = Model::instance()->year()+irandom(1,12);
-        d->setResult(s.id(), rt);
+        id.setResult(s.id(), rt);
+
     }
+    QThread::msleep(5);
+
 }
 
 

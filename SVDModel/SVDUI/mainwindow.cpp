@@ -11,6 +11,7 @@
 #include "model.h"
 
 #include "integratetest.h"
+#include "../Predictor/predtest.h"
 
 #include "spdlog/spdlog.h"
 #include "strtools.h"
@@ -130,7 +131,7 @@ protected:
                 break;
             }
 
-        QMetaObject::invokeMethod(mOut, "appendPlainText", Qt::QueuedConnection, Q_ARG(QString, QString(buf)));
+        // QMetaObject::invokeMethod(mOut, "appendPlainText", Qt::QueuedConnection, Q_ARG(QString, QString(buf)));
         //mOut->appendPlainText( QString(buf));
     }
     void _flush() override
@@ -158,6 +159,8 @@ void MainWindow::on_pushButton_3_clicked()
 
 void MainWindow::initiateLogging()
 {
+    if (spdlog::get("main"))
+        return;
     // asynchronous logging, 2 seconds auto-flush
     spdlog::set_async_mode(8192, spdlog::async_overflow_policy::block_retry,
                            nullptr,
@@ -200,11 +203,18 @@ void MainWindow::on_pushButton_4_clicked()
     it.testRandom();
 }
 
+void MainWindow::on_pushButton_5_clicked()
+{
+    initiateLogging();
+    PredTest it;
+    it.testTensor();
+}
+
 void MainWindow::on_pbLoad_clicked()
 {
     // create & load model
     mMC->setup(ui->lConfigFile->text());
-    mUpdateModelTimer.start(20);
+    mUpdateModelTimer.start(100);
 }
 
 void MainWindow::on_pbDeleteModel_clicked()
@@ -215,7 +225,7 @@ void MainWindow::on_pbDeleteModel_clicked()
 void MainWindow::on_pbRunModel_clicked()
 {
     mMC->run( ui->sYears->value() );
-    mUpdateModelTimer.start(20);
+    mUpdateModelTimer.start(100);
 }
 
 void MainWindow::on_pbRun_clicked()
@@ -224,3 +234,5 @@ void MainWindow::on_pbRun_clicked()
     writeFile(ui->lParam->text().toStdString(), s);
 
 }
+
+

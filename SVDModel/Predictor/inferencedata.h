@@ -8,14 +8,15 @@ class Batch; // forward
 class InferenceData
 {
 public:
-    /// creates an item and pull all the required data from the model
-    InferenceData(Cell *cell);
+    InferenceData(): mOldState(-1), mNextState(-1), mNextTime(-1), mBatch(nullptr), mSlot(-1) {}
+    /// fills an item by pulling all the required data from the model
+    void fetchData(Cell *cell, Batch *batch, int slot);
 
     void setResult(state_t state, restime_t time) { mNextState=state; mNextTime=time; }
     void writeResult();
 private:
     /// pull the data from the model and stores in the Tensor
-    void fetchData();
+    void internalFetchData();
     // functions for individual content types
     void fetchClimate(const InputTensorItem &def);
     void fetchState(const InputTensorItem &def);

@@ -22,7 +22,7 @@ DEFINES += NOMINMAX
 #https://gist.github.com/Garoe/a6a82b75ea8277d12829eee81d6d2203
 DEFINES +=  WIN32
 DEFINES +=  _WINDOWS
-DEFINES +=  NDEBUG
+#DEFINES +=  NDEBUG
 DEFINES +=  EIGEN_AVOID_STL_ARRAY
 DEFINES +=  _WIN32_WINNT=0x0A00
 DEFINES +=  LANG_CXX11
@@ -56,7 +56,8 @@ SOURCES += \
     predictortest.cpp \
     batchmanager.cpp \
     batch.cpp \
-    inferencedata.cpp
+    inferencedata.cpp \
+    predtest.cpp
 
 HEADERS += \
     modelinterface.h \
@@ -64,7 +65,8 @@ HEADERS += \
     batchmanager.h \
     batch.h \
     tensorhelper.h \
-    inferencedata.h
+    inferencedata.h \
+    predtest.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

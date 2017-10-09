@@ -45,8 +45,9 @@ private:
 };
 
 class Model; // forward
-class Cell;
-class InferenceData;
+class Cell; // forward
+class InferenceData; // forward
+class Batch; // forward
 
 
 class ModelShell: public QObject
@@ -72,7 +73,7 @@ signals:
     void log(QString s);
 
 
-    void newPackage(std::list<InferenceData*>*, int packageId);
+    void newPackage(Batch *batch, int packageId);
     void finished();
 
 public slots:
@@ -84,14 +85,14 @@ public slots:
     ModelRunState state() { return mState; }
     QString stateString(ModelRunState s);
 
-    void processedPackage(std::list<InferenceData*>*package, int packageId);
+    void processedPackage(Batch *batch, int packageId);
     void allPackagesBuilt();
 
 private:
     void internalRun();
     void buildInferenceData(Cell *cell);
-    void addDataPackage(InferenceData *item);
-    void sendInferencePackage();
+    void checkBatch(Batch *batch);
+    void sendPendingBatches();
     void finalizeCycle();
 
 
@@ -100,8 +101,9 @@ private:
     bool mAbort;
     Model *mModel;
 
-    std::list< std::list<InferenceData*>* > mInferenceData;
-    int mLivePackages;
+    int mPackagesBuilt;
+    int mPackagesProcessed;
+    bool mAllPackagesBuilt;
     int mPackageId;
 
     QFutureWatcher<void> packageWatcher;

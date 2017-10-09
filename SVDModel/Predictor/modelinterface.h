@@ -7,6 +7,7 @@
 #include "batchmanager.h"
 
 class InferenceData; // forward
+class Batch; // forward
 
 class ModelInterface: public QObject
 {
@@ -20,12 +21,12 @@ private:
 public slots:
     void setup(QString fileName);
 
-    void doWork(std::list<InferenceData*>*package, int packageId);
+    void doWork(Batch *batch, int packageId);
 signals:
-    void workDone(std::list<InferenceData*>*, int packageId);
+    void workDone(Batch *batch, int packageId);
 
 private:
-    void dummyDNN(std::list<InferenceData *> *package);
+    void dummyDNN(Batch *batch);
     // loggers
     std::shared_ptr<spdlog::logger> lg;
 

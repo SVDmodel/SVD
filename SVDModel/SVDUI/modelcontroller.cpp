@@ -87,13 +87,15 @@ ModelController::ModelController(QObject *parent)
     mModelInterface->moveToThread(dnnThread);
     connect(dnnThread, &QThread::finished, mModelInterface, &QObject::deleteLater);
 
-    // connection between main model and DNN:
-    connect(mModelShell, &ModelShell::newPackage, mModelInterface, &ModelInterface::doWork);
-    connect(mModelInterface, &ModelInterface::workDone, mModelShell, &ModelShell::processedPackage);
-    connect(mModelShell, &ModelShell::finished, this, &ModelController::finishedRun);
+    // connection between main model and DNN: [this requires the old way of connect, because there are errors with Batch* otherwise]
+    QObject::connect(mModelShell, SIGNAL(newPackage(Batch*,int)), mModelInterface, SLOT(doWork(Batch*,int)), Qt::QueuedConnection);
+    QObject::connect(mModelInterface, SIGNAL(workDone(Batch*,int)), mModelShell, SLOT(processedPackage(Batch*,int)), Qt::QueuedConnection);
+    //connect(mModelShell, &ModelShell::newPackage, mModelInterface, &ModelInterface::doWork);
+    //connect(mModelInterface, &ModelInterface::workDone, mModelShell, &ModelShell::processedPackage);
+    connect(mModelShell, &ModelShell::finished, this, &ModelController::finishedRun, Qt::QueuedConnection);
 
     // logging
-    connect(mModelShell, &ModelShell::log, this, &ModelController::log);
+    connect(mModelShell, &ModelShell::log, this, &ModelController::log, Qt::QueuedConnection);
     log("Modelcontroller: before thread.start()");
 
     QThread::currentThread()->setObjectName("SVDUI");

@@ -62,12 +62,17 @@ public:
     std::shared_ptr<spdlog::logger> &log() {return lg; }
     /// returns a pointer to a batch (first) and a (valid)
     /// slot (=index within the batch): second
-    std::pair<Batch *, int> batch();
+    std::pair<Batch *, int> validSlot();
+
+    const std::list<Batch *> batches() const { return mBatches; }
 
     /// the definition of the tensors to fill
     const std::list<InputTensorItem> &tensorDefinition() const {return mTensorDef; }
 private:
+    int mBatchSize;
+    int mMaxQueueLength;
     Batch *createBatch();
+    std::pair<Batch *, int> findValidSlot();
     TensorWrapper *buildTensor(int batch_size, InputTensorItem &item);
     std::list<InputTensorItem> mTensorDef;
     std::list<Batch *> mBatches;

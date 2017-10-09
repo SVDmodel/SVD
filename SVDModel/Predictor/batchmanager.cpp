@@ -1,5 +1,9 @@
 #include "batchmanager.h"
 #include "batch.h"
+#include "tensorhelper.h"
+
+#include "model.h"
+#include "settings.h"
 
 #include <mutex>
 
@@ -64,6 +68,10 @@ void BatchManager::setup()
     if (!lg)
         throw std::logic_error("BatchManager::setup: logging not available.");
     lg->info("Setup of batch manager.");
+    Model::instance()->settings().requiredKeys("dnn", {"batchSize", "maxBatchQueue"});
+    mBatchSize = Model::instance()->settings().valueInt("dnn.batchSize");
+    mMaxQueueLength = Model::instance()->settings().valueInt("dnn.maxBatchQueue");
+
 //    mTensorDef =  {
 //        {"test", InputTensorItem::DT_FLOAT, 2, 24, 10, InputTensorItem::Climate},
 //        {"test2", InputTensorItem::DT_INT16, 1, 1, 0, InputTensorItem::State}
@@ -87,26 +95,57 @@ void BatchManager::setup()
 }
 
 std::mutex batch_mutex;
-std::pair<Batch *, int> BatchManager::batch()
+std::pair<Batch *, int> BatchManager::validSlot()
 {
     // serialize this function...
     std::lock_guard<std::mutex> guard(batch_mutex);
+    std::pair<Batch *, int> result;
+    do {
+        result = findValidSlot();
+        if (!result.first) {
+            // wait
+            lg->trace("BatchManager: no batch available. Sleeping.");
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    } while (!result.first);
+    return result;
 
-    if (mBatches.size()==0)
-        mBatches.push_back( createBatch() );
+}
 
-    if (mBatches.back()->freeSlots()<=0) {
-        // we need to create a new batch
-        mBatches.push_back( createBatch() );
+std::pair<Batch *, int> BatchManager::findValidSlot()
+{
+    // this function is serialized (access via validSlot() ).
+
+    // look for a batch which is currently not in the DNN processing chain
+    Batch *batch = nullptr;
+    for (auto b : mBatches) {
+        if (b->state()==Batch::Fill && b->freeSlots()>0) {
+            batch=b;
+            break;
+        }
+    }
+    if (!batch || batch->freeSlots()<=0) {
+        if (mBatches.size() >= mMaxQueueLength) {
+            // currently we don't find a proper place for the data.
+            return std::pair<Batch*, int>(nullptr, 0);
+        }
+        batch = createBatch();
+        mBatches.push_back( batch );
         lg->trace("created a new batch. Now the list contains {} batch(es).", mBatches.size());
+        if ( lg->should_log(spdlog::level::trace) ) {
+            int idx=0;
+            for (auto b : mBatches) {
+                lg->trace("#{}: state: {}, used: {}, free: {}", idx, b->state(), b->usedSlots(), b->freeSlots());
+                ++idx;
+            }
+        }
     }
 
-    Batch *last = mBatches.back();
 
     // get a new slot in the batch
     std::pair<Batch *, int> result;
-    result.first = last;
-    result.second = last->acquireSlot();
+    result.first = batch;
+    result.second = batch->acquireSlot();
     return result;
 
 }
@@ -143,16 +182,16 @@ TensorWrapper *BatchManager::buildTensor(int batch_size, InputTensorItem &item)
 
 Batch *BatchManager::createBatch()
 {
-    const int batch_size=16;
 
-    Batch *b = new Batch(batch_size);
+    Batch *b = new Batch(mBatchSize);
 
     // loop over tensor definition and create the required tensors....
+    int index=0;
     for (auto &td : mTensorDef) {
         // create a tensor of the right size
-        TensorWrapper *tw = buildTensor(batch_size, td);
+        TensorWrapper *tw = buildTensor(mBatchSize, td);
 
-        td.index = static_cast<int>(b->mTensors.size());
+        td.index = index++; // static_cast<int>(b->mTensors.size());
         b->mTensors.push_back(tw);
     }
 

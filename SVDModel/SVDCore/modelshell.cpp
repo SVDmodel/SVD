@@ -3,6 +3,7 @@
 #include "model.h"
 
 #include "../Predictor/inferencedata.h"
+#include "../Predictor/batch.h"
 #include "grid.h"
 
 #include <QThread>
@@ -70,7 +71,7 @@ ModelShell::ModelShell(QObject *parent)
     mAbort = false;
     mState = Invalid;
     mModel = 0;
-    mLivePackages = 0;
+    mPackagesBuilt = 0;
     mPackageId = 0;
 
     connect(&packageWatcher, SIGNAL(finished()), this, SLOT(allPackagesBuilt()));
@@ -272,35 +273,29 @@ void ModelShell::setState(ModelShell::ModelRunState new_state, QString msg)
 
 
 QMutex lock_processed_package;
-void ModelShell::processedPackage(std::list<InferenceData *> *package, int packageId)
+void ModelShell::processedPackage(Batch *batch, int packageId)
 {
     // DNN delivered processed package....
     lg->debug("Model: DNN package {} received!", packageId);
 
-    // write back to data.....
-    for (InferenceData * ii : *package) {
-        ii->writeResult();
+    for (int i=0;i<batch->usedSlots();++i) {
+        batch->inferenceData(i).writeResult();
     }
+    batch->changeState(Batch::Fill);
 
 
     // now the data can be freed:
     {
     QMutexLocker locker(&lock_processed_package);
-    mModel->stats.NPackagesDNN += package->size();
+    mPackagesProcessed++;
 
-    mLivePackages--;
-
-    for (auto p : *package)
-        delete p;
-
-    delete package;
     }
 
-    if (mLivePackages==0) {
+    if (mAllPackagesBuilt && mPackagesBuilt==mPackagesProcessed) {
         lg->info( "Model: processsed Last Package! [NSent: {} NReceived: {}]", mModel->stats.NPackagesSent, mModel->stats.NPackagesDNN );
         finalizeCycle();
     } else {
-        lg->debug( "Model: #packages: {} [NSent: {} NReceived: {}]", mLivePackages, mModel->stats.NPackagesSent, mModel->stats.NPackagesDNN);
+        lg->debug( "Model: #packages: {} sent, {} processed [total: NSent: {} NReceived: {}]", mPackagesBuilt, mPackagesProcessed, mModel->stats.NPackagesSent, mModel->stats.NPackagesDNN);
     }
 
 }
@@ -308,7 +303,8 @@ void ModelShell::processedPackage(std::list<InferenceData *> *package, int packa
 void ModelShell::allPackagesBuilt()
 {
     //lg->debug("** all packages built, starting the last package");
-    sendInferencePackage(); // start last batch (even if < than batch size)
+    sendPendingBatches(); // start last batch (even if < than batch size)
+    mAllPackagesBuilt = true;
 }
 
 void ModelShell::internalRun()
@@ -317,9 +313,13 @@ void ModelShell::internalRun()
     try {
         // increment the time step of the model
         mModel->newYear();
+        mAllPackagesBuilt=false;
+        mPackagesBuilt=0;
+        mPackagesProcessed=0;
 
         // check for each cell if we need to do something; if yes, then
-        // create a InferenceData item (and eventually add it to a 'package')
+        // fill a InferenceData item within a batch of data
+        //
         packageFuture = QtConcurrent::map(mModel->landscape()->currentGrid(), [this](Cell &cell){ this->buildInferenceData(&cell); });
         packageWatcher.setFuture(packageFuture);
 
@@ -341,12 +341,15 @@ void ModelShell::buildInferenceData(Cell *cell)
         if (cell->needsUpdate()==false)
             return;
 
-        // create an InferenceData item and populate it with the required data
-        // the c'tor requests all the information from the model
-        InferenceData *item = new InferenceData(cell);
+        assert(BatchManager::instance()!=nullptr);
+        std::pair<Batch*, int> newslot = BatchManager::instance()->validSlot();
+        InferenceData &id = newslot.first->inferenceData(newslot.second);
 
-        // add to processing chain
-        addDataPackage(item);
+        // populate the InferenceData with the required data
+        id.fetchData(cell, newslot.first, newslot.second);
+
+        checkBatch(newslot.first);
+
 
     } catch (const std::exception &e) {
         lg->error("An error occured: {}", e.what());
@@ -356,58 +359,35 @@ void ModelShell::buildInferenceData(Cell *cell)
 }
 
 
-QMutex lock_inference_list;
-/// addDataPackage adds the data package 'item' to
-/// the internal list. If the batch_size is reached,
-/// a package is sent to the DNN thread.
-void ModelShell::addDataPackage(InferenceData *item)
+
+
+void ModelShell::checkBatch(Batch *batch)
 {
-    const int batch_size = 128;
-    QMutexLocker locker(&lock_inference_list);
-    if (mInferenceData.size()==0) {
-        mInferenceData.push_back( new std::list<InferenceData*>() );
-        mLivePackages++;
+    if (batch->freeSlots()<=0) {
+        mPackageId++;
+        mModel->stats.NPackagesSent ++;
+        ++mPackagesBuilt;
+        lg->debug("sending package to Inference id={} (now in queue {})", mPackageId, mPackagesBuilt);
+        emit newPackage(batch, mPackageId);
+
     }
-
-    std::list<InferenceData*> *list = mInferenceData.back();
-    if (list->size()>=batch_size) {
-        sendInferencePackage();
-
-        mInferenceData.push_back( new std::list<InferenceData*>() );
-        mLivePackages++;
-        list = mInferenceData.back();
-        // std::cout << "created new data list, #=" << for_inference.size() << std::endl;
-    }
-    list->push_back(item);
-
 }
 
 
 /// sendInferencePackage() takes the next batch of items and emits a signal
 /// to the DNN thread that a new batch is ready to process
 /// Note that this code is still protected by the 'lock_inference_list' mutex
-void ModelShell::sendInferencePackage()
+void ModelShell::sendPendingBatches()
 {
-    if (mInferenceData.size()==0)
-        return;
-
-    // take the first element of the list:
-    std::list<InferenceData*> *inf_list = mInferenceData.front();
-    mInferenceData.pop_front();
-
-    // Call inference machine: route to DNN thread
-    while (mLivePackages>3 && mAbort==false) {
-        // wait some time...
-        lg->debug("... wait until <=3 .... #packages= {}", mLivePackages);
-        QThread::msleep(1000);
-        QCoreApplication::processEvents(); // allow receiving of packages...
-
+    for (auto e : BatchManager::instance()->batches()) {
+        if (e->state()==Batch::Fill && e->usedSlots()>0) {
+            mPackageId++;
+            mModel->stats.NPackagesSent ++;
+            ++mPackagesBuilt;
+            lg->debug("sending pending package to Inference id={} (now in queue {}, Batch manager: {})", mPackageId, mPackagesBuilt, BatchManager::instance()->batches().size());
+            emit newPackage(e, mPackageId);
+        }
     }
-    mPackageId++;
-    mModel->stats.NPackagesSent += inf_list->size();
-    lg->debug("sending package to Inference id={} (now in queue {})", mPackageId, mLivePackages);
-    emit newPackage(inf_list, mPackageId);
-
 }
 
 void ModelShell::finalizeCycle()
