@@ -17,14 +17,16 @@ std::map< std::string, InputTensorItem::DataContent> data_contents = {
     {"Climate",       InputTensorItem::Climate},
     {"State",         InputTensorItem::State},
     {"ResidenceTime", InputTensorItem::ResidenceTime},
-    {"Neighbors",     InputTensorItem::Neighbors}
+    {"Neighbors",     InputTensorItem::Neighbors},
+    {"Site",          InputTensorItem::Site}
 };
 std::map< std::string, InputTensorItem::DataType> data_types = {
     {"Invalid", InputTensorItem::DT_INVALID},
     {"float",   InputTensorItem::DT_FLOAT},
     {"int16",   InputTensorItem::DT_INT16},
     {"int64",   InputTensorItem::DT_INT64},
-    {"uint16",  InputTensorItem::DT_UINT16}
+    {"uint16",  InputTensorItem::DT_UINT16},
+    {"float16", InputTensorItem::DT_BFLOAT16}
 };
 
 template <typename T>
@@ -45,7 +47,7 @@ BatchManager::BatchManager()
         throw std::logic_error("Creation of batch manager: instance ptr is not 0.");
     mInstance = this;
     if (spdlog::get("dnn"))
-        spdlog::get("dnn")->debug("Batch manager created: {0:x}", (void*)this);
+        spdlog::get("dnn")->debug("Batch manager created: {#x}", (void*)this);
 
 }
 
@@ -56,7 +58,7 @@ BatchManager::~BatchManager()
         delete b;
 
     if (spdlog::get("dnn"))
-        spdlog::get("dnn")->debug("Batch manager destroyed: {0:x}", (void*)this);
+        spdlog::get("dnn")->debug("Batch manager destroyed: {#x}", (void*)this);
 
     mInstance = nullptr;
 }
@@ -77,8 +79,11 @@ void BatchManager::setup()
 //        {"test2", InputTensorItem::DT_INT16, 1, 1, 0, InputTensorItem::State}
 //    };
     mTensorDef =  {
-        {"test", "float", 2, 24, 10, "Climate"},
-        {"test2", "uint16", 1, 1, 0, "State"}
+        {"clim_input", "float", 2, 24, 10, "Climate"},
+        {"state_input", "int16", 1, 1, 0, "State"},
+        {"time_input", "int16", 1, 1, 0, "ResidenceTime"},
+        {"site_input", "float", 1, 2, 0, "Site"},
+        {"neighbor_input", "float", 1, 62, 0, "Neighbors"}
     };
 
 
@@ -132,13 +137,13 @@ std::pair<Batch *, int> BatchManager::findValidSlot()
         batch = createBatch();
         mBatches.push_back( batch );
         lg->trace("created a new batch. Now the list contains {} batch(es).", mBatches.size());
-        if ( lg->should_log(spdlog::level::trace) ) {
+        /*if ( lg->should_log(spdlog::level::trace) ) {
             int idx=0;
             for (auto b : mBatches) {
                 lg->trace("#{}: state: {}, used: {}, free: {}", idx, b->state(), b->usedSlots(), b->freeSlots());
                 ++idx;
             }
-        }
+        }*/
     }
 
 

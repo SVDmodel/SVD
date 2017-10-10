@@ -27,6 +27,7 @@ public:
     virtual tensorflow::Tensor &tensor() const  = 0;
     virtual int ndim() const = 0;
     virtual tensorflow::DataType dataType() const = 0;
+    virtual std::string asString(size_t example) const = 0;
     virtual ~TensorWrapper() {}
 };
 
@@ -60,9 +61,16 @@ public:
     int ndim() const { return 2; }
     size_t batchSize() const { return mBatchSize; }
     tensorflow::DataType dataType() const  { return mDataType; }
-    T *example(size_t element) {
+    T *example(size_t element) const {
         assert(element*mN*sizeof(T)<mNBytes);
         return mData + element*mN; }
+    std::string asString(size_t element) const {
+        T* p=example(element);
+        std::stringstream ss;
+        for (size_t i=0;i<n();++i)
+            ss << *p++ << " ";
+        return ss.str();
+    }
 
     ~TensorWrap2d() { if (mPrivateTensor) delete mT; }
 private:
@@ -113,13 +121,23 @@ public:
     T *example(size_t element) {
         assert(element*mNx*mNy*sizeof(T)<mNBytes);
         return mData + element*mNx*mNy; }
-    T *row(size_t element, size_t x) {
+    T *row(size_t element, size_t x) const {
         assert((element*mNx*mNy +x*mNx)*sizeof(T)<mNBytes);
         return mData + element*mNx*mNy+x*mNx; }
 
     int ndim() const { return 3; }
     size_t batchSize() const { return mBatchSize; }
     tensorflow::DataType dataType() const  { return mDataType; }
+    std::string asString(size_t example) const {
+        std::stringstream ss;
+        for (size_t r=0;r<ny(); ++r) {
+            for (size_t c=0;c<nx(); ++c)
+                ss << row(example, r)[c];
+            ss << std::endl;
+        }
+        return ss.str();
+    }
+
 
 private:
     tensorflow::DataType mDataType;

@@ -98,6 +98,9 @@ ModelController::ModelController(QObject *parent)
     connect(mModelShell, &ModelShell::log, this, &ModelController::log, Qt::QueuedConnection);
     log("Modelcontroller: before thread.start()");
 
+    // connecting the two threads
+    connect(mModelInterface, &ModelInterface::dnnState, mModelShell, &ModelShell::dnnState, Qt::QueuedConnection);
+
     QThread::currentThread()->setObjectName("SVDUI");
 
     modelThread->setObjectName("SVDMain");

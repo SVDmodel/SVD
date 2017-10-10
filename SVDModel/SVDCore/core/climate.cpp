@@ -37,6 +37,12 @@ void Climate::setup()
         vec.resize(rdr.columnCount()-2);
         for (int i=2;i<rdr.columnCount();++i)
             vec[i-2] = static_cast<float>(rdr.value(i));
+        // scaling, TODO!
+        for (int i=0;i<12;++i)
+            vec[i] = (vec[i]- 6.3) / 6.7; // temp
+        for (int i=12;i<24;++i)
+            vec[i] = (vec[i]- 116) / 63; // precip
+
         ++n;
     }
     lg->debug("loaded {} records.", n);

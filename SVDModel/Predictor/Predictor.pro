@@ -57,7 +57,8 @@ SOURCES += \
     batchmanager.cpp \
     batch.cpp \
     inferencedata.cpp \
-    predtest.cpp
+    predtest.cpp \
+    dnn.cpp
 
 HEADERS += \
     modelinterface.h \
@@ -66,7 +67,8 @@ HEADERS += \
     batch.h \
     tensorhelper.h \
     inferencedata.h \
-    predtest.h
+    predtest.h \
+    dnn.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

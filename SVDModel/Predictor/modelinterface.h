@@ -5,6 +5,7 @@
 #include "spdlog/spdlog.h"
 
 #include "batchmanager.h"
+#include "dnn.h"
 
 class InferenceData; // forward
 class Batch; // forward
@@ -24,6 +25,7 @@ public slots:
     void doWork(Batch *batch, int packageId);
 signals:
     void workDone(Batch *batch, int packageId);
+    void dnnState(QString msg);
 
 private:
     void dummyDNN(Batch *batch);
@@ -31,6 +33,7 @@ private:
     std::shared_ptr<spdlog::logger> lg;
 
     std::unique_ptr<BatchManager> mBatchManager;
+    std::unique_ptr<DNN> mDNN;
 
 };
 

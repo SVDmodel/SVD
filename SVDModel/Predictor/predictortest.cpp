@@ -135,7 +135,7 @@ Status ReadTensorFromImageFile(string file_name, const int input_height,
 
 // Reads a model graph definition from disk, and creates a session object you
 // can use to run it.
-Status LoadGraph(string graph_file_name,
+Status PLoadGraph(string graph_file_name,
                  tensorflow::Session* session) {
   tensorflow::GraphDef graph_def;
   Status load_graph_status =
@@ -284,7 +284,7 @@ bool PredictorTest::setup(QString model_path)
 
     //std::unique_ptr<tensorflow::Session> session;
     //string graph_path = tensorflow::io::JoinPath(root_dir, graph);
-    Status load_graph_status = LoadGraph(graph_path, session);
+    Status load_graph_status = PLoadGraph(graph_path, session);
     if (!load_graph_status.ok()) {
       qWarning() << load_graph_status.error_message().data();
       return false;

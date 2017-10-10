@@ -6,9 +6,11 @@
 void InferenceData::fetchData(Cell *cell, Batch *batch, int slot)
 {
     mOldState = cell->state();
+    mResidenceTime = cell->residenceTime();
     mNextState = 0;
     mNextTime = 0;
     mIndex = cell - Model::instance()->landscape()->currentGrid().begin();
+
 
     mBatch = batch;
     mSlot = slot;
@@ -27,6 +29,31 @@ void InferenceData::writeResult()
 
 }
 
+const EnvironmentCell &InferenceData::environmentCell() const
+{
+    return Model::instance()->landscape()->environmentCell(mIndex);
+}
+
+std::string InferenceData::dumpTensorData()
+{
+    std::stringstream ss;
+    const std::list<InputTensorItem> &tdef = BatchManager::instance()->tensorDefinition();
+    ss << " **** Dump for example " << mSlot << " **** " << std::endl;
+    for (const auto &def : tdef) {
+        ss << "*****************************************" << std::endl;
+        ss << "Tensor: '" << def.name << "', ";
+        ss << "dtype: " << InputTensorItem::datatypeString(def.type) << ", Dimensions: " << def.ndim;
+        if (def.ndim == 1)
+            ss << ", Size: " << def.sizeX << std::endl;
+        else
+            ss << ", Size: "<< def.sizeX << " x " << def.sizeY << std::endl;
+        ss << "*****************************************" << std::endl;
+        ss <<  mBatch->tensor(def.index)->asString(mSlot) << std::endl;
+
+    }
+    return ss.str();
+}
+
 void InferenceData::internalFetchData()
 {
     const std::list<InputTensorItem> &tdef = BatchManager::instance()->tensorDefinition();
@@ -41,6 +68,13 @@ void InferenceData::internalFetchData()
         case InputTensorItem::ResidenceTime:
             fetchResidenceTime(def);
             break;
+        case InputTensorItem::Site:
+            fetchSite(def);
+            break;
+        case InputTensorItem::Neighbors:
+            fetchNeighbors(def);
+            break;
+
         default:
             throw std::logic_error("InferenceData::fetchData: invalid content type.");
 
@@ -61,6 +95,7 @@ void InferenceData::fetchClimate(const InputTensorItem &def)
 
     //return;
     // copy the climate data to the tensors
+    // TODO: transform inputs
     size_t i = 0;
     for (const std::vector<float> *p : climate_series) {
         float *d = tw->row(mSlot, i++);
@@ -73,16 +108,42 @@ void InferenceData::fetchState(const InputTensorItem &def)
 {
     // the current state
     TensorWrapper *t = mBatch->tensor(def.index);
-    TensorWrap2d<short unsigned int> *tw = static_cast<TensorWrap2d<short unsigned int>*>(t);
-    short unsigned int *p = tw->example(mSlot);
-    //return;
-    if (p - tw->example(0) >= tw->batchSize())
-        throw std::logic_error("fetchState!");
+    TensorWrap2d<short int> *tw = static_cast<TensorWrap2d<short int>*>(t);
+    short int *p = tw->example(mSlot);
     *p = mOldState;
 
 }
 
 void InferenceData::fetchResidenceTime(const InputTensorItem &def)
 {
+    TensorWrapper *t = mBatch->tensor(def.index);
+    TensorWrap2d<short int> *tw = static_cast<TensorWrap2d<short int>*>(t);
+    short int *p = tw->example(mSlot);
+    *p = mResidenceTime;
+}
 
+void InferenceData::fetchNeighbors(const InputTensorItem &def)
+{
+    const size_t n_neighbors = 62;
+    TensorWrapper *t = mBatch->tensor(def.index);
+    TensorWrap2d<float> *tw = static_cast<TensorWrap2d<float>*>(t);
+    float *p = tw->example(mSlot);
+
+    // TODO
+    for (size_t i=0;i<n_neighbors;++i)
+        *p++ = 0.f;
+
+}
+
+void InferenceData::fetchSite(const InputTensorItem &def)
+{
+    const int i_nitrogen=0, i_soildepth=1;
+    TensorWrapper *t = mBatch->tensor(def.index);
+    TensorWrap2d<float> *tw = static_cast<TensorWrap2d<float>*>(t);
+    float *p = tw->example(mSlot);
+    // site: nitrogen/soil-depth
+    auto &ec = Model::instance()->landscape()->environmentCell(mIndex);
+    // TODO: transformation...
+    *p++ = static_cast<float>( (ec.value(i_nitrogen) -58.500)/41.536 );
+    *p++ = static_cast<float>( (ec.value(i_soildepth)-58.500)/41.536 );
 }

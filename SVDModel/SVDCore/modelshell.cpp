@@ -142,10 +142,25 @@ std::string ModelShell::run_test_op(std::string what)
 
     return "invalid method";
 }
+
+void ModelShell::dnnState(QString msg)
+{
+    // a message from DNN
+    if (spdlog::get("main"))
+        spdlog::get("main")->debug("A message from the DNN: {}", msg.toStdString());
+    if (msg=="startup.ok")
+        mDNNState = ReadyToRun;
+    if (msg=="startup.error")
+        mDNNState = ErrorDuringSetup;
+    if (msg=="error")
+        mDNNState = Error;
+
+}
 void ModelShell::createModel(QString fileName)
 {
     try {
         setState(Creating);
+        mDNNState = Creating;
         if (model())
             destroyModel();
 

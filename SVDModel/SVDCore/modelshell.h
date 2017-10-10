@@ -77,6 +77,7 @@ signals:
     void finished();
 
 public slots:
+    void dnnState(QString msg);
     void createModel(QString fileName);
     void setup();
     void runOneStep();
@@ -98,6 +99,7 @@ private:
 
     void setState(ModelRunState new_state, QString msg=QString());
     ModelRunState mState; // current state of the model
+    ModelRunState mDNNState; // current state of the DNN
     bool mAbort;
     Model *mModel;
 

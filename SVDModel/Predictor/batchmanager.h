@@ -16,7 +16,8 @@ struct InputTensorItem {
         Climate = 1,
         State = 2,
         ResidenceTime = 3,
-        Neighbors = 4
+        Neighbors = 4,
+        Site = 5
     };
 
     /// supported data types (values copied from tensorflow types.pb.h)
@@ -25,7 +26,8 @@ struct InputTensorItem {
         DT_FLOAT = 1,
         DT_INT16 = 5,
         DT_INT64 = 9,
-        DT_UINT16 = 17
+        DT_UINT16 = 17,
+        DT_BFLOAT16 = 14
     };
     InputTensorItem(std::string aname, DataType atype, int andim, int asizex, int asizey, DataContent acontent):
         name(aname), type(atype), ndim(andim), sizeX(asizex), sizeY(asizey), content(acontent){}

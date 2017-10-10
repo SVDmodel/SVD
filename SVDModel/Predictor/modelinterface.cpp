@@ -24,6 +24,13 @@ void ModelInterface::setup(QString fileName)
     mBatchManager = std::unique_ptr<BatchManager>(new BatchManager());
     mBatchManager->setup();
 
+    mDNN = std::unique_ptr<DNN>(new DNN());
+    if (mDNN->setup()) {
+        emit dnnState("startup.ok");
+    } else {
+        emit dnnState("startup.error");
+    }
+
 }
 
 void ModelInterface::doWork(Batch *batch, int packageId)
@@ -43,6 +50,10 @@ void ModelInterface::doWork(Batch *batch, int packageId)
 
 void ModelInterface::dummyDNN(Batch *batch)
 {
+    // dump....
+    if (lg->should_log(spdlog::level::trace))
+        lg->trace("{}", batch->inferenceData(0).dumpTensorData());
+
     for (int i=0;i<batch->usedSlots();++i) {
         InferenceData &id=batch->inferenceData(i);
         // just random ....
