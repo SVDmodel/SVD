@@ -4,6 +4,7 @@
 #include <QFileDialog>
 #include <QTimer>
 #include <QTime>
+#include <QMessageBox>
 
 #include "testdnn.h"
 
@@ -59,7 +60,7 @@ void MainWindow::modelStateChanged(QString s)
 
 void MainWindow::modelUpdate()
 {
-    ui->lLog->appendPlainText(QString("%1 - %2").arg( QTime::currentTime().toString(Qt::ISODate) ).arg(mMC->shell()->stateString(mMC->shell()->state())));
+    ui->lLog->appendPlainText(QString("%1 - %2").arg( QTime::currentTime().toString(Qt::ISODate) ).arg(QString::fromStdString(mMC->shell()->state().stateString())) );
 }
 
 
@@ -213,6 +214,14 @@ void MainWindow::on_pushButton_5_clicked()
 void MainWindow::on_pbLoad_clicked()
 {
     // create & load model
+    if (mMC && mMC->model()) {
+        if (QMessageBox::question(this, "Confirm reload", "The model is already created. Create a new model?")==QMessageBox::No)
+            return;
+    }
+
+    mMC = std::unique_ptr<ModelController>(new ModelController()); // this frees the current model
+    initiateModelController();
+
     mMC->setup(ui->lConfigFile->text());
     mUpdateModelTimer.start(100);
 }

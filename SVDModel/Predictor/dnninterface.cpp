@@ -1,7 +1,8 @@
-#include "modelinterface.h"
+#include "dnninterface.h"
 
 #include <QThread>
 #include <QMetaType>
+#include <QCoreApplication>
 
 #include "inferencedata.h"
 #include "randomgen.h"
@@ -10,11 +11,12 @@
 
 
 
-ModelInterface::ModelInterface()
+DNNInterface::DNNInterface()
 {
+
 }
 
-void ModelInterface::setup(QString fileName)
+void DNNInterface::setup(QString fileName)
 {
     // setup is called *after* the set up of the main model
     lg = spdlog::get("dnn");
@@ -26,19 +28,39 @@ void ModelInterface::setup(QString fileName)
 
     mDNN = std::unique_ptr<DNN>(new DNN());
     if (mDNN->setup()) {
+        mState=ModelRunState::ReadyToRun;
         emit dnnState("startup.ok");
     } else {
+        mState=ModelRunState::ErrorDuringSetup;
         emit dnnState("startup.error");
     }
 
+
 }
 
-void ModelInterface::doWork(Batch *batch, int packageId)
+void DNNInterface::doWork(Batch *batch, int packageId)
 {
+
+    if (Model::instance()->state().shouldCancel()) {
+        batch->setError(true);
+        mState=ModelRunState::Stopping;
+        emit workDone(batch, packageId);
+        return;
+    }
 
     // do the processing with DNN....
     batch->changeState(Batch::DNN);
+    mState = ModelRunState::Running;
+
+    if (!mDNN->run(batch)) {
+        mState = ModelRunState::Error;
+        emit dnnState("error");
+        QCoreApplication::processEvents();
+        return;
+    }
+
     // now just fake:
+
     dummyDNN(batch);
 
     batch->changeState(Batch::Finished);
@@ -46,9 +68,11 @@ void ModelInterface::doWork(Batch *batch, int packageId)
     lg->debug("finished data package {} (size={})", packageId, batch->usedSlots());
 
     emit workDone(batch, packageId);
+    mState = ModelRunState::ReadyToRun;
+    QCoreApplication::processEvents();
 }
 
-void ModelInterface::dummyDNN(Batch *batch)
+void DNNInterface::dummyDNN(Batch *batch)
 {
     // dump....
     if (lg->should_log(spdlog::level::trace))

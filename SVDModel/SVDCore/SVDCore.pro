@@ -26,7 +26,6 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-        svdcore.cpp \
     modelshell.cpp \
     toymodel.cpp \
     tools/gisgrid.cpp \
@@ -41,10 +40,10 @@ SOURCES += \
     core/states.cpp \
     core/climate.cpp \
     tools/tools.cpp \
-    core/environmentcell.cpp
+    core/environmentcell.cpp \
+    modelrunstate.cpp
 
 HEADERS += \
-        svdcore.h \
     modelshell.h \
     toymodel.h \
     tools/gisgrid.h \
@@ -59,7 +58,8 @@ HEADERS += \
     core/states.h \
     core/climate.h \
     tools/tools.h \
-    core/environmentcell.h
+    core/environmentcell.h \
+    modelrunstate.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

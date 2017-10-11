@@ -12,9 +12,14 @@ class Batch
 public:
     Batch(int batch_size);
     ~Batch();
+
+    /// the state of the batch
     enum BatchState { Fill=0, DNN=1, Finished=2};
     BatchState state() const { return mState; }
     BatchState changeState(BatchState newState);
+
+    bool hasError() const { return mError; }
+    void setError(bool error) { mError = error; }
 
     /// get slot number in the batch (atomic access)
     int acquireSlot();
@@ -32,6 +37,7 @@ public:
         throw std::logic_error("Batch: invalid slot!");}
 
 private:
+    bool mError;
     BatchState mState;
     std::vector<InferenceData> mInferenceData;
     /// the tensors associated with this batch of data

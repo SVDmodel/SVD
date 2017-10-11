@@ -17,7 +17,8 @@ struct InputTensorItem {
         State = 2,
         ResidenceTime = 3,
         Neighbors = 4,
-        Site = 5
+        Site = 5,
+        Scalar = 6
     };
 
     /// supported data types (values copied from tensorflow types.pb.h)
@@ -26,6 +27,7 @@ struct InputTensorItem {
         DT_FLOAT = 1,
         DT_INT16 = 5,
         DT_INT64 = 9,
+        DT_BOOL = 10,
         DT_UINT16 = 17,
         DT_BFLOAT16 = 14
     };

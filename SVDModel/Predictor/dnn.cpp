@@ -4,6 +4,8 @@
 #include "model.h"
 #include "tools.h"
 #include "tensorhelper.h"
+#include "batch.h"
+#include "batchmanager.h"
 
 // Tensorflow includes
 //  from inception demo
@@ -70,7 +72,7 @@ DNN::DNN()
 
 DNN::~DNN()
 {
-
+    mInstance=nullptr;
 }
 
 bool DNN::setup()
@@ -92,7 +94,12 @@ bool DNN::setup()
         session->Close();
         delete session;
     }
-
+#ifdef TF_DEBUG_MODE
+    lg->info("*** debug build: Tensorflow is disabled.");
+    mDummyDNN = true;
+    return true;
+#else
+    mDummyDNN = false;
     tensorflow::SessionOptions opts;
     opts.config.set_log_device_placement(true);
     session = tensorflow::NewSession(tensorflow::SessionOptions()); // no specific options: tensorflow::SessionOptions()
@@ -106,8 +113,45 @@ bool DNN::setup()
 
     lg->info("DNN Setup complete.");
     return true;
+#endif
 
+}
 
+bool DNN::run(Batch *batch)
+{
+    std::vector<Tensor> outputs;
+
+    std::vector<std::pair<string, Tensor> > inputs;
+    const std::list<InputTensorItem> &tdef = BatchManager::instance()->tensorDefinition();
+    int tindex=0;
+    for (const auto &def : tdef) {
+        inputs.push_back( std::pair<string, Tensor>( def.name, batch->tensor(tindex)->tensor() ));
+        tindex++;
+    }
+
+    if (mDummyDNN) {
+        lg->debug("DNN in debug mode... no action");
+        // wait a bit...
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        return true;
+    }
+
+    /* Run Tensorflow */
+    Status run_status = session->Run(inputs, {"out/Softmax", "time_out/Softmax"}, {}, &outputs);
+    if (!run_status.ok()) {
+        lg->trace("{}", batch->inferenceData(0).dumpTensorData());
+        lg->error("Tensorflow error: {}", run_status.error_message());
+        batch->setError(true);
+        return false;
+    }
+
+    lg->debug("DNN result: {} output tensors.", outputs.size());
+    lg->debug("out:  {}", outputs[0].DebugString());
+    lg->debug("time: {}", outputs[1].DebugString());
+    // output tensors: 2dim; 1x batch, 1x data
+    lg->debug("dimension time: {} x {}.", outputs[1].dim_size(0), outputs[1].dim_size(2));
+
+    return true;
 }
 
 

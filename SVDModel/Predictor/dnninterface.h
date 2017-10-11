@@ -4,18 +4,19 @@
 #include <QObject>
 #include "spdlog/spdlog.h"
 
+#include "modelrunstate.h"
 #include "batchmanager.h"
 #include "dnn.h"
 
 class InferenceData; // forward
 class Batch; // forward
 
-class ModelInterface: public QObject
+class DNNInterface: public QObject
 {
     Q_OBJECT
 public:
-    ModelInterface();
-
+    DNNInterface();
+    const ModelRunState &state() const { return mState; }
 
 
 private:
@@ -29,6 +30,7 @@ signals:
 
 private:
     void dummyDNN(Batch *batch);
+    ModelRunState mState;
     // loggers
     std::shared_ptr<spdlog::logger> lg;
 

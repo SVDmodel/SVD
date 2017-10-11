@@ -10,12 +10,14 @@ Batch::Batch(int batch_size)
     mBatchSize = batch_size;
     mInferenceData.resize(mBatchSize);
     mState=Fill;
+    mError=false;
 }
 
 Batch::~Batch()
 {
     // free the memory of the tensors...
-    spdlog::get("dnn")->trace("Destructor of batch, free tensors");
+    if (spdlog::get("dnn"))
+        spdlog::get("dnn")->trace("Destructor of batch, free tensors");
     for (auto p : mTensors) {
         delete p;
     }

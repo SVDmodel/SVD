@@ -6,6 +6,7 @@
 #include <QFutureWatcher>
 #include <QtConcurrent>
 
+#include "modelrunstate.h"
 #include "spdlog/spdlog.h"
 #include "toymodel.h"
 //#include "core/model.h"
@@ -36,12 +37,13 @@ private:
 class ThreadSafeException : public QtConcurrent::Exception
 {
 public:
-    ThreadSafeException(QString msg) { mMsg = msg; }
-    char const * what() const {return mMsg.toStdString().c_str(); }
+    ThreadSafeException(const std::exception& err) : e(err) {}
+    char const * what() const {return e.what(); }
     void raise() const { throw *this; }
     ThreadSafeException *clone() const { return new ThreadSafeException(*this); }
+    std::exception error() const { return e; }
 private:
-    QString mMsg;
+    std::exception e;
 };
 
 class Model; // forward
@@ -55,7 +57,6 @@ class ModelShell: public QObject
     Q_OBJECT
     Q_ENUMS(ModelRunState)
 public:
-    enum ModelRunState { Invalid=0, Creating, ReadyToRun, Stopping, Running, Paused, Finsihed, Canceled, ErrorDuringSetup, Error };
     explicit ModelShell(QObject *parent = nullptr);
     ~ModelShell();
     void destroyModel();
@@ -84,7 +85,6 @@ public slots:
     void run(int n_steps);
     void abort();
     ModelRunState state() { return mState; }
-    QString stateString(ModelRunState s);
 
     void processedPackage(Batch *batch, int packageId);
     void allPackagesBuilt();
@@ -95,9 +95,12 @@ private:
     void checkBatch(Batch *batch);
     void sendPendingBatches();
     void finalizeCycle();
+    void cancel();
+
+    void processEvents();
 
 
-    void setState(ModelRunState new_state, QString msg=QString());
+    void setState(ModelRunState::State new_state, QString msg=QString());
     ModelRunState mState; // current state of the model
     ModelRunState mDNNState; // current state of the DNN
     bool mAbort;

@@ -3,7 +3,7 @@
 #include "toymodel.h"
 #include "model.h"
 
-#include "../Predictor/modelinterface.h"
+#include "../Predictor/dnninterface.h"
 
 ToyModelController::ToyModelController(QObject *parent) : QObject(parent)
 {
@@ -78,13 +78,13 @@ ModelController::ModelController(QObject *parent)
     mModelShell->moveToThread(modelThread);
 
     connect(modelThread, &QThread::finished, model_shell, &QObject::deleteLater);
-
     connect(mModelShell, &ModelShell::stateChanged, this, &ModelController::stateChanged);
 
 
     dnnThread = new QThread();
-    mModelInterface = new ModelInterface;
+    mModelInterface = new DNNInterface;
     mModelInterface->moveToThread(dnnThread);
+
     connect(dnnThread, &QThread::finished, mModelInterface, &QObject::deleteLater);
 
     // connection between main model and DNN: [this requires the old way of connect, because there are errors with Batch* otherwise]
@@ -96,10 +96,9 @@ ModelController::ModelController(QObject *parent)
 
     // logging
     connect(mModelShell, &ModelShell::log, this, &ModelController::log, Qt::QueuedConnection);
-    log("Modelcontroller: before thread.start()");
 
     // connecting the two threads
-    connect(mModelInterface, &ModelInterface::dnnState, mModelShell, &ModelShell::dnnState, Qt::QueuedConnection);
+    connect(mModelInterface, &DNNInterface::dnnState, mModelShell, &ModelShell::dnnState, Qt::QueuedConnection);
 
     QThread::currentThread()->setObjectName("SVDUI");
 
@@ -113,8 +112,16 @@ ModelController::ModelController(QObject *parent)
 
 ModelController::~ModelController()
 {
+    // shut down threads...
+    modelThread->quit();
+    dnnThread->quit();
+    modelThread->wait();
+    dnnThread->wait();
+
     if (mModelShell)
         delete mModelShell;
+    if (mModelInterface)
+        delete mModelInterface;
 
 }
 

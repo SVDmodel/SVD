@@ -69,7 +69,7 @@ ModelShell::ModelShell(QObject *parent)
 {
     Q_UNUSED(parent);
     mAbort = false;
-    mState = Invalid;
+    mState = ModelRunState::Invalid;
     mModel = 0;
     mPackagesBuilt = 0;
     mPackageId = 0;
@@ -97,7 +97,7 @@ void ModelShell::destroyModel()
 
 bool ModelShell::isModelRunning() const
 {
-    return (mState == Creating || mState==Stopping || mState==Running);
+    return (mState == ModelRunState::Creating || mState==ModelRunState::Stopping || mState==ModelRunState::Running);
 }
 
 std::string ModelShell::run_test_op(std::string what)
@@ -149,27 +149,29 @@ void ModelShell::dnnState(QString msg)
     if (spdlog::get("main"))
         spdlog::get("main")->debug("A message from the DNN: {}", msg.toStdString());
     if (msg=="startup.ok")
-        mDNNState = ReadyToRun;
+        mDNNState = ModelRunState::ReadyToRun;
     if (msg=="startup.error")
-        mDNNState = ErrorDuringSetup;
+        mDNNState = ModelRunState::ErrorDuringSetup;
     if (msg=="error")
-        mDNNState = Error;
+        mDNNState = ModelRunState::Error;
 
 }
 void ModelShell::createModel(QString fileName)
 {
     try {
-        setState(Creating);
-        mDNNState = Creating;
+        mDNNState.set(ModelRunState::Creating);
+        setState(ModelRunState::Creating);
+        mDNNState = ModelRunState::Creating;
         if (model())
             destroyModel();
 
         mModel = new Model(fileName.toStdString());
+        mModel->setProcessEventsCallback( std::bind(&ModelShell::processEvents, this) );
 
     } catch (const std::exception &e) {
         if (spdlog::get("main"))
             spdlog::get("main")->error("An error occured: {}", e.what());
-        setState( ErrorDuringSetup, QString(e.what()));
+        setState( ModelRunState::ErrorDuringSetup, QString(e.what()));
     }
 }
 
@@ -179,27 +181,36 @@ void ModelShell::setup()
         if (!model())
             throw std::logic_error("ModelShell::setup: model is NULL");
 
-        setState(Creating);
+        setState(ModelRunState::Creating);
 
         if (model()->setup(  )) {
             // setup successful
             lg = spdlog::get("main");
-            lg->info("Model successfully set up in Thread {}.", QThread::currentThread()->objectName().toStdString());
-
-            setState(ReadyToRun);
+            while (mDNNState == ModelRunState::Creating) {
+                lg->debug("waiting for DNN thread...");
+                QThread::msleep(50);
+                QCoreApplication::processEvents();
+            }
+            if (mDNNState==ModelRunState::ReadyToRun) {
+                lg->info("Model successfully set up in Thread {}.", QThread::currentThread()->objectName().toStdString());
+                setState(ModelRunState::ReadyToRun);
+            } else {
+                lg->info("Model setup, but error in setup of DNN.");
+                setState(ModelRunState::ErrorDuringSetup);
+            }
         }
 
 
     } catch (const std::exception &e) {
         if (spdlog::get("main"))
             spdlog::get("main")->error("An error occured: {}", e.what());
-        setState( ErrorDuringSetup, QString(e.what()));
+        setState( ModelRunState::ErrorDuringSetup, QString(e.what()));
     }
 }
 
 void ModelShell::runOneStep()
 {
-    setState(Running);
+    setState(ModelRunState::Running);
     try {
         spdlog::get("main")->info("Run one step.");
         // run the model...
@@ -209,7 +220,7 @@ void ModelShell::runOneStep()
 
     } catch (const std::exception &e) {
         spdlog::get("main")->error("An error occured: {}", e.what());
-        setState( Error, QString(e.what()));
+        setState( ModelRunState::Error, QString(e.what()));
     }
 }
 
@@ -219,16 +230,16 @@ void ModelShell::run(int n_steps)
     runOneStep();
     return;
 
-    setState(Running);
+    setState(ModelRunState::Running);
     try {
         spdlog::get("main")->info("Run {} steps.", n_steps);
         // run the model...
         for (int i=0;i<n_steps;++i) {
             QCoreApplication::processEvents();
             spdlog::get("main")->info("Run step {} of {}.", i+1, n_steps);
-            setState(Running, QString("year %1 of %2.").arg(i+1).arg(n_steps));
+            setState(ModelRunState::Running, QString("year %1 of %2.").arg(i+1).arg(n_steps));
             if (mAbort) {
-                setState(Canceled);
+                setState(ModelRunState::Canceled);
                 return;
             }
 
@@ -236,12 +247,12 @@ void ModelShell::run(int n_steps)
 
 
         }
-        setState(ReadyToRun);
+        setState(ModelRunState::ReadyToRun);
 
 
     } catch (const std::exception &e) {
         spdlog::get("main")->error("An error occured: {}", e.what());
-        setState( Error, QString(e.what()));
+        setState( ModelRunState::Error, QString(e.what()));
     }
 
 }
@@ -249,36 +260,20 @@ void ModelShell::run(int n_steps)
 void ModelShell::abort()
 {
     mAbort = true;
-    if (mState==Creating || mState==Running) {
-        setState(Stopping, "by user request.");
+    if (mState==ModelRunState::Creating || mState==ModelRunState::Running) {
+        setState(ModelRunState::Stopping, "by user request.");
     } else {
-        setState(Invalid, "model destroyed");
+        setState(ModelRunState::Invalid, "model destroyed");
         destroyModel();
     }
 }
 
-QString ModelShell::stateString(ModelRunState s)
-{
-    // Invalid=0, Creating, ReadyToRun, Stopping, Running, Paused, Finsihed, Canceled, ErrorDuringSetup, Error };
-    switch (s) {
-    case Invalid: return QStringLiteral("Invalid");
-    case Creating: return QStringLiteral("Creating...");
-    case ReadyToRun: return QStringLiteral("Ready.");
-    case Stopping: return QStringLiteral("Stopping...");
-    case Running: return QStringLiteral("Running...");
-    case Finsihed: return QStringLiteral("Finished!");
-    case Canceled: return QStringLiteral("Canceled!");
-    case ErrorDuringSetup: return QStringLiteral("Error during setup!!");
-    case Error: return QStringLiteral("Error!!");
-    default: return QStringLiteral("invalid state");
-    }
 
-}
 
-void ModelShell::setState(ModelShell::ModelRunState new_state, QString msg)
+void ModelShell::setState(ModelRunState::State new_state, QString msg)
 {
     mState = new_state;
-    QString text = stateString(mState);
+    QString text = QString::fromStdString(mState.stateString());
     if (msg.isEmpty())
         emit stateChanged(text);
     else
@@ -290,6 +285,11 @@ void ModelShell::setState(ModelShell::ModelRunState new_state, QString msg)
 QMutex lock_processed_package;
 void ModelShell::processedPackage(Batch *batch, int packageId)
 {
+    if (batch->hasError()) {
+        return;
+    }
+
+
     // DNN delivered processed package....
     lg->debug("Model: DNN package {} received!", packageId);
 
@@ -299,10 +299,11 @@ void ModelShell::processedPackage(Batch *batch, int packageId)
     batch->changeState(Batch::Fill);
 
 
+
     // now the data can be freed:
     {
-    QMutexLocker locker(&lock_processed_package);
-    mPackagesProcessed++;
+        QMutexLocker locker(&lock_processed_package);
+        mPackagesProcessed++;
 
     }
 
@@ -337,11 +338,13 @@ void ModelShell::internalRun()
         //
         packageFuture = QtConcurrent::map(mModel->landscape()->currentGrid(), [this](Cell &cell){ this->buildInferenceData(&cell); });
         packageWatcher.setFuture(packageFuture);
+        packageFuture.waitForFinished(); // TODO: this causes hanging ... if we don't wait, we don't get exceptions!
 
     } catch (const ThreadSafeException &e) {
         // if an exception occures during the execution of the QtConcurrent function, then a thread safe exception is created,
         // and catched here in the main thread.
         lg->error("An error occured: {}", e.what());
+        setState(ModelRunState::Error);
         throw std::logic_error(e.what());
     }
 
@@ -349,6 +352,9 @@ void ModelShell::internalRun()
 
 void ModelShell::buildInferenceData(Cell *cell)
 {
+    if (mDNNState==ModelRunState::Error)
+        return;
+
     try {
         // this function is called from multiple threads....
         if (cell->isNull())
@@ -358,6 +364,8 @@ void ModelShell::buildInferenceData(Cell *cell)
 
         assert(BatchManager::instance()!=nullptr);
         std::pair<Batch*, int> newslot = BatchManager::instance()->validSlot();
+        if (!newslot.first)
+            throw std::logic_error("Error: cannot find a valid slot. Timeout?");
         InferenceData &id = newslot.first->inferenceData(newslot.second);
 
         // populate the InferenceData with the required data
@@ -368,7 +376,7 @@ void ModelShell::buildInferenceData(Cell *cell)
 
     } catch (const std::exception &e) {
         lg->error("An error occured: {}", e.what());
-        throw ThreadSafeException(QString(e.what()));
+        throw ThreadSafeException(e);
     }
 
 }
@@ -378,6 +386,10 @@ void ModelShell::buildInferenceData(Cell *cell)
 
 void ModelShell::checkBatch(Batch *batch)
 {
+    if (mDNNState == ModelRunState::Error) {
+        cancel();
+        return;
+    }
     if (batch->freeSlots()<=0) {
         mPackageId++;
         mModel->stats.NPackagesSent ++;
@@ -394,6 +406,9 @@ void ModelShell::checkBatch(Batch *batch)
 /// Note that this code is still protected by the 'lock_inference_list' mutex
 void ModelShell::sendPendingBatches()
 {
+    if (state()==ModelRunState::Error)
+        return;
+
     for (auto e : BatchManager::instance()->batches()) {
         if (e->state()==Batch::Fill && e->usedSlots()>0) {
             mPackageId++;
@@ -411,7 +426,18 @@ void ModelShell::finalizeCycle()
     mModel->finalizeYear();
     lg->info("Year {} finished.", mModel->year());
 
-    setState(ReadyToRun);
+    setState(ModelRunState::ReadyToRun);
+}
+
+void ModelShell::cancel()
+{
+    lg->error("An error occured - stopping.");
+    setState(ModelRunState::Error);
+}
+
+void ModelShell::processEvents()
+{
+    QCoreApplication::processEvents();
 }
 
 

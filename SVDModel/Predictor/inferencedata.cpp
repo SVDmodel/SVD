@@ -74,6 +74,9 @@ void InferenceData::internalFetchData()
         case InputTensorItem::Neighbors:
             fetchNeighbors(def);
             break;
+        case InputTensorItem::Scalar:
+            // a scalar is already set to the correct value.
+            break;
 
         default:
             throw std::logic_error("InferenceData::fetchData: invalid content type.");
@@ -117,9 +120,9 @@ void InferenceData::fetchState(const InputTensorItem &def)
 void InferenceData::fetchResidenceTime(const InputTensorItem &def)
 {
     TensorWrapper *t = mBatch->tensor(def.index);
-    TensorWrap2d<short int> *tw = static_cast<TensorWrap2d<short int>*>(t);
-    short int *p = tw->example(mSlot);
-    *p = mResidenceTime;
+    TensorWrap2d<float> *tw = static_cast<TensorWrap2d<float>*>(t);
+    float *p = tw->example(mSlot);
+    *p = static_cast<float>(mResidenceTime);
 }
 
 void InferenceData::fetchNeighbors(const InputTensorItem &def)

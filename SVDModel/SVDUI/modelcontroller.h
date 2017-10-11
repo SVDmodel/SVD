@@ -29,7 +29,7 @@ private:
 
 };
 
-class ModelInterface; // forward
+class DNNInterface; // forward
 
 
 class ModelController : public QObject
@@ -42,7 +42,7 @@ public:
     ~ModelController();
     ModelShell *shell() const { return mModelShell; }
     const Model *model() const { return mModelShell->model(); }
-    ModelInterface *dnnInterface() const { return mModelInterface; }
+    DNNInterface *dnnInterface() const { return mModelInterface; }
 
 signals:
     void log(const QString &s);
@@ -57,7 +57,7 @@ public slots:
     void finishedRun();
 private:
     ModelShell *mModelShell; // lives in main thread
-    ModelInterface *mModelInterface; // lives in DNN thread
+    DNNInterface *mModelInterface; // lives in DNN thread
 
 };
 

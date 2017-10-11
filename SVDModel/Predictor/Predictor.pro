@@ -37,6 +37,7 @@ DEFINES +=  EIGEN_HAS_C99_MATH
 
 win32:CONFIG(release, debug|release): DEFINES +=  _ITERATOR_DEBUG_LEVEL=0
 
+win32:CONFIG(debug, debug|release): DEFINES +=  TF_DEBUG_MODE=0
 
 LIBS += -LE:/dev/tensorflow/tensorflow/contrib/cmake/build/Release -ltensorflow
 
@@ -52,23 +53,23 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    modelinterface.cpp \
     predictortest.cpp \
     batchmanager.cpp \
     batch.cpp \
     inferencedata.cpp \
     predtest.cpp \
-    dnn.cpp
+    dnn.cpp \
+    dnninterface.cpp
 
 HEADERS += \
-    modelinterface.h \
     predictortest.h \
     batchmanager.h \
     batch.h \
     tensorhelper.h \
     inferencedata.h \
     predtest.h \
-    dnn.h
+    dnn.h \
+    dnninterface.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

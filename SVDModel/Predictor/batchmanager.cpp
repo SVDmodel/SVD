@@ -18,7 +18,8 @@ std::map< std::string, InputTensorItem::DataContent> data_contents = {
     {"State",         InputTensorItem::State},
     {"ResidenceTime", InputTensorItem::ResidenceTime},
     {"Neighbors",     InputTensorItem::Neighbors},
-    {"Site",          InputTensorItem::Site}
+    {"Site",          InputTensorItem::Site},
+    {"Scalar",          InputTensorItem::Scalar}
 };
 std::map< std::string, InputTensorItem::DataType> data_types = {
     {"Invalid", InputTensorItem::DT_INVALID},
@@ -26,7 +27,8 @@ std::map< std::string, InputTensorItem::DataType> data_types = {
     {"int16",   InputTensorItem::DT_INT16},
     {"int64",   InputTensorItem::DT_INT64},
     {"uint16",  InputTensorItem::DT_UINT16},
-    {"float16", InputTensorItem::DT_BFLOAT16}
+    {"float16", InputTensorItem::DT_BFLOAT16},
+    {"bool",    InputTensorItem::DT_BOOL}
 };
 
 template <typename T>
@@ -79,11 +81,12 @@ void BatchManager::setup()
 //        {"test2", InputTensorItem::DT_INT16, 1, 1, 0, InputTensorItem::State}
 //    };
     mTensorDef =  {
-        {"clim_input", "float", 2, 24, 10, "Climate"},
+        {"clim_input", "float", 2, 10, 24, "Climate"},
         {"state_input", "int16", 1, 1, 0, "State"},
-        {"time_input", "int16", 1, 1, 0, "ResidenceTime"},
+        {"time_input", "float", 1, 1, 0, "ResidenceTime"},
         {"site_input", "float", 1, 2, 0, "Site"},
-        {"neighbor_input", "float", 1, 62, 0, "Neighbors"}
+        {"neighbor_input", "float", 1, 62, 0, "Neighbors"},
+        {"dropout_1/keras_learning_phase", "bool", 0, 0, 0, "Scalar"}
     };
 
 
@@ -105,12 +108,24 @@ std::pair<Batch *, int> BatchManager::validSlot()
     // serialize this function...
     std::lock_guard<std::mutex> guard(batch_mutex);
     std::pair<Batch *, int> result;
+    int sleeps = 0;
     do {
         result = findValidSlot();
         if (!result.first) {
             // wait
-            lg->trace("BatchManager: no batch available. Sleeping.");
+
+
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            Model::instance()->processEvents();
+
+            if (++sleeps % 100 == 0) // 1s
+                lg->trace("BatchManager: no batch available (queue full). Sleeping for {} s.", sleeps/100);
+
+            if (sleeps % 10000 == 0) { // 100 secs
+                lg->error("time out in batch manager - no empty slots found.");
+                return std::pair<Batch*, int>(nullptr, 0);
+
+            }
         }
     } while (!result.first);
     return result;
@@ -158,6 +173,21 @@ std::pair<Batch *, int> BatchManager::findValidSlot()
 TensorWrapper *BatchManager::buildTensor(int batch_size, InputTensorItem &item)
 {
     TensorWrapper *tw = nullptr;
+
+    // a scalar, i.e. one value for the whole *batch*
+    if (item.ndim == 0) {
+        switch (item.type) {
+        case InputTensorItem::DT_BOOL:
+            tw = new TensorWrap1d<bool>();
+            // defaults to true, TODO
+            TensorWrap1d<bool> *twb = static_cast< TensorWrap1d<bool>* >(tw);
+            twb->setValue(true);
+            lg->debug("created a scalar, value: '{}'", twb->value());
+            break;
+        }
+    }
+
+    // a 1d vector per example (or a single value per example)
     if (item.ndim == 1) {
         switch (item.type) {
         case InputTensorItem::DT_FLOAT:
@@ -170,6 +200,8 @@ TensorWrapper *BatchManager::buildTensor(int batch_size, InputTensorItem &item)
             tw = new TensorWrap2d<long long>(batch_size, item.sizeX); break;
         }
     }
+
+    // a 2d vector by example
     if (item.ndim==2) {
         switch (item.type) {
             case InputTensorItem::DT_FLOAT:

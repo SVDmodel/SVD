@@ -2,8 +2,11 @@
 #define MODEL_H
 // system
 #include <memory>
+#include <functional>
+
 #include "spdlog/spdlog.h"
 
+#include "modelrunstate.h"
 #include "settings.h"
 #include "states.h"
 #include "climate.h"
@@ -21,6 +24,11 @@ public:
 
     void newYear();
     void finalizeYear();
+
+    // callbacks
+    void setProcessEventsCallback( std::function<void()> event) { mProcessEvents = event; }
+    void processEvents() { if (mProcessEvents) mProcessEvents(); }
+    const ModelRunState &state() const { return mState; }
 
     // access
     /// access to the currently avaialable global model
@@ -59,6 +67,10 @@ private:
 
     // helpers
     Settings mSettings;
+
+    // callbacks
+    std::function<void()> mProcessEvents;
+    ModelRunState mState;
 
     // model state
     int mYear;
