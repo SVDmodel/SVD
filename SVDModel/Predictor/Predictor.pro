@@ -59,7 +59,7 @@ SOURCES += \
     inferencedata.cpp \
     predtest.cpp \
     dnn.cpp \
-    dnninterface.cpp
+    dnnshell.cpp
 
 HEADERS += \
     predictortest.h \
@@ -69,7 +69,7 @@ HEADERS += \
     inferencedata.h \
     predtest.h \
     dnn.h \
-    dnninterface.h
+    dnnshell.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

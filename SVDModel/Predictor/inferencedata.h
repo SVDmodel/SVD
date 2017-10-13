@@ -15,6 +15,8 @@ public:
 
     /// set the result of the DNN
     void setResult(state_t state, restime_t time) { mNextState=state; mNextTime=time; }
+    state_t nextState() const { return mNextState; }
+    restime_t nextTime() const { return mNextTime; }
     /// write the result back to the cell in the model
     void writeResult();
 

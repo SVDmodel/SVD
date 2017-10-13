@@ -34,18 +34,6 @@ private:
 };
 
 
-class ThreadSafeException : public QtConcurrent::Exception
-{
-public:
-    ThreadSafeException(const std::exception& err) : e(err) {}
-    char const * what() const {return e.what(); }
-    void raise() const { throw *this; }
-    ThreadSafeException *clone() const { return new ThreadSafeException(*this); }
-    std::exception error() const { return e; }
-private:
-    std::exception e;
-};
-
 class Model; // forward
 class Cell; // forward
 class InferenceData; // forward
@@ -63,8 +51,6 @@ public:
 
     Model *model() { return mModel; }
 
-    bool isModelRunning() const;
-
     // test function
     std::string run_test_op(std::string what);
 
@@ -78,13 +64,12 @@ signals:
     void finished();
 
 public slots:
-    void dnnState(QString msg);
     void createModel(QString fileName);
     void setup();
     void runOneStep();
     void run(int n_steps);
     void abort();
-    ModelRunState state() { return mState; }
+    //ModelRunState state() { return *mState; }
 
     void processedPackage(Batch *batch, int packageId);
     void allPackagesBuilt();
@@ -101,8 +86,6 @@ private:
 
 
     void setState(ModelRunState::State new_state, QString msg=QString());
-    ModelRunState mState; // current state of the model
-    ModelRunState mDNNState; // current state of the DNN
     bool mAbort;
     Model *mModel;
 

@@ -3,7 +3,7 @@
 #include "toymodel.h"
 #include "model.h"
 
-#include "../Predictor/dnninterface.h"
+#include "../Predictor/dnnshell.h"
 
 ToyModelController::ToyModelController(QObject *parent) : QObject(parent)
 {
@@ -72,6 +72,8 @@ void ToyModelController::finishedRun()
 
 ModelController::ModelController(QObject *parent)
 {
+    mState = std::unique_ptr<RunState>(new RunState());
+
     ModelShell *model_shell = new ModelShell;
     modelThread = new QThread();
     mModelShell = model_shell;
@@ -82,23 +84,20 @@ ModelController::ModelController(QObject *parent)
 
 
     dnnThread = new QThread();
-    mModelInterface = new DNNInterface;
-    mModelInterface->moveToThread(dnnThread);
+    mDNNShell = new DNNShell;
+    mDNNShell->moveToThread(dnnThread);
 
-    connect(dnnThread, &QThread::finished, mModelInterface, &QObject::deleteLater);
+    connect(dnnThread, &QThread::finished, mDNNShell, &QObject::deleteLater);
 
     // connection between main model and DNN: [this requires the old way of connect, because there are errors with Batch* otherwise]
-    QObject::connect(mModelShell, SIGNAL(newPackage(Batch*,int)), mModelInterface, SLOT(doWork(Batch*,int)), Qt::QueuedConnection);
-    QObject::connect(mModelInterface, SIGNAL(workDone(Batch*,int)), mModelShell, SLOT(processedPackage(Batch*,int)), Qt::QueuedConnection);
+    QObject::connect(mModelShell, SIGNAL(newPackage(Batch*,int)), mDNNShell, SLOT(doWork(Batch*,int)), Qt::QueuedConnection);
+    QObject::connect(mDNNShell, SIGNAL(workDone(Batch*,int)), mModelShell, SLOT(processedPackage(Batch*,int)), Qt::QueuedConnection);
     //connect(mModelShell, &ModelShell::newPackage, mModelInterface, &ModelInterface::doWork);
     //connect(mModelInterface, &ModelInterface::workDone, mModelShell, &ModelShell::processedPackage);
     connect(mModelShell, &ModelShell::finished, this, &ModelController::finishedRun, Qt::QueuedConnection);
 
     // logging
     connect(mModelShell, &ModelShell::log, this, &ModelController::log, Qt::QueuedConnection);
-
-    // connecting the two threads
-    connect(mModelInterface, &DNNInterface::dnnState, mModelShell, &ModelShell::dnnState, Qt::QueuedConnection);
 
     QThread::currentThread()->setObjectName("SVDUI");
 
@@ -112,16 +111,17 @@ ModelController::ModelController(QObject *parent)
 
 ModelController::~ModelController()
 {
+    shutdown();
     // shut down threads...
     modelThread->quit();
     dnnThread->quit();
     modelThread->wait();
     dnnThread->wait();
 
-    if (mModelShell)
-        delete mModelShell;
-    if (mModelInterface)
-        delete mModelInterface;
+    //if (mModelShell)
+    //    delete mModelShell;
+    //if (mDNNShell)
+    //    delete mDNNShell;
 
 }
 
@@ -135,13 +135,14 @@ void ModelController::setup(QString fileName)
 
     QMetaObject::invokeMethod(mModelShell, "setup", Qt::QueuedConnection) ;
 
-    QMetaObject::invokeMethod(mModelInterface, "setup", Qt::QueuedConnection,
+    QMetaObject::invokeMethod(mDNNShell, "setup", Qt::QueuedConnection,
                               Q_ARG(QString, fileName)) ;
 
 }
 
 void ModelController::shutdown()
 {
+    RunState::instance()->setCancel( true ); // stop running operations
     QMetaObject::invokeMethod(mModelShell, "abort", Qt::QueuedConnection);
 }
 

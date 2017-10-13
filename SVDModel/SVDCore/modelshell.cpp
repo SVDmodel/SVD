@@ -69,7 +69,7 @@ ModelShell::ModelShell(QObject *parent)
 {
     Q_UNUSED(parent);
     mAbort = false;
-    mState = ModelRunState::Invalid;
+
     mModel = 0;
     mPackagesBuilt = 0;
     mPackageId = 0;
@@ -95,10 +95,6 @@ void ModelShell::destroyModel()
     }
 }
 
-bool ModelShell::isModelRunning() const
-{
-    return (mState == ModelRunState::Creating || mState==ModelRunState::Stopping || mState==ModelRunState::Running);
-}
 
 std::string ModelShell::run_test_op(std::string what)
 {
@@ -143,25 +139,11 @@ std::string ModelShell::run_test_op(std::string what)
     return "invalid method";
 }
 
-void ModelShell::dnnState(QString msg)
-{
-    // a message from DNN
-    if (spdlog::get("main"))
-        spdlog::get("main")->debug("A message from the DNN: {}", msg.toStdString());
-    if (msg=="startup.ok")
-        mDNNState = ModelRunState::ReadyToRun;
-    if (msg=="startup.error")
-        mDNNState = ModelRunState::ErrorDuringSetup;
-    if (msg=="error")
-        mDNNState = ModelRunState::Error;
 
-}
 void ModelShell::createModel(QString fileName)
 {
     try {
-        mDNNState.set(ModelRunState::Creating);
         setState(ModelRunState::Creating);
-        mDNNState = ModelRunState::Creating;
         if (model())
             destroyModel();
 
@@ -186,18 +168,12 @@ void ModelShell::setup()
         if (model()->setup(  )) {
             // setup successful
             lg = spdlog::get("main");
-            while (mDNNState == ModelRunState::Creating) {
+            while (RunState::instance()->dnnState() == ModelRunState::Creating) {
                 lg->debug("waiting for DNN thread...");
                 QThread::msleep(50);
                 QCoreApplication::processEvents();
             }
-            if (mDNNState==ModelRunState::ReadyToRun) {
-                lg->info("Model successfully set up in Thread {}.", QThread::currentThread()->objectName().toStdString());
-                setState(ModelRunState::ReadyToRun);
-            } else {
-                lg->info("Model setup, but error in setup of DNN.");
-                setState(ModelRunState::ErrorDuringSetup);
-            }
+            setState( ModelRunState::ReadyToRun );
         }
 
 
@@ -260,20 +236,22 @@ void ModelShell::run(int n_steps)
 void ModelShell::abort()
 {
     mAbort = true;
+    /*
     if (mState==ModelRunState::Creating || mState==ModelRunState::Running) {
         setState(ModelRunState::Stopping, "by user request.");
     } else {
         setState(ModelRunState::Invalid, "model destroyed");
         destroyModel();
-    }
+    } */
 }
 
 
 
 void ModelShell::setState(ModelRunState::State new_state, QString msg)
 {
-    mState = new_state;
-    QString text = QString::fromStdString(mState.stateString());
+    RunState::instance()->modelState().set(new_state);
+
+    QString text = QString::fromStdString(RunState::instance()->asString());
     if (msg.isEmpty())
         emit stateChanged(text);
     else
@@ -285,7 +263,12 @@ void ModelShell::setState(ModelRunState::State new_state, QString msg)
 QMutex lock_processed_package;
 void ModelShell::processedPackage(Batch *batch, int packageId)
 {
-    if (batch->hasError()) {
+    if (RunState::instance()->cancel() || batch->hasError()) {
+        mPackagesProcessed++;
+        lg->debug("error/cancel packages: all built: {}, #built: {}, #processed: {}, batch-id: {}", mAllPackagesBuilt, mPackagesBuilt, mPackagesProcessed, packageId);
+        if (mPackagesBuilt==mPackagesProcessed) {
+            finalizeCycle();
+        }
         return;
     }
 
@@ -326,7 +309,7 @@ void ModelShell::allPackagesBuilt()
 void ModelShell::internalRun()
 {
 
-    try {
+
         // increment the time step of the model
         mModel->newYear();
         mAllPackagesBuilt=false;
@@ -338,21 +321,13 @@ void ModelShell::internalRun()
         //
         packageFuture = QtConcurrent::map(mModel->landscape()->currentGrid(), [this](Cell &cell){ this->buildInferenceData(&cell); });
         packageWatcher.setFuture(packageFuture);
-        packageFuture.waitForFinished(); // TODO: this causes hanging ... if we don't wait, we don't get exceptions!
 
-    } catch (const ThreadSafeException &e) {
-        // if an exception occures during the execution of the QtConcurrent function, then a thread safe exception is created,
-        // and catched here in the main thread.
-        lg->error("An error occured: {}", e.what());
-        setState(ModelRunState::Error);
-        throw std::logic_error(e.what());
-    }
 
 }
 
 void ModelShell::buildInferenceData(Cell *cell)
 {
-    if (mDNNState==ModelRunState::Error)
+    if (RunState::instance()->cancel())
         return;
 
     try {
@@ -364,8 +339,15 @@ void ModelShell::buildInferenceData(Cell *cell)
 
         assert(BatchManager::instance()!=nullptr);
         std::pair<Batch*, int> newslot = BatchManager::instance()->validSlot();
-        if (!newslot.first)
-            throw std::logic_error("Error: cannot find a valid slot. Timeout?");
+        if (!newslot.first) {
+            if (newslot.second==0)
+                return; // cancel operation
+            else {
+                // report an error
+                RunState::instance()->setError("Error: cannot find a valid slot. Timeout?", RunState::instance()->modelState());
+                return;
+            }
+        }
         InferenceData &id = newslot.first->inferenceData(newslot.second);
 
         // populate the InferenceData with the required data
@@ -375,8 +357,7 @@ void ModelShell::buildInferenceData(Cell *cell)
 
 
     } catch (const std::exception &e) {
-        lg->error("An error occured: {}", e.what());
-        throw ThreadSafeException(e);
+        RunState::instance()->setError("Error: " + to_string(e.what()), RunState::instance()->modelState());
     }
 
 }
@@ -386,7 +367,7 @@ void ModelShell::buildInferenceData(Cell *cell)
 
 void ModelShell::checkBatch(Batch *batch)
 {
-    if (mDNNState == ModelRunState::Error) {
+    if (RunState::instance()->cancel()) {
         cancel();
         return;
     }
@@ -406,7 +387,7 @@ void ModelShell::checkBatch(Batch *batch)
 /// Note that this code is still protected by the 'lock_inference_list' mutex
 void ModelShell::sendPendingBatches()
 {
-    if (state()==ModelRunState::Error)
+    if (RunState::instance()->cancel())
         return;
 
     for (auto e : BatchManager::instance()->batches()) {
@@ -422,6 +403,11 @@ void ModelShell::sendPendingBatches()
 
 void ModelShell::finalizeCycle()
 {
+    if (RunState::instance()->cancel()) {
+        lg->info("Stopped in year {}.", mModel->year());
+        setState(ModelRunState::Canceled);
+        return;
+    }
     // everything is
     mModel->finalizeYear();
     lg->info("Year {} finished.", mModel->year());
@@ -432,7 +418,7 @@ void ModelShell::finalizeCycle()
 void ModelShell::cancel()
 {
     lg->error("An error occured - stopping.");
-    setState(ModelRunState::Error);
+    setState(ModelRunState::Stopping);
 }
 
 void ModelShell::processEvents()

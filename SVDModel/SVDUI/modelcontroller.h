@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QThread>
 #include "modelshell.h"
+#include "modelrunstate.h"
 
 
 class ToyModelShell; // forward
@@ -29,7 +30,7 @@ private:
 
 };
 
-class DNNInterface; // forward
+class DNNShell; // forward
 
 
 class ModelController : public QObject
@@ -42,7 +43,8 @@ public:
     ~ModelController();
     ModelShell *shell() const { return mModelShell; }
     const Model *model() const { return mModelShell->model(); }
-    DNNInterface *dnnInterface() const { return mModelInterface; }
+    DNNShell *dnnInterface() const { return mDNNShell; }
+    RunState *state() { return mState.get(); }
 
 signals:
     void log(const QString &s);
@@ -57,7 +59,8 @@ public slots:
     void finishedRun();
 private:
     ModelShell *mModelShell; // lives in main thread
-    DNNInterface *mModelInterface; // lives in DNN thread
+    DNNShell *mDNNShell; // lives in DNN thread
+    std::unique_ptr<RunState> mState; // the state of the system (lives in main thread)
 
 };
 

@@ -10,6 +10,7 @@
 
 #include "modelcontroller.h"
 #include "model.h"
+#include "modelrunstate.h"
 
 #include "integratetest.h"
 #include "../Predictor/predtest.h"
@@ -53,14 +54,16 @@ MainWindow::~MainWindow()
 void MainWindow::modelStateChanged(QString s)
 {
     // stop the update timer...
-    if (!mMC->shell()->isModelRunning())
+    if (!mMC->state()->isModelRunning()) {
         mUpdateModelTimer.stop();
+        modelUpdate();
+    }
 
 }
 
 void MainWindow::modelUpdate()
 {
-    ui->lLog->appendPlainText(QString("%1 - %2").arg( QTime::currentTime().toString(Qt::ISODate) ).arg(QString::fromStdString(mMC->shell()->state().stateString())) );
+    ui->lModelState->setText(QString("%1 - %2").arg( QTime::currentTime().toString(Qt::ISODate) ).arg(QString::fromStdString(RunState::instance()->asString())));
 }
 
 
@@ -219,7 +222,8 @@ void MainWindow::on_pbLoad_clicked()
             return;
     }
 
-    mMC = std::unique_ptr<ModelController>(new ModelController()); // this frees the current model
+    mMC.reset();
+    mMC.reset(new ModelController()); // this frees the current model
     initiateModelController();
 
     mMC->setup(ui->lConfigFile->text());

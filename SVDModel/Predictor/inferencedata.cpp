@@ -91,11 +91,15 @@ void InferenceData::fetchClimate(const InputTensorItem &def)
     // the climate data
     auto &ec = Model::instance()->landscape()->environmentCell(mIndex);
     auto climate_series = Model::instance()->climate()->series(Model::instance()->year(),
-                                                               def.sizeY,
+                                                               def.sizeX,
                                                                ec.climateId());
     TensorWrapper *t = mBatch->tensor(def.index);
     TensorWrap3d<float> *tw = static_cast<TensorWrap3d<float>*>(t);
 
+    if (climate_series.size() != def.sizeX || climate_series[0]->size() != def.sizeY)
+        throw std::logic_error("InferenceData::fetchClimate: mismatch in dimensions: expected " +
+                               to_string(def.sizeX) + ", got " + to_string(climate_series.size()) +  " years; " +
+                               "expected " + to_string(def.sizeY) + ", got " + to_string(climate_series[0]->size()) + " columns (per year)!");
     //return;
     // copy the climate data to the tensors
     // TODO: transform inputs

@@ -81,7 +81,7 @@ void BatchManager::setup()
 //        {"test2", InputTensorItem::DT_INT16, 1, 1, 0, InputTensorItem::State}
 //    };
     mTensorDef =  {
-        {"clim_input", "float", 2, 10, 24, "Climate"},
+        {"clim_input", "float", 2, 10, 40, "Climate"},
         {"state_input", "int16", 1, 1, 0, "State"},
         {"time_input", "float", 1, 1, 0, "ResidenceTime"},
         {"site_input", "float", 1, 2, 0, "Site"},
@@ -121,9 +121,14 @@ std::pair<Batch *, int> BatchManager::validSlot()
             if (++sleeps % 100 == 0) // 1s
                 lg->trace("BatchManager: no batch available (queue full). Sleeping for {} s.", sleeps/100);
 
-            if (sleeps % 10000 == 0) { // 100 secs
-                lg->error("time out in batch manager - no empty slots found.");
+            if (RunState::instance()->cancel() ) {
+                lg->info("Canceled.");
                 return std::pair<Batch*, int>(nullptr, 0);
+
+            }
+            if ( sleeps % 10000 == 0) { // 100 secs
+                lg->error("time out in batch manager - no empty slots found.");
+                return std::pair<Batch*, int>(nullptr, -1);
 
             }
         }

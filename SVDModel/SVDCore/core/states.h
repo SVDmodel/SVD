@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include <unordered_set>
+#include <unordered_map>
 
 typedef short int state_t;
 typedef short int restime_t;
@@ -15,6 +15,7 @@ public:
     const std::string &compositionString() const { return mComposition; }
     int function() const { return mFunction; }
     int structure() const {return mStructure; }
+    std::string asString() const;
 private:
     state_t mId;
     std::string mComposition;
@@ -33,10 +34,12 @@ public:
     bool isValid(state_t state) const { return mStateSet.find(state) != mStateSet.end(); }
     const State &randomState() const;
     const std::vector<State> &states() { return mStates; }
+    const State &stateByIndex(size_t index) const { return mStates[index]; }
+    const State &stateById(int id);
 
 private:
     std::vector<State> mStates;
-    std::unordered_set<state_t> mStateSet;
+    std::unordered_map<state_t, size_t> mStateSet;
 
 };
 

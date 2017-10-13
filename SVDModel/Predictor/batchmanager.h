@@ -63,7 +63,10 @@ public:
         assert(mInstance!=nullptr);
         return mInstance; }
 
+    int batchSize() const { return mBatchSize; }
+
     std::shared_ptr<spdlog::logger> &log() {return lg; }
+
     /// returns a pointer to a batch (first) and a (valid)
     /// slot (=index within the batch): second
     std::pair<Batch *, int> validSlot();

@@ -1,12 +1,19 @@
 #include "modelrunstate.h"
 
-std::string ModelRunState::stateString(ModelRunState &s)
+#include <mutex>
+#include <sstream>
+
+#include "spdlog/spdlog.h"
+
+RunState *RunState::mInstance = nullptr;
+
+std::string ModelRunState::stateString(const ModelRunState &s) const
 {
     // Invalid=0, Creating, ReadyToRun, Stopping, Running, Paused, Finsihed, Canceled, ErrorDuringSetup, Error };
     switch (s.state()) {
     case Invalid: return "Invalid";
     case Creating: return "Creating...";
-    case ReadyToRun: return "Ready.";
+    case ReadyToRun: return "Ready";
     case Stopping: return "Stopping...";
     case Running: return "Running...";
     case Finished: return "Finished!";
@@ -42,4 +49,66 @@ ModelRunState::State ModelRunState::combine(const ModelRunState &model, const Mo
     if (model.in({Creating, ReadyToRun}) || dnn.in({Creating, ReadyToRun})) return Creating;
 
     return model.state();
+}
+
+void ModelRunState::update()
+{
+    // notify parent state....
+    RunState::instance()->update(this);
+}
+
+RunState::RunState()
+{
+    mInstance = this;
+    mInUpdate = false;
+    clear();
+}
+
+void RunState::clear()
+{
+    mCancel=false;
+    mTotal = ModelRunState::Invalid;
+    mModel = ModelRunState::Invalid;
+    mDNN   = ModelRunState::Invalid;
+}
+
+void RunState::set(ModelRunState state)
+{
+    //
+}
+
+std::mutex runstate_mutex;
+void RunState::update(ModelRunState *source)
+{
+    if (mInUpdate)
+        return;
+
+    std::lock_guard<std::mutex> guard(runstate_mutex);
+    mInUpdate=true;
+    if (source!=&mTotal) {
+        // update the "total" state based on the changed sub states
+        mTotal.set(mModel, mDNN);
+
+        if (spdlog::get("main"))
+            spdlog::get("main")->trace("Model Status: Total: {}, Model: {}, DNN: {}.", mTotal.stateString(), mModel.stateString(), mDNN.stateString());
+    }
+    mInUpdate=false;
+}
+
+std::string RunState::asString() const
+{
+    std::stringstream s;
+    s << mTotal.stateString()
+      << " [Model: " << mModel.stateString()
+      << ", DNN: " << mDNN.stateString() << "]";
+    return s.str();
+}
+
+void RunState::setError(std::string error_message, ModelRunState &state)
+{
+    mErrorMessage = error_message;
+    state=ModelRunState::Error;
+    setCancel(true);
+    if (spdlog::get("main"))
+        spdlog::get("main")->error("An error occured in {}: {}", (&state == &mDNN ? "DNN":"Model"), error_message);
 }

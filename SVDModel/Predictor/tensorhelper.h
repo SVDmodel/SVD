@@ -160,8 +160,8 @@ public:
         assert(element*mRows*mCols*sizeof(T)<mNBytes);
         return mData + element*mRows*mCols; }
     T *row(size_t element, size_t row) const {
-        assert((element*mRows*mCols +row*mRows)*sizeof(T)<mNBytes);
-        return mData + element*mRows*mCols+row*mRows; }
+        assert((element*mRows*mCols +row*mCols)*sizeof(T)<mNBytes);
+        return mData + element*mRows*mCols+row*mCols; }
 
     int ndim() const { return 3; }
     size_t batchSize() const { return mBatchSize; }

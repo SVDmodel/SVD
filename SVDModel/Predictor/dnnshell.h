@@ -11,26 +11,23 @@
 class InferenceData; // forward
 class Batch; // forward
 
-class DNNInterface: public QObject
+class DNNShell: public QObject
 {
     Q_OBJECT
 public:
-    DNNInterface();
-    const ModelRunState &state() const { return mState; }
+    DNNShell();
 
 
 private:
 public slots:
     void setup(QString fileName);
-
     void doWork(Batch *batch, int packageId);
 signals:
     void workDone(Batch *batch, int packageId);
-    void dnnState(QString msg);
 
 private:
     void dummyDNN(Batch *batch);
-    ModelRunState mState;
+
     // loggers
     std::shared_ptr<spdlog::logger> lg;
 

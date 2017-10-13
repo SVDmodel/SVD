@@ -1,4 +1,4 @@
-#include "dnninterface.h"
+#include "dnnshell.h"
 
 #include <QThread>
 #include <QMetaType>
@@ -11,68 +11,69 @@
 
 
 
-DNNInterface::DNNInterface()
+DNNShell::DNNShell()
 {
 
 }
 
-void DNNInterface::setup(QString fileName)
+
+
+void DNNShell::setup(QString fileName)
 {
     // setup is called *after* the set up of the main model
     lg = spdlog::get("dnn");
     if (lg)
         lg->info("DNN Setup, config file: {}", fileName.toStdString());
 
+    RunState::instance()->dnnState()=ModelRunState::Creating;
+
     mBatchManager = std::unique_ptr<BatchManager>(new BatchManager());
     mBatchManager->setup();
 
     mDNN = std::unique_ptr<DNN>(new DNN());
     if (mDNN->setup()) {
-        mState=ModelRunState::ReadyToRun;
-        emit dnnState("startup.ok");
+        RunState::instance()->dnnState()=ModelRunState::ReadyToRun;
     } else {
-        mState=ModelRunState::ErrorDuringSetup;
-        emit dnnState("startup.error");
+        RunState::instance()->dnnState()=ModelRunState::ErrorDuringSetup;
     }
 
 
 }
 
-void DNNInterface::doWork(Batch *batch, int packageId)
+void DNNShell::doWork(Batch *batch, int packageId)
 {
 
-    if (Model::instance()->state().shouldCancel()) {
+    if (RunState::instance()->cancel()) {
         batch->setError(true);
-        mState=ModelRunState::Stopping;
+        //RunState::instance()->dnnState()=ModelRunState::Stopping; // TODO: main
         emit workDone(batch, packageId);
         return;
     }
 
     // do the processing with DNN....
     batch->changeState(Batch::DNN);
-    mState = ModelRunState::Running;
+    RunState::instance()->dnnState() = ModelRunState::Running;
 
     if (!mDNN->run(batch)) {
-        mState = ModelRunState::Error;
-        emit dnnState("error");
+        RunState::instance()->setError("Error in DNN", RunState::instance()->dnnState());
+        emit workDone(batch, packageId);
         QCoreApplication::processEvents();
         return;
     }
 
     // now just fake:
-
-    dummyDNN(batch);
+    // dummyDNN(batch);
 
     batch->changeState(Batch::Finished);
 
     lg->debug("finished data package {} (size={})", packageId, batch->usedSlots());
 
     emit workDone(batch, packageId);
-    mState = ModelRunState::ReadyToRun;
-    QCoreApplication::processEvents();
+    RunState::instance()->dnnState() = ModelRunState::ReadyToRun;
+    //QCoreApplication::processEvents();
 }
 
-void DNNInterface::dummyDNN(Batch *batch)
+void DNNShell::dummyDNN(Batch *batch)
 {
     // dump....
     if (lg->should_log(spdlog::level::trace))
