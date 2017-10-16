@@ -61,12 +61,12 @@ signals:
 
 
     void newPackage(Batch *batch, int packageId);
-    void finished();
+
 
 public slots:
     void createModel(QString fileName);
     void setup();
-    void runOneStep();
+    void runOneStep(int current_step);
     void run(int n_steps);
     void abort();
     //ModelRunState state() { return *mState; }
@@ -93,6 +93,8 @@ private:
     int mPackagesProcessed;
     bool mAllPackagesBuilt;
     int mPackageId;
+
+
 
     QFutureWatcher<void> packageWatcher;
     QFuture<void> packageFuture;

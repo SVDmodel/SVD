@@ -20,7 +20,11 @@ public:
     bool needsUpdate() const;
 
     // actions
+    /// check if update is scheduled and apply
+    /// after update(), the cell is in the final state of the current year (31st of december)
+    void update();
     void setState(state_t new_state) { mState = new_state; }
+    void setNextState(state_t new_state) { mNextState = new_state; }
     void setResidenceTime(restime_t res_time) { mResidenceTime = res_time; }
     void setNextUpdateTime(int next_year) { mNextUpdateTime = next_year; }
     void setInvalid() { mState=0; mResidenceTime=0; }
@@ -28,6 +32,7 @@ private:
     state_t mState; ///< the numeric ID of the state the cell is in
     restime_t mResidenceTime;
     int mNextUpdateTime; ///< the year (see Model::year()) when the next update of this cell is scheduled
+    state_t mNextState; ///< the new state scheduled at mNextUpdateTime
 };
 
 #endif // CELL_H

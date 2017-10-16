@@ -5,6 +5,9 @@
 #include <vector>
 #include <iomanip>
 
+#pragma warning(push, 0)
+//Some includes with unfixable warnings: https://stackoverflow.com/questions/2541984/how-to-suppress-warnings-in-external-headers-in-visual-c
+
 #include "tensorflow/cc/ops/const_op.h"
 #include "tensorflow/cc/ops/image_ops.h"
 #include "tensorflow/cc/ops/standard_ops.h"
@@ -23,6 +26,7 @@
 #include "tensorflow/core/public/session.h"
 #include "tensorflow/core/util/command_line_flags.h"
 
+#pragma warning(pop)
 
 #include <QFile>
 #include <QFileInfo>

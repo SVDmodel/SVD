@@ -94,7 +94,10 @@ ModelController::ModelController(QObject *parent)
     QObject::connect(mDNNShell, SIGNAL(workDone(Batch*,int)), mModelShell, SLOT(processedPackage(Batch*,int)), Qt::QueuedConnection);
     //connect(mModelShell, &ModelShell::newPackage, mModelInterface, &ModelInterface::doWork);
     //connect(mModelInterface, &ModelInterface::workDone, mModelShell, &ModelShell::processedPackage);
-    connect(mModelShell, &ModelShell::finished, this, &ModelController::finishedRun, Qt::QueuedConnection);
+    //connect(mModelShell, &ModelShell::finished, this, &ModelController::finishedRun, Qt::QueuedConnection);
+
+    // fired after a simulation year ended
+    connect(mModelShell, &ModelShell::processedStep, this, &ModelController::finishedStep, Qt::QueuedConnection);
 
     // logging
     connect(mModelShell, &ModelShell::log, this, &ModelController::log, Qt::QueuedConnection);
@@ -106,6 +109,9 @@ ModelController::ModelController(QObject *parent)
 
     dnnThread->setObjectName("SVDDNN");
     dnnThread->start();
+
+    mYearsToRun = 0;
+    mCurrentStep = 0;
 
 }
 
@@ -148,11 +154,26 @@ void ModelController::shutdown()
 
 void ModelController::run(int n_years)
 {
+    mYearsToRun = n_years;
+    mCurrentStep = 1;
     QMetaObject::invokeMethod(mModelShell, "run", Qt::QueuedConnection, Q_ARG(int,n_years));
 }
 
-void ModelController::finishedRun()
+
+void ModelController::finishedStep(int n)
 {
+    mCurrentStep++;
+    if (mCurrentStep >= mYearsToRun) {
+        // finished
+        log(QString("Finished!"));
+        emit finished();
+        return;
+    } else {
+        emit finishedYear(mCurrentStep);
+    }
+    // run the next year of the simulation
+    QMetaObject::invokeMethod(mModelShell, "runOneStep", Qt::QueuedConnection, Q_ARG(int, mCurrentStep));
+    log(QString("finished %1 of %2.").arg(n).arg(mYearsToRun));
 
 }
 

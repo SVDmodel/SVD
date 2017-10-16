@@ -9,8 +9,7 @@ void InferenceData::fetchData(Cell *cell, Batch *batch, int slot)
     mResidenceTime = cell->residenceTime();
     mNextState = 0;
     mNextTime = 0;
-    mIndex = cell - Model::instance()->landscape()->currentGrid().begin();
-
+    mIndex = static_cast<int>( cell - Model::instance()->landscape()->grid().begin() );
 
     mBatch = batch;
     mSlot = slot;
@@ -19,13 +18,19 @@ void InferenceData::fetchData(Cell *cell, Batch *batch, int slot)
     internalFetchData();
 }
 
+void InferenceData::setResult(state_t state, restime_t time)
+{
+    mNextState=state;
+    mNextTime=Model::instance()->year() + time;
+}
+
 void InferenceData::writeResult()
 {
     // write back:
-    Cell &cell = Model::instance()->landscape()->futureGrid()[size_t(mIndex)];
-    cell.setState(mNextState);
+    Cell &cell = Model::instance()->landscape()->grid()[mIndex];
+    cell.setNextState(mNextState);
     cell.setNextUpdateTime(mNextTime);
-    cell.setResidenceTime(0);
+
 
 }
 

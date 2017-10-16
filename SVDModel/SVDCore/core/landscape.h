@@ -17,8 +17,8 @@ public:
 
     // access
     // access single cells
-    Cell &cell(int index) { assert((*mCurrentGrid).isIndexValid(index));
-                            return (*mCurrentGrid)[index]; }
+    Cell &cell(int index) { assert(mGrid.isIndexValid(index));
+                            return mGrid[index]; }
     EnvironmentCell &environmentCell(int index) { assert(mEnvironmentGrid.isIndexValid(index));
                                                 assert(mEnvironmentGrid[index] != nullptr);
                                                 return *mEnvironmentGrid[index]; }
@@ -26,19 +26,14 @@ public:
     // access whole grids
     /// get the grid of Cells. Cells outside the project area are marked
     /// by cells where isNull() is true.
-    Grid<Cell> &currentGrid() const { return *mCurrentGrid; }
-    Grid<Cell> &futureGrid() const { return *mFutureGrid; }
+    Grid<Cell> &grid() { return mGrid; }
     /// environment-grid: pointer to EnvironmentCell, nullptr if invalid.
     Grid<EnvironmentCell*> &environment()  { return mEnvironmentGrid; }
 
-    void switchStates();
 
 private:
     void setupInitialState();
-    Grid<Cell> mGridA;
-    Grid<Cell> mGridB;
-    Grid<Cell> *mCurrentGrid;
-    Grid<Cell> *mFutureGrid;
+    Grid<Cell> mGrid;
 
     Grid<EnvironmentCell*> mEnvironmentGrid;
     std::vector<EnvironmentCell> mEnvironmentCells;

@@ -188,7 +188,7 @@ public:
     PointF cellCenterPoint(const int &index) const { Point pos=indexOf(index); return PointF( (pos.x()+0.5)*mCellsize+mRect.left(), (pos.y()+0.5)*mCellsize + mRect.top());}
     /// get the metric rectangle of the cell with index @pos
     RectF cellRect(const Point &pos) const { RectF r( PointF(mRect.left() + mCellsize*pos.x(), mRect.top() + pos.y()*mCellsize),
-                                                   QSizeF(mCellsize, mCellsize)); return r; } ///< return coordinates of rect given by @param pos.
+                                                      QSizeF(mCellsize, mCellsize)); return r; } ///< return coordinates of rect given by @param pos.
 
     inline  T* begin() const { return mData; } ///< get "iterator" pointer
     inline  T* end() const { return mEnd; } ///< get iterator end-pointer
@@ -285,7 +285,7 @@ private:
 */
 class Vector3D
 {
- public:
+public:
     Vector3D(): mX(0.), mY(0.), mZ(0.) {}
     Vector3D(const double x, const double y, const double z): mX(x), mY(y), mZ(z) {}
     double x() const { return mX; } ///< get x-coordinate
@@ -312,7 +312,7 @@ Grid<T>::Grid(const Grid<T>& toCopy)
     const T* end = toCopy.end();
     T* ptr = begin();
     for (T* i= toCopy.begin(); i!=end; ++i, ++ptr)
-       *ptr = *i;
+        *ptr = *i;
 }
 
 // normalize function
@@ -431,14 +431,14 @@ Note: north and south are reversed, thus the item with index 0 is located in the
 template <class T> inline
 Point Grid<T>::indexOf(const T* element) const
 {
-//    Point result(-1,-1);
+    //    Point result(-1,-1);
     if (element==NULL || element<mData || element>=end())
         return Point(-1, -1);
     int idx = static_cast<int>( element - mData );
     return Point(idx % mSizeX,  idx / mSizeX);
-//    result.setX( idx % mSizeX);
-//    result.setY( idx / mSizeX);
-//    return result;
+    //    result.setX( idx % mSizeX);
+    //    result.setY( idx / mSizeX);
+    //    return result;
 }
 
 template <class T>
@@ -448,7 +448,7 @@ T  Grid<T>::max() const
     T* p;
     T* pend = end();
     for (p=begin(); p!=pend;++p)
-       maxv = std::max(maxv, *p);
+        maxv = std::max(maxv, *p);
     return maxv;
 }
 
@@ -458,7 +458,7 @@ T  Grid<T>::sum() const
     T* pend = end();
     T total = 0;
     for (T *p=begin(); p!=pend;++p)
-       total += *p;
+        total += *p;
     return total;
 }
 
@@ -475,7 +475,7 @@ void Grid<T>::add(const T& summand)
 {
     T* pend = end();
     for (T *p=begin(); p!=pend;*p+=summand,++p)
-       ;
+        ;
 }
 
 template <class T>
@@ -559,16 +559,16 @@ void GridRunner<T>::setup(const Grid<T> *target_grid, const Rect &rectangle)
     mLineLength =  target_grid->sizeX() - mCols;
     mCurrentCol = -1;
     mGrid = target_grid;
-//    qDebug() << "GridRunner: rectangle:" << rectangle
-//             << "upper_left:" << target_grid.cellCenterPoint(target_grid.indexOf(mCurrent))
-//             << "lower_right:" << target_grid.cellCenterPoint(target_grid.indexOf(mLast));
+    //    qDebug() << "GridRunner: rectangle:" << rectangle
+    //             << "upper_left:" << target_grid.cellCenterPoint(target_grid.indexOf(mCurrent))
+    //             << "lower_right:" << target_grid.cellCenterPoint(target_grid.indexOf(mLast));
 }
 
 template <class T>
 void GridRunner<T>::setup(const Grid<T> *target_grid, const RectF &rectangle_metric)
 {
     Rect rect(target_grid->indexAt(rectangle_metric.topLeft()),
-               target_grid->indexAt(rectangle_metric.bottomRight()) );
+              target_grid->indexAt(rectangle_metric.bottomRight()) );
     setup (target_grid, rect);
 }
 
@@ -651,24 +651,24 @@ std::string gridToString(const DoubleGrid &grid, const char sep=';', const int n
 /// @param sep string separator
 /// @param newline_after if <>-1 a newline is added after every 'newline_after' data values
 template <class T>
-        std::string gridToString(const Grid<T> &grid, const char sep=';', const int newline_after=-1)
+std::string gridToString(const Grid<T> &grid, const char sep=';', const int newline_after=-1)
 {
 
-       std::string res;
+    std::string res;
 
-       int newl_counter = newline_after;
-       for (int y=grid.sizeY()-1;y>=0;--y) {
-            for (int x=0;x<grid.sizeX();x++) {
+    int newl_counter = newline_after;
+    for (int y=grid.sizeY()-1;y>=0;--y) {
+        for (int x=0;x<grid.sizeX();x++) {
 
-                res+= std::to_string(grid(x,y)) + sep;
-               if (--newl_counter==0) {
-                   res += "\n";
-                   newl_counter = newline_after;
-               }
-           }
-           res+="\r\n";
-       }
-       return res;
+            res+= std::to_string(grid(x,y)) + sep;
+            if (--newl_counter==0) {
+                res += "\n";
+                newl_counter = newline_after;
+            }
+        }
+        res+="\r\n";
+    }
+    return res;
 }
 
 /// template version for non-double grids (see also version for DoubleGrid)
@@ -676,43 +676,43 @@ template <class T>
 /// @param sep string separator
 /// @param newline_after if <>-1 a newline is added after every 'newline_after' data values
 template <class T>
-        std::string gridToString(const Grid<T> &grid, std::function<std::string(const T&)> valueFunction, const char sep=';', const int newline_after=-1 )
-        {
-            std::ostringstream ts;
+std::string gridToString(const Grid<T> &grid, std::function<std::string(const T&)> valueFunction, const char sep=';', const int newline_after=-1 )
+{
+    std::ostringstream ts;
 
-            int newl_counter = newline_after;
-            for (int y=grid.sizeY()-1;y>=0;--y){
-                for (int x=0;x<grid.sizeX();x++){
-                    ts << valueFunction(grid.constValueAtIndex(x,y)) << sep;
+    int newl_counter = newline_after;
+    for (int y=grid.sizeY()-1;y>=0;--y){
+        for (int x=0;x<grid.sizeX();x++){
+            ts << valueFunction(grid.constValueAtIndex(x,y)) << sep;
 
-                    if (--newl_counter==0) {
-                        ts << "\r\n";
-                        newl_counter = newline_after;
-                    }
-                }
+            if (--newl_counter==0) {
                 ts << "\r\n";
+                newl_counter = newline_after;
             }
-
-            return ts.str();
         }
+        ts << "\r\n";
+    }
+
+    return ts.str();
+}
 void modelToWorld(const Vector3D &From, Vector3D &To);
 
 template <class T>
-    std::string gridToESRIRaster(const Grid<T> &grid, std::function<std::string(const T&)>  valueFunction )
+std::string gridToESRIRaster(const Grid<T> &grid, std::function<std::string(const T&)>  valueFunction )
 {
-        Vector3D model(grid.metricRect().left(), grid.metricRect().top(), 0.);
-        Vector3D world;
-        modelToWorld(model, world);
-        std::ostringstream oss;
-        oss << "ncols " << grid.sizeX() << std::endl
-            << "nrows " << grid.sizeY() << std::endl
-            << "xllcorner " << world.x() << std::endl
-            << "yllcorner " << world.y() << std::endl
-            << "cellsize " << grid.cellsize() << std::endl
-            << "NODATA_value -9999" << std::endl;
-        oss << gridToString(grid, valueFunction, ' ');
-        return oss.str();
-        /*
+    Vector3D model(grid.metricRect().left(), grid.metricRect().top(), 0.);
+    Vector3D world;
+    modelToWorld(model, world);
+    std::ostringstream oss;
+    oss << "ncols " << grid.sizeX() << std::endl
+        << "nrows " << grid.sizeY() << std::endl
+        << "xllcorner " << world.x() << std::endl
+        << "yllcorner " << world.y() << std::endl
+        << "cellsize " << grid.cellsize() << std::endl
+        << "NODATA_value -9999" << std::endl;
+    oss << gridToString(grid, valueFunction, ' ');
+    return oss.str();
+    /*
         QString result = QString("ncols %1\r\nnrows %2\r\nxllcorner %3\r\nyllcorner %4\r\ncellsize %5\r\nNODATA_value %6\r\n")
                                 .arg(grid.sizeX())
                                 .arg(grid.sizeY())
@@ -721,22 +721,22 @@ template <class T>
         QString line =  gridToString(grid, valueFunction, QChar(' ')); // for special grids */
 }
 
-    template <class T>
-        std::string gridToESRIRaster(const Grid<T> &grid )
+template <class T>
+std::string gridToESRIRaster(const Grid<T> &grid )
 {
-            Vector3D model(grid.metricRect().left(), grid.metricRect().top(), 0.);
-            Vector3D world;
-            modelToWorld(model, world);
-            std::string result = "not implemented";
-            std::string line = ", sorry";
-/*
+    Vector3D model(grid.metricRect().left(), grid.metricRect().top(), 0.);
+    Vector3D world;
+    modelToWorld(model, world);
+    std::string result = "not implemented";
+    std::string line = ", sorry";
+    /*
             QString result = QString("ncols %1\r\nnrows %2\r\nxllcorner %3\r\nyllcorner %4\r\ncellsize %5\r\nNODATA_value %6\r\n")
                     .arg(grid.sizeX())
                     .arg(grid.sizeY())
                     .arg(world.x(),0,'f').arg(world.y(),0,'f')
                     .arg(grid.cellsize()).arg(-9999);
             QString line = gridToString(grid, QChar(' ')); // for normal grids (e.g. double) */
-            return result + line;
+    return result + line;
 }
 
 #endif // GRID_H

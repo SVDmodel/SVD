@@ -14,7 +14,7 @@ public:
     void fetchData(Cell *cell, Batch *batch, int slot);
 
     /// set the result of the DNN
-    void setResult(state_t state, restime_t time) { mNextState=state; mNextTime=time; }
+    void setResult(state_t state, restime_t time);
     state_t nextState() const { return mNextState; }
     restime_t nextTime() const { return mNextTime; }
     /// write the result back to the cell in the model
@@ -38,7 +38,7 @@ private:
     state_t mNextState;
     restime_t mNextTime;
     restime_t mResidenceTime;
-    size_t mIndex; ///< index of the cell in both landscape grids
+    int mIndex; ///< index of the cell in the landscape grid
     Batch *mBatch; ///< link to the batch (that contains the actual Tensors)
     int mSlot; ///< slot within the batch for this cell
 };

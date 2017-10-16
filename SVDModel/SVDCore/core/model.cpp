@@ -1,6 +1,7 @@
 #include "model.h"
 #include "tools.h"
 #include "strtools.h"
+#include "../Predictor/batchmanager.h"
 
 #include <QThreadPool>
 
@@ -60,13 +61,14 @@ bool Model::setup()
 void Model::finalizeYear()
 {
     // increment residence time for all pixels (updated pixels go from 0 -> 1)
-    for (Cell &c : landscape()->futureGrid()) {
-        if (!c.isNull())
-            c.setResidenceTime( c.residenceTime() + 1);
+    for (Cell &c : landscape()->grid()) {
+        if (!c.isNull()) {
+            c.update();
+
+        }
     }
 
 
-    landscape()->switchStates();
     stats.NPackagesTotalSent += stats.NPackagesSent;
     stats.NPackagesTotalDNN += stats.NPackagesDNN;
 }
@@ -74,14 +76,15 @@ void Model::finalizeYear()
 void Model::newYear()
 {
     if (mYear == 0) {
-        // first year of the simulation: copy the current to the modifyable landscape:
-        landscape()->futureGrid().copy(landscape()->currentGrid());
+        // this indicates the state before the first year of the simulation is executed
+
     }
 
     stats.NPackagesSent = stats.NPackagesDNN = 0;
     // increment the counter
     mYear = mYear + 1;
     // other initialization ....
+    BatchManager::instance()->newYear();
 }
 
 void Model::inititeLogging()

@@ -102,11 +102,17 @@ void BatchManager::setup()
 
 }
 
+void BatchManager::newYear()
+{
+    mSlotRequested = false;
+}
+
 std::mutex batch_mutex;
 std::pair<Batch *, int> BatchManager::validSlot()
 {
     // serialize this function...
     std::lock_guard<std::mutex> guard(batch_mutex);
+    mSlotRequested = true;
     std::pair<Batch *, int> result;
     int sleeps = 0;
     do {

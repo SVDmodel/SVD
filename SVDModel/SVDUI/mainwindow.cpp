@@ -194,6 +194,8 @@ void MainWindow::initiateModelController()
     // bookkeeping, signal - slot connections
     connect(mMC.get(), &ModelController::stateChanged, [this](QString s) {ui->statusBar->showMessage(s);});
     connect(mMC.get(), &ModelController::stateChanged, this, &MainWindow::modelStateChanged);
+    connect(mMC.get(), &ModelController::finishedYear, ui->progressBar, &QProgressBar::setValue);
+    connect(mMC.get(), &ModelController::finished, [this]() { ui->progressBar->setValue(ui->progressBar->maximum());});
 
     connect(&mUpdateModelTimer, &QTimer::timeout, this, &MainWindow::modelUpdate);
 
@@ -237,6 +239,8 @@ void MainWindow::on_pbDeleteModel_clicked()
 
 void MainWindow::on_pbRunModel_clicked()
 {
+    ui->progressBar->reset();
+    ui->progressBar->setMaximum( ui->sYears->value() );
     mMC->run( ui->sYears->value() );
     mUpdateModelTimer.start(100);
 }

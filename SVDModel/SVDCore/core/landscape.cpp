@@ -10,8 +10,6 @@
 
 Landscape::Landscape()
 {
-    mCurrentGrid = &mGridA;
-    mFutureGrid = &mGridB;
 }
 
 void Landscape::setup()
@@ -94,15 +92,14 @@ void Landscape::setup()
     }
 
     // now set up the landscape cells
-    // the grids have the same size:
-    mGridA.setup(mEnvironmentGrid.metricRect(), mEnvironmentGrid.cellsize());
-    mGridB.setup(mEnvironmentGrid.metricRect(), mEnvironmentGrid.cellsize());
+    // the grid has the same size:
+    mGrid.setup(mEnvironmentGrid.metricRect(), mEnvironmentGrid.cellsize());
 
-    Cell *a=mGridA.begin(), *b=mGridB.begin();
-    for (EnvironmentCell **ec=mEnvironmentGrid.begin(); ec!=mEnvironmentGrid.end(); ++ec, ++a, ++b)
+    Cell *a=mGrid.begin();
+    for (EnvironmentCell **ec=mEnvironmentGrid.begin(); ec!=mEnvironmentGrid.end(); ++ec, ++a)
         if (*ec) {
             // set to invalid state (different from NULL which is outside of the project area)
-            a->setInvalid(); b->setInvalid();
+            a->setInvalid();
         }
 
 
@@ -111,13 +108,6 @@ void Landscape::setup()
     lg->info("Landscape successfully set up.");
 }
 
-void Landscape::switchStates()
-{
-    mGridA.copy(mGridB);
-    //Grid<Cell> *ms = mCurrentGrid;
-    //mCurrentGrid = mFutureGrid;
-    //mFutureGrid = ms;
-}
 
 void Landscape::setupInitialState()
 {
@@ -134,7 +124,7 @@ void Landscape::setupInitialState()
 
     int n_affected = 0;
     if (mode == "random") {
-        for (Cell *c = currentGrid().begin(); c!=currentGrid().end(); ++c)
+        for (Cell *c = grid().begin(); c!=grid().end(); ++c)
             if (!c->isNull()) {
                 c->setState( Model::instance()->states()->randomState().id() );
                 c->setResidenceTime(irandom(0,10));
@@ -151,7 +141,7 @@ void Landscape::setupInitialState()
         if (i_state<0 || i_restime<0)
             throw std::logic_error("Initialize landscape state: mode is 'file' and the 'landscape.file' does not contain the columns 'stateId' and/or 'residenceTime'.");
 
-        Cell *cell = currentGrid().begin();
+        Cell *cell = grid().begin();
         bool error = false;
         int n_affected=0;
         for (EnvironmentCell **ec=mEnvironmentGrid.begin(); ec!=mEnvironmentGrid.end(); ++ec, ++cell)
@@ -161,7 +151,7 @@ void Landscape::setupInitialState()
                 if (!Model::instance()->states()->isValid(t)) {
                     if (!error) lg->error("Initalize states from landscape file '{}': Errors detected:", settings.valueString("landscape.file"));
                     error = true;
-                    lg->error("State: {} not valid (at {}/{})", t, currentGrid().indexOf(cell).x(), currentGrid().indexOf(cell).y());
+                    lg->error("State: {} not valid (at {}/{})", t, grid().indexOf(cell).x(), grid().indexOf(cell).y());
                 } else {
                     cell->setState(t);
                     cell->setResidenceTime(res_time);

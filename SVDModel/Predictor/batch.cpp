@@ -3,6 +3,8 @@
 
 #include "spdlog/spdlog.h"
 
+#include "tensorhelper.h"
+
 Batch::Batch(int batch_size)
 {
 

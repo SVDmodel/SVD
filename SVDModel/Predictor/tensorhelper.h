@@ -1,7 +1,11 @@
 #ifndef TENSORHELPER_H
 #define TENSORHELPER_H
 
+#pragma warning(push, 0)
+
 #include "tensorflow/core/framework/tensor.h"
+
+#pragma warning(pop)
 
 /// Some array conversion tools.
 /// \author David Stutz
@@ -55,7 +59,7 @@ public:
     tensorflow::DataType dataType() const  { return mDataType; }
     T value() const { return mTensor.scalar<bool>()(); }
     void setValue(T value) { mTensor.scalar<bool>()() = value; }
-    std::string asString(size_t example) const {
+    std::string asString(size_t /*example*/) const {
         std::stringstream ss;
         ss << "Scalar: " << value();
         return ss.str();

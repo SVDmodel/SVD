@@ -50,17 +50,23 @@ signals:
     void log(const QString &s);
     void stateChanged(QString s);
 
+    void finishedYear(int n);
+    void finished();
+
 public slots:
     void setup(QString fileName);
     void shutdown();
 
     void run(int n_years);
     //void abort();
-    void finishedRun();
+    void finishedStep(int n);
 private:
     ModelShell *mModelShell; // lives in main thread
     DNNShell *mDNNShell; // lives in DNN thread
     std::unique_ptr<RunState> mState; // the state of the system (lives in main thread)
+
+    int mYearsToRun;
+    int mCurrentStep;
 
 };
 

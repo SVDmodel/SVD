@@ -14,6 +14,9 @@
 #include <vector>
 #include <iomanip>
 
+#pragma warning(push, 0)
+//Some includes with unfixable warnings: https://stackoverflow.com/questions/2541984/how-to-suppress-warnings-in-external-headers-in-visual-c
+
 #include "tensorflow/cc/ops/const_op.h"
 #include "tensorflow/cc/ops/image_ops.h"
 #include "tensorflow/cc/ops/standard_ops.h"
@@ -31,6 +34,9 @@
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/core/public/session.h"
 #include "tensorflow/core/util/command_line_flags.h"
+
+#pragma warning(pop)
+
 
 // These are all common classes it's handy to reference with no namespace.
 using tensorflow::Flag;
@@ -106,7 +112,7 @@ bool DNN::setup()
     mDummyDNN = false;
     tensorflow::SessionOptions opts;
     opts.config.set_log_device_placement(true);
-    session = tensorflow::NewSession(tensorflow::SessionOptions()); // no specific options: tensorflow::SessionOptions()
+    session = tensorflow::NewSession(opts); // no specific options: tensorflow::SessionOptions()
 
     lg->trace("attempting to load the graph...");
     Status load_graph_status = LoadGraph(file, session);
@@ -124,7 +130,7 @@ bool DNN::setup()
     //output_classes = new tensorflow::Input();
     int bs = BatchManager::instance()->batchSize();
     // number of classes:
-    int ncls = Model::instance()->states()->states().size();
+    int ncls = static_cast<int>(Model::instance()->states()->states().size());
     top_k_tensor = new tensorflow::Tensor(tensorflow::DT_FLOAT, tensorflow::TensorShape({bs, ncls}));
     //top_k_tensor = new tensorflow::Tensor(tensorflow::DT_FLOAT, tensorflow::PartialTensorShape({-1, ncls}));
     //new tensorflow::Tensor(dt, tensorflow::TensorShape({ static_cast<int>(mBatchSize), static_cast<int>(mRows), static_cast<int>(mCols)}));
@@ -162,6 +168,7 @@ bool DNN::setup()
     top_k_session = tensorflow::NewSession(tensorflow::SessionOptions());
 
     tf_status = top_k_session->Create(graph);
+    //tf_status = session->Create(graph);
     if (!tf_status.ok()) {
         lg->error("Error creating top-k graph: {}", tf_status.error_message());
         return false;
@@ -174,10 +181,23 @@ bool DNN::setup()
 
 }
 
+class STimer {
+public:
+    STimer(std::shared_ptr<spdlog::logger> logger, std::string name) { start_time = std::chrono::system_clock::now(); _logger=logger; _name=name; }
+    int elapsed() { return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start_time).count(); }
+    void print(std::string s) { _logger->debug("Timer {}: {}: {}us", _name, s, elapsed()); }
+    ~STimer() { _logger->debug("Timer {}: {} us.", _name, elapsed()); }
+private:
+    std::shared_ptr<spdlog::logger> _logger;
+    std::string _name;
+    std::chrono::system_clock::time_point start_time;
+};
+
 bool DNN::run(Batch *batch)
 {
     const int top_n=10;
     std::vector<Tensor> outputs;
+    STimer timr(lg, "DNN::run");
 
     std::vector<std::pair<string, Tensor> > inputs;
     const std::list<InputTensorItem> &tdef = BatchManager::instance()->tensorDefinition();
@@ -195,6 +215,7 @@ bool DNN::run(Batch *batch)
     }
 
     /* Run Tensorflow */
+    timr.print("before main dnn");
     Status run_status = session->Run(inputs, {"out/Softmax", "time_out/Softmax"}, {}, &outputs);
     if (!run_status.ok()) {
         lg->trace("{}", batch->inferenceData(0).dumpTensorData());
@@ -202,18 +223,29 @@ bool DNN::run(Batch *batch)
         batch->setError(true);
         return false;
     }
+    timr.print("main dnn");
 
-    //*top_k_tensor = outputs[0];
-    // run top-k labels
-    std::vector< Tensor > topk_output;
+    // fake!
+//    for (int i=0; i<batch->usedSlots(); ++i) {
+//        InferenceData &id = batch->inferenceData(i);
+//        id.setResult(1, 10);
+//    }
+//    return true;
+
+
+            //*top_k_tensor = outputs[0];
+            // run top-k labels
+            std::vector< Tensor > topk_output;
+    // top_k_session
     run_status = top_k_session->Run({ {"Const/Const" , outputs[0]} }, {"top_k:0", "top_k:1"},
-                                    {}, &topk_output);
+    {}, &topk_output);
     if (!run_status.ok()) {
         lg->trace("{}", batch->inferenceData(0).dumpTensorData());
         lg->error("Tensorflow error (run top-k): {}", run_status.error_message());
         batch->setError(true);
         return false;
     }
+    timr.print("topk dnn");
 
     tensorflow::Tensor *scores = &topk_output[0];
     tensorflow::Tensor *indices = &topk_output[1];
@@ -223,7 +255,7 @@ bool DNN::run(Batch *batch)
     lg->debug("out:  {}", outputs[0].DebugString());
     lg->debug("time: {}", outputs[1].DebugString());
     // output tensors: 2dim; 1x batch, 1x data
-    lg->debug("dimension time: {} x {}.", outputs[1].dim_size(0), outputs[1].dim_size(0));
+    // lg->debug("dimension time: {} x {}.", outputs[1].dim_size(0), outputs[1].dim_size(0));
 
 
     TensorWrap2d<float> out_time(outputs[1]);
@@ -235,8 +267,9 @@ bool DNN::run(Batch *batch)
     // choose randomly from the result
     for (int i=0; i<batch->usedSlots(); ++i) {
         InferenceData &id = batch->inferenceData(i);
-        restime_t rt = chooseProbabilisticIndex(out_time.example(i), out_time.n()) + 1;
-        int index = chooseProbabilisticIndex(scores_flat.example(i), scores_flat.n());
+        // residence time: at least one year
+        restime_t rt = static_cast<restime_t>( chooseProbabilisticIndex(out_time.example(i), static_cast<int>(out_time.n())) + 1 );
+        int index = chooseProbabilisticIndex(scores_flat.example(i), static_cast<int>(scores_flat.n())) ;
         int state_index = indices_flat.example(i)[index];
         state_t stateId = Model::instance()->states()->stateByIndex( state_index ).id();
         id.setResult(stateId, rt);
@@ -266,8 +299,6 @@ bool DNN::run(Batch *batch)
 
 
     }
-
-
     return true;
 }
 
@@ -304,13 +335,13 @@ int DNN::chooseProbabilisticIndex(float *values, int n)
 {
 
     // calculate the sum of probs
-    float p_sum = 0.f;
+    double p_sum = 0.;
     for (int i=0;i<n;++i)
         p_sum+=values[i];
 
-    float p = nrandom(0., p_sum);
+    double p = nrandom(0., p_sum);
 
-    p_sum = 0.f;
+    p_sum = 0.;
     for (int i=0;i<n;++i) {
         p_sum += *values++;
         if (p < p_sum)

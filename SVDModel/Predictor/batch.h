@@ -2,7 +2,7 @@
 #define BATCH_H
 
 #include <list>
-//#include "tensorhelper.h"
+
 #include "inferencedata.h"
 
 class BatchManager; // forward

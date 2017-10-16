@@ -56,6 +56,8 @@ public:
     BatchManager();
     ~BatchManager();
     void setup();
+    /// called at the beginning of a year
+    void newYear();
 
     /// access to the currently avaialable BatchManager
     /// this allows accessing the model with BatchManager::instance()->....
@@ -73,11 +75,14 @@ public:
 
     const std::list<Batch *> batches() const { return mBatches; }
 
+    bool slotsRequested() const { return mSlotRequested; }
+
     /// the definition of the tensors to fill
     const std::list<InputTensorItem> &tensorDefinition() const {return mTensorDef; }
 private:
     int mBatchSize;
     int mMaxQueueLength;
+    bool mSlotRequested;
     Batch *createBatch();
     std::pair<Batch *, int> findValidSlot();
     TensorWrapper *buildTensor(int batch_size, InputTensorItem &item);

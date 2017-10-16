@@ -99,12 +99,12 @@ void ModelShell::destroyModel()
 std::string ModelShell::run_test_op(std::string what)
 {
     if (what=="grid_state") {
-        auto &grid = Model::instance()->landscape()->currentGrid();
+        auto &grid = Model::instance()->landscape()->grid();
         std::string result = gridToESRIRaster<Cell>(grid, [](const Cell &c) { if (c.isNull()) return std::string("-9999"); else return std::to_string(c.state()); });
         return result;
     }
     if (what=="grid_restime") {
-        auto &grid = Model::instance()->landscape()->currentGrid();
+        auto &grid = Model::instance()->landscape()->grid();
         std::string result = gridToESRIRaster<Cell>(grid, [](const Cell &c)
         { if (c.isNull())
                 return std::string("-9999");
@@ -114,7 +114,7 @@ std::string ModelShell::run_test_op(std::string what)
         return result;
     }
     if (what=="grid_next") {
-        auto &grid = Model::instance()->landscape()->currentGrid();
+        auto &grid = Model::instance()->landscape()->grid();
         std::string result = gridToESRIRaster<Cell>(grid, [](const Cell &c)
         { if (c.isNull())
                 return std::string("-9999");
@@ -184,11 +184,13 @@ void ModelShell::setup()
     }
 }
 
-void ModelShell::runOneStep()
+void ModelShell::runOneStep(int current_step)
 {
     setState(ModelRunState::Running);
     try {
-        spdlog::get("main")->info("Run one step.");
+        spdlog::get("main")->info("Run year {}.", current_step);
+        spdlog::get("main")->info("*****************************");
+
         // run the model...
         internalRun();
 
@@ -203,33 +205,12 @@ void ModelShell::runOneStep()
 void ModelShell::run(int n_steps)
 {
 
-    runOneStep();
-    return;
+    //runOneStep();
+    //return;
+    spdlog::get("main")->info("***********************************************");
+    spdlog::get("main")->info("Start the simulation of {} steps.",n_steps);
 
-    setState(ModelRunState::Running);
-    try {
-        spdlog::get("main")->info("Run {} steps.", n_steps);
-        // run the model...
-        for (int i=0;i<n_steps;++i) {
-            QCoreApplication::processEvents();
-            spdlog::get("main")->info("Run step {} of {}.", i+1, n_steps);
-            setState(ModelRunState::Running, QString("year %1 of %2.").arg(i+1).arg(n_steps));
-            if (mAbort) {
-                setState(ModelRunState::Canceled);
-                return;
-            }
-
-            internalRun();
-
-
-        }
-        setState(ModelRunState::ReadyToRun);
-
-
-    } catch (const std::exception &e) {
-        spdlog::get("main")->error("An error occured: {}", e.what());
-        setState( ModelRunState::Error, QString(e.what()));
-    }
+    runOneStep(1);
 
 }
 
@@ -301,6 +282,10 @@ void ModelShell::processedPackage(Batch *batch, int packageId)
 
 void ModelShell::allPackagesBuilt()
 {
+    if (!BatchManager::instance()->slotsRequested()) {
+        lg->debug("No pixel was updated this year.");
+        finalizeCycle();
+    }
     //lg->debug("** all packages built, starting the last package");
     sendPendingBatches(); // start last batch (even if < than batch size)
     mAllPackagesBuilt = true;
@@ -319,7 +304,7 @@ void ModelShell::internalRun()
         // check for each cell if we need to do something; if yes, then
         // fill a InferenceData item within a batch of data
         //
-        packageFuture = QtConcurrent::map(mModel->landscape()->currentGrid(), [this](Cell &cell){ this->buildInferenceData(&cell); });
+        packageFuture = QtConcurrent::map(mModel->landscape()->grid(), [this](Cell &cell){ this->buildInferenceData(&cell); });
         packageWatcher.setFuture(packageFuture);
 
 
@@ -413,6 +398,7 @@ void ModelShell::finalizeCycle()
     lg->info("Year {} finished.", mModel->year());
 
     setState(ModelRunState::ReadyToRun);
+    emit processedStep(mModel->year());
 }
 
 void ModelShell::cancel()
