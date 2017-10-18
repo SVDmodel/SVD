@@ -43,8 +43,11 @@ public:
     ~ModelController();
     ModelShell *shell() const { return mModelShell; }
     const Model *model() const { return mModelShell->model(); }
-    DNNShell *dnnInterface() const { return mDNNShell; }
+    DNNShell *dnnShell() const { return mDNNShell; }
     RunState *state() { return mState.get(); }
+
+    /// retrieve system statistics as key-value pairs
+    std::unordered_map<std::string, std::string> systemStatus();
 
 signals:
     void log(const QString &s);

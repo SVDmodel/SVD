@@ -52,6 +52,8 @@ private slots:
 
     void on_pushButton_5_clicked();
 
+    void on_pbUpdateStats_clicked();
+
 private:
     Ui::MainWindow *ui;
     std::unique_ptr<ModelController> mMC;

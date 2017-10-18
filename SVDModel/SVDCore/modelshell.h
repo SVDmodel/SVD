@@ -53,6 +53,8 @@ public:
 
     // test function
     std::string run_test_op(std::string what);
+    int packagesBuilt() const { return mPackagesBuilt; }
+    int packagesProcessed() const { return mPackagesProcessed; }
 
 signals:
     void stateChanged(QString s);

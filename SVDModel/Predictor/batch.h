@@ -21,6 +21,9 @@ public:
     bool hasError() const { return mError; }
     void setError(bool error) { mError = error; }
 
+    int packageId() const { return mPackageId; }
+    void setPackageId(int id) { mPackageId = id; }
+
     /// get slot number in the batch (atomic access)
     int acquireSlot();
     /// number of slots that are free
@@ -44,6 +47,7 @@ private:
     std::vector<TensorWrapper*> mTensors;
     std::atomic<int> mCurrentSlot; ///< atomic access; number of currently used slots (not the index!)
     int mBatchSize;
+    int mPackageId;
     friend class BatchManager;
 };
 

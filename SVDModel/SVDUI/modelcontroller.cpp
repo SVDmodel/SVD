@@ -2,6 +2,8 @@
 #include "modelshell.h"
 #include "toymodel.h"
 #include "model.h"
+#include "../Predictor/batchmanager.h"
+#include "../Predictor/batch.h"
 
 #include "../Predictor/dnnshell.h"
 
@@ -129,6 +131,36 @@ ModelController::~ModelController()
     //if (mDNNShell)
     //    delete mDNNShell;
 
+}
+
+std::unordered_map<std::string, std::string> ModelController::systemStatus()
+{
+    std::unordered_map<std::string, std::string> result;
+    // add statistics
+    result["dnnRunning"] = dnnShell()->isRunnig() ? "yes" : "no";
+    result["dnnBatchesProcessed"] = to_string(dnnShell()->batchesProcessed());
+    result["dnnCellsProcessed"] = to_string(dnnShell()->cellsProcessed());
+
+    int n_fill=0, n_finished=0, n_dnn=0;
+    int n_open_slots = 0;
+    for (auto e : BatchManager::instance()->batches()) {
+        switch (e->state()) {
+        case Batch::Fill: ++n_fill; n_open_slots += e->freeSlots();  break;
+        case Batch::Finished: ++n_finished; break;
+        case Batch::DNN: ++n_dnn; break;
+        }
+    }
+    result["batches"] = to_string( BatchManager::instance()->batches().size() );
+    result["batchesFinished"] = to_string(n_finished);
+    result["batchesDNN"] = to_string(n_dnn);
+    result["batchesAvailable"] = to_string(n_fill);
+    result["batchCellAvailable"] = to_string(n_open_slots);
+
+    // main packages...
+    result["mainBatchesBuilt"] = to_string( shell()->packagesBuilt() );
+    result["mainBatchesProcessed"] = to_string( shell()->packagesProcessed() );
+
+    return result;
 }
 
 void ModelController::setup(QString fileName)

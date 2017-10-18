@@ -64,6 +64,7 @@ void MainWindow::modelStateChanged(QString s)
 void MainWindow::modelUpdate()
 {
     ui->lModelState->setText(QString("%1 - %2").arg( QTime::currentTime().toString(Qt::ISODate) ).arg(QString::fromStdString(RunState::instance()->asString())));
+    on_pbUpdateStats_clicked();
 }
 
 
@@ -253,3 +254,18 @@ void MainWindow::on_pbRun_clicked()
 }
 
 
+
+void MainWindow::on_pbUpdateStats_clicked()
+{
+    auto stats = mMC->systemStatus();
+    ui->listStatus->clear();
+    ui->listStatus->setHorizontalHeaderLabels({"Statistic", "Value"});
+    ui->listStatus->setRowCount(stats.size());
+    ui->listStatus->setColumnCount(2);
+    int r=0;
+    for (std::pair<std::string, std::string> s : stats) {
+        ui->listStatus->setItem(r,0, new QTableWidgetItem(QString::fromStdString(s.first)));
+        ui->listStatus->setItem(r,1, new QTableWidgetItem(QString::fromStdString(s.second)));
+        ++r;
+    }
+}

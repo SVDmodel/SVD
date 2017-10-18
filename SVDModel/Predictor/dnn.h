@@ -25,7 +25,7 @@ public:
 
     /// DNN main function: execute the DNN inference for the
     /// examples provided in 'batch'.
-    bool run(Batch *batch);
+    Batch *run(Batch *batch);
 
 private:
     static DNN *mInstance;
@@ -37,9 +37,6 @@ private:
     tensorflow::Status getTopClasses(const tensorflow::Tensor &classes, const int n_top, tensorflow::Tensor *indices, tensorflow::Tensor *scores);
     tensorflow::Session *session;
     tensorflow::Session *top_k_session;
-    tensorflow::Input *output_classes;
-    tensorflow::Tensor *output_time;
-    tensorflow::Tensor *top_k_tensor;
 
     /// select randomly an index 0..n-1, with values the weights.
     int chooseProbabilisticIndex(float *values, int n);

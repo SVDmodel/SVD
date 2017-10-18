@@ -78,10 +78,15 @@ DNN::DNN()
     if (spdlog::get("dnn"))
         spdlog::get("dnn")->debug("DNN created: {#x}", (void*)this);
     session = nullptr;
+    top_k_session = nullptr;
 }
 
 DNN::~DNN()
 {
+    if (session)
+        session->Close();
+    if (top_k_session)
+        top_k_session->Close();
     mInstance=nullptr;
 }
 
@@ -131,7 +136,7 @@ bool DNN::setup()
     int bs = BatchManager::instance()->batchSize();
     // number of classes:
     int ncls = static_cast<int>(Model::instance()->states()->states().size());
-    top_k_tensor = new tensorflow::Tensor(tensorflow::DT_FLOAT, tensorflow::TensorShape({bs, ncls}));
+    Tensor top_k_tensor(tensorflow::DT_FLOAT, tensorflow::TensorShape({bs, ncls}));
     //top_k_tensor = new tensorflow::Tensor(tensorflow::DT_FLOAT, tensorflow::PartialTensorShape({-1, ncls}));
     //new tensorflow::Tensor(dt, tensorflow::TensorShape({ static_cast<int>(mBatchSize), static_cast<int>(mRows), static_cast<int>(mCols)}));
 
@@ -143,10 +148,10 @@ bool DNN::setup()
     //string topk_input_name = "topk_input";
 
 // tensorflow::Node* topk =
-    tensorflow::ops::TopK tk(root.WithOpName(output_name), *top_k_tensor, n_top);
+    tensorflow::ops::TopK tk(root.WithOpName(output_name), top_k_tensor, n_top);
 
 
-    lg->trace("top-k-tensor: {}", top_k_tensor->DebugString());
+    lg->trace("top-k-tensor: {}", top_k_tensor.DebugString());
     //lg->trace("node: {}", topk->DebugString());
 
     // This runs the GraphDef network definition that we've just constructed, and
@@ -193,7 +198,7 @@ private:
     std::chrono::system_clock::time_point start_time;
 };
 
-bool DNN::run(Batch *batch)
+Batch * DNN::run(Batch *batch)
 {
     const int top_n=10;
     std::vector<Tensor> outputs;
@@ -211,7 +216,7 @@ bool DNN::run(Batch *batch)
         lg->debug("DNN in debug mode... no action");
         // wait a bit...
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        return true;
+        return batch;
     }
 
     /* Run Tensorflow */
@@ -221,7 +226,7 @@ bool DNN::run(Batch *batch)
         lg->trace("{}", batch->inferenceData(0).dumpTensorData());
         lg->error("Tensorflow error (run main network): {}", run_status.error_message());
         batch->setError(true);
-        return false;
+        return batch;
     }
     timr.print("main dnn");
 
@@ -243,7 +248,7 @@ bool DNN::run(Batch *batch)
         lg->trace("{}", batch->inferenceData(0).dumpTensorData());
         lg->error("Tensorflow error (run top-k): {}", run_status.error_message());
         batch->setError(true);
-        return false;
+        return batch;
     }
     timr.print("topk dnn");
 
@@ -251,7 +256,7 @@ bool DNN::run(Batch *batch)
     tensorflow::Tensor *indices = &topk_output[1];
 
 
-    lg->debug("DNN result: {} output tensors.", outputs.size());
+    lg->debug("DNN result: {} output tensors. package {}", outputs.size(), batch->packageId());
     lg->debug("out:  {}", outputs[0].DebugString());
     lg->debug("time: {}", outputs[1].DebugString());
     // output tensors: 2dim; 1x batch, 1x data
@@ -299,7 +304,8 @@ bool DNN::run(Batch *batch)
 
 
     }
-    return true;
+    lg->debug("DNN::run finished; package {}", batch->packageId());
+    return batch;
 }
 
 tensorflow::Status DNN::getTopClasses(const tensorflow::Tensor &classes, const int n_top, tensorflow::Tensor *indices, tensorflow::Tensor *scores)

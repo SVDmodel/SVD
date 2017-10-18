@@ -5,6 +5,7 @@
 #-------------------------------------------------
 
 QT       -= gui
+QT      += concurrent
 
 TARGET = Predictor
 TEMPLATE = lib

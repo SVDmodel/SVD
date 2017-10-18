@@ -255,7 +255,7 @@ void ModelShell::processedPackage(Batch *batch, int packageId)
 
 
     // DNN delivered processed package....
-    lg->debug("Model: DNN package {} received!", packageId);
+    lg->debug("Model: received package {} (from DNN). Writing back data.", packageId);
 
     for (int i=0;i<batch->usedSlots();++i) {
         batch->inferenceData(i).writeResult();
@@ -360,7 +360,7 @@ void ModelShell::checkBatch(Batch *batch)
         mPackageId++;
         mModel->stats.NPackagesSent ++;
         ++mPackagesBuilt;
-        lg->debug("sending package to Inference id={} (now in queue {})", mPackageId, mPackagesBuilt);
+        lg->debug("sending package {} to Inference (built total: {})", mPackageId, mPackagesBuilt);
         emit newPackage(batch, mPackageId);
 
     }
@@ -380,7 +380,7 @@ void ModelShell::sendPendingBatches()
             mPackageId++;
             mModel->stats.NPackagesSent ++;
             ++mPackagesBuilt;
-            lg->debug("sending pending package to Inference id={} (now in queue {}, Batch manager: {})", mPackageId, mPackagesBuilt, BatchManager::instance()->batches().size());
+            lg->debug("sending pending package {} to Inference. (total. {}, size queue: {})", mPackageId, mPackagesBuilt, BatchManager::instance()->batches().size());
             emit newPackage(e, mPackageId);
         }
     }
