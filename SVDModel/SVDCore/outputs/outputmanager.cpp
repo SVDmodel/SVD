@@ -5,14 +5,17 @@
 #include "strtools.h"
 #include "filereader.h"
 
+// the individual outputs
+#include "stategridout.h"
+
 OutputManager::OutputManager()
 {
-    mOutputNames = {"state_grid", "test"};
+    mOutputs.push_back(new StateGridOut());
 }
 
 OutputManager::~OutputManager()
 {
-
+    delete_and_clear(mOutputs);
 }
 
 void OutputManager::setup()
@@ -28,8 +31,19 @@ void OutputManager::setup()
             throw std::logic_error("Output Manager: invalid key: " + s);
         lg->debug("Output: {}, key: {} = {}", toks[1], toks[2], Model::instance()->settings().valueString(s));
 
-        if (indexOf(mOutputNames, toks[2])==-1)
-            throw std::logic_error("Output Manager: the output '" + toks[2] + "' does not exist. Available outputs are: " + join(mOutputNames));
+        Output *o = find(toks[1]);
+        if (o == nullptr)
+            throw std::logic_error("Output Manager: the output '" + toks[1] + "' does not exist. Key: " + s);
+
+    }
+    for (auto o : mOutputs) {
+        // check if enabled:
+        if (Model::instance()->settings().valueBool("output." + o->name() + ".enabled")) {
+            o->setEnabled(true);
+            o->setup();
+        } else {
+            o->setEnabled(false);
+        }
     }
 
 //    std::string file_name = Tools::path(Model::instance()->settings().valueString("states.file"));
@@ -51,7 +65,25 @@ void OutputManager::setup()
 
 }
 
+bool OutputManager::run(const std::string &output_name)
+{
+    Output *o = find(output_name);
+    if (o==nullptr)
+        throw std::logic_error("Output Manager: invalid output '"+output_name+"' in run().");
+    if (o->enabled())
+        o->execute();
+    return o->enabled();
+}
+
 void OutputManager::run()
 {
 
+}
+
+Output *OutputManager::find(std::string output_name)
+{
+    for (auto o : mOutputs)
+        if ( o->name() == output_name)
+            return o;
+    return nullptr;
 }

@@ -5,6 +5,7 @@
 #include "../Predictor/inferencedata.h"
 #include "../Predictor/batch.h"
 #include "grid.h"
+#include "outputs/outputmanager.h"
 
 #include <QThread>
 #include <QCoreApplication>
@@ -306,6 +307,9 @@ void ModelShell::internalRun()
         //
         packageFuture = QtConcurrent::map(mModel->landscape()->grid(), [this](Cell &cell){ this->buildInferenceData(&cell); });
         packageWatcher.setFuture(packageFuture);
+
+        // we can run the outputs conerning the current state right now (in parallel)
+        mModel->outputManager()->run("StateGrid");
 
 
 }

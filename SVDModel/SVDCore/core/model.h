@@ -11,7 +11,7 @@
 #include "states.h"
 #include "climate.h"
 #include "landscape.h"
-#include "outputmanager.h"
+#include "outputs/outputmanager.h"
 
 
 class Model
@@ -47,6 +47,10 @@ public:
     const std::vector<std::string> &species() { return mSpeciesList; }
     std::shared_ptr<Landscape> &landscape() { return mLandscape; }
     std::shared_ptr<Climate> &climate() { return mClimate; }
+
+
+    /// access to the output machinery
+    std::shared_ptr<OutputManager> &outputManager() { return mOutputManager; }
 
 
     /// access to the model configuration

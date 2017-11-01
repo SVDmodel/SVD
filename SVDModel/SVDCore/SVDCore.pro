@@ -11,7 +11,7 @@ TARGET = SVDCore
 TEMPLATE = lib
 CONFIG += staticlib
 
-INCLUDEPATH += third_party tools core ../core ../tools ../output
+INCLUDEPATH += third_party tools core ../core ../tools ../outputs
 
 CONFIG += c++14
 # The following define makes your compiler emit warnings if you use
@@ -43,7 +43,8 @@ SOURCES += \
     core/environmentcell.cpp \
     modelrunstate.cpp \
     outputs/output.cpp \
-    outputs/outputmanager.cpp
+    outputs/outputmanager.cpp \
+    outputs/stategridout.cpp
 
 HEADERS += \
     modelshell.h \
@@ -63,7 +64,8 @@ HEADERS += \
     core/environmentcell.h \
     modelrunstate.h \
     outputs/output.h \
-    outputs/outputmanager.h
+    outputs/outputmanager.h \
+    outputs/stategridout.h
 unix {
     target.path = /usr/lib
     INSTALLS += target
