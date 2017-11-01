@@ -100,7 +100,7 @@ std::string ModelShell::run_test_op(std::string what)
 {
     if (what=="grid_state") {
         auto &grid = Model::instance()->landscape()->grid();
-        std::string result = gridToESRIRaster<Cell>(grid, [](const Cell &c) { if (c.isNull()) return std::string("-9999"); else return std::to_string(c.state()); });
+        std::string result = gridToESRIRaster<Cell>(grid, [](const Cell &c) { if (c.isNull()) return std::string("-9999"); else return std::to_string(c.stateId()); });
         return result;
     }
     if (what=="grid_restime") {

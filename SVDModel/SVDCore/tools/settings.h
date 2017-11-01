@@ -18,6 +18,9 @@ public:
     /// the prafix is added, e.g.: praefix='climate', keys={a,b} -> test for 'climate.a' and 'climate.b'
     bool requiredKeys(std::string praefix, const std::vector<std::string> &keys) const;
 
+    /// get a list of all keys that start with a certain string
+    std::vector<std::string> findKeys(std::string start_with) const;
+
     std::string valueString(const std::string &key, std::string default_value="") const {
         auto it = mValues.find(key);
         if (it==mValues.end())

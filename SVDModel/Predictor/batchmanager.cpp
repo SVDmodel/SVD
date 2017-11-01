@@ -84,9 +84,9 @@ void BatchManager::setup()
         {"clim_input", "float", 2, 10, 40, "Climate"},
         {"state_input", "int16", 1, 1, 0, "State"},
         {"time_input", "float", 1, 1, 0, "ResidenceTime"},
-        {"site_input", "float", 1, 2, 0, "Site"},
-        {"neighbor_input", "float", 1, 62, 0, "Neighbors"},
-        {"dropout_1/keras_learning_phase", "bool", 0, 0, 0, "Scalar"}
+        {"site_input", "float", 1, 2, 0, "Site"} ,
+        // {"neighbor_input", "float", 1, 62, 0, "Neighbors"},
+        {"keras_learning_phase", "bool", 0, 0, 0, "Scalar"}
     };
 
 
@@ -192,7 +192,7 @@ TensorWrapper *BatchManager::buildTensor(int batch_size, InputTensorItem &item)
             tw = new TensorWrap1d<bool>();
             // defaults to true, TODO
             TensorWrap1d<bool> *twb = static_cast< TensorWrap1d<bool>* >(tw);
-            twb->setValue(true);
+            twb->setValue(false);
             lg->debug("created a scalar, value: '{}'", twb->value());
             break;
         }

@@ -36,6 +36,8 @@ public:
     Point (int x, int y) { mX=x; mY=y; }
     int x() const { return mX; }
     int y() const { return mY; }
+    // operators
+    Point operator+(const Point &p) {return Point(x()+p.x(), y()+p.y()); }
 private:
     int mX;
     int mY;

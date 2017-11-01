@@ -5,7 +5,7 @@
 
 void InferenceData::fetchData(Cell *cell, Batch *batch, int slot)
 {
-    mOldState = cell->state();
+    mOldState = cell->stateId();
     mResidenceTime = cell->residenceTime();
     mNextState = 0;
     mNextTime = 0;
@@ -28,7 +28,7 @@ void InferenceData::writeResult()
 {
     // write back:
     Cell &cell = Model::instance()->landscape()->grid()[mIndex];
-    cell.setNextState(mNextState);
+    cell.setNextStateId(mNextState);
     cell.setNextUpdateTime(mNextTime);
 
 
@@ -122,7 +122,8 @@ void InferenceData::fetchState(const InputTensorItem &def)
     TensorWrapper *t = mBatch->tensor(def.index);
     TensorWrap2d<short int> *tw = static_cast<TensorWrap2d<short int>*>(t);
     short int *p = tw->example(mSlot);
-    *p = mOldState;
+    // stateId starts with 1, the state tensor is 0-based
+    *p = mOldState - 1;
 
 }
 
@@ -136,14 +137,18 @@ void InferenceData::fetchResidenceTime(const InputTensorItem &def)
 
 void InferenceData::fetchNeighbors(const InputTensorItem &def)
 {
-    const size_t n_neighbors = 62;
+    const size_t n_neighbors = 62; // 2x32
     TensorWrapper *t = mBatch->tensor(def.index);
     TensorWrap2d<float> *tw = static_cast<TensorWrap2d<float>*>(t);
     float *p = tw->example(mSlot);
 
-    // TODO
+    auto &ec = Model::instance()->landscape()->cell(mIndex);
+    auto neighbors = ec.neighborSpecies();
+    if (neighbors.size() != n_neighbors)
+        throw std::logic_error("Invalid number of neighbors...");
+
     for (size_t i=0;i<n_neighbors;++i)
-        *p++ = 0.f;
+        *p++ = static_cast<float>(neighbors[i]);
 
 }
 

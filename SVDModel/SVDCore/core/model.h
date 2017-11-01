@@ -11,6 +11,7 @@
 #include "states.h"
 #include "climate.h"
 #include "landscape.h"
+#include "outputmanager.h"
 
 
 class Model
@@ -79,6 +80,7 @@ private:
     std::shared_ptr<States> mStates;
     std::shared_ptr<Climate> mClimate;
     std::shared_ptr<Landscape> mLandscape;
+    std::shared_ptr<OutputManager> mOutputManager;
     // loggers
     std::shared_ptr<spdlog::logger> lg_main;
     std::shared_ptr<spdlog::logger> lg_setup;

@@ -88,3 +88,15 @@ bool Settings::requiredKeys(std::string praefix, const std::vector<std::string> 
         return true;
     throw std::logic_error("Error: Required column(s) not in settings: " + msg);
 }
+
+std::vector<std::string> Settings::findKeys(std::string start_with) const
+{
+    std::vector<std::string> keys;
+    for (auto it=mValues.begin(); it!=mValues.end(); ++it) {
+        if(it->first.substr(0, start_with.size()) == start_with)
+            keys.push_back(it->first);
+    }
+
+    return keys;
+}
+

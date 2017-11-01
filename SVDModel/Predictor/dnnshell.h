@@ -34,7 +34,6 @@ signals:
     void workDone(Batch *batch, int packageId);
 
 private:
-    void dummyDNN(Batch *batch);
     /// get a future watcher and lock it
     QFutureWatcher<Batch*> *getFutureWatcher();
     QFutureWatcher<Batch*> *getFinishedWatcher();

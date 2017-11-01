@@ -16,6 +16,7 @@ public:
     int function() const { return mFunction; }
     int structure() const {return mStructure; }
     std::string asString() const;
+    const std::vector<double> &speciesShares() const { return mSpeciesShare; }
 private:
     state_t mId;
     std::string mComposition;

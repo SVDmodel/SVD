@@ -100,8 +100,6 @@ void DNNShell::dnnFinished()
 
     lg->debug("DNNShell: dnn finished, package {}. Sending to main.", batch->packageId());
 
-    // now just fake:
-    // dummyDNN(batch);
 
     mBatchesProcessed++;
     mCellsProcessed += batch->usedSlots();
@@ -118,23 +116,6 @@ void DNNShell::dnnFinished()
 
 }
 
-void DNNShell::dummyDNN(Batch *batch)
-{
-    // dump....
-    if (lg->should_log(spdlog::level::trace))
-        lg->trace("{}", batch->inferenceData(0).dumpTensorData());
-
-    for (int i=0;i<batch->usedSlots();++i) {
-        InferenceData &id=batch->inferenceData(i);
-        // just random ....
-        const State &s = Model::instance()->states()->randomState();
-        restime_t rt = Model::instance()->year()+irandom(1,12);
-        id.setResult(s.id(), rt);
-
-    }
-    QThread::msleep(5);
-
-}
 
 std::mutex _watcher_mutex;
 QFutureWatcher<Batch*> *DNNShell::getFutureWatcher()

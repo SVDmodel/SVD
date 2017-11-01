@@ -53,6 +53,10 @@ bool Model::setup()
     mLandscape = std::shared_ptr<Landscape>(new Landscape());
     mLandscape->setup();
 
+    // set up outputs
+    mOutputManager = std::shared_ptr<OutputManager>(new OutputManager());
+    mOutputManager->setup();
+
     mYear = 0; // model is set up, ready to run
     return true;
 
@@ -100,7 +104,7 @@ void Model::inititeLogging()
                            std::chrono::seconds(2));
 
     std::vector<spdlog::sink_ptr> sinks;
-    sinks.push_back(std::make_shared<spdlog::sinks::simple_file_sink_mt>(log_file));
+    sinks.push_back(std::make_shared<spdlog::sinks::simple_file_sink_mt>(log_file,true));
 
     //sinks.push_back(std::make_shared<my_threaded_sink>(ui->lLog));
     std::vector<std::string> levels = SPDLOG_LEVEL_NAMES; // trace, debug, info, ...

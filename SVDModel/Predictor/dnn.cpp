@@ -212,10 +212,21 @@ Batch * DNN::run(Batch *batch)
         tindex++;
     }
 
+    // if disabled (in debug mode), TF_DEBUG_MODE
     if (mDummyDNN) {
         lg->debug("DNN in debug mode... no action");
         // wait a bit...
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        // ... and produce a random result
+        for (int i=0;i<batch->usedSlots();++i) {
+            InferenceData &id=batch->inferenceData(i);
+            // just random ....
+            const State &s = Model::instance()->states()->randomState();
+            restime_t rt = Model::instance()->year()+irandom(1,12);
+            id.setResult(s.id(), rt);
+
+        }
+
         return batch;
     }
 
