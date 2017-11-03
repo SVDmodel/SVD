@@ -30,6 +30,8 @@ Batch::BatchState Batch::changeState(Batch::BatchState newState)
     if (newState==Fill) {
         mCurrentSlot = 0;
         mState = newState;
+    } else {
+        mState = newState;
     }
     return mState;
 }

@@ -21,6 +21,8 @@ void InferenceData::fetchData(Cell *cell, Batch *batch, int slot)
 void InferenceData::setResult(state_t state, restime_t time)
 {
     mNextState=state;
+    // time is the number of years the next update should happen
+    // we change to the absolute year:
     mNextTime=Model::instance()->year() + time;
 }
 

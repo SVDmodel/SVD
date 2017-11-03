@@ -36,11 +36,8 @@ signals:
 private:
     /// get a future watcher and lock it
     QFutureWatcher<Batch*> *getFutureWatcher();
+    /// get a finished watcher and unlock
     QFutureWatcher<Batch*> *getFinishedWatcher();
-
-
-    /// free the lock for a watcher
-    void freeWatcher(QFutureWatcher<Batch*>* watcher  );
 
 
     QThreadPool *mThreads;

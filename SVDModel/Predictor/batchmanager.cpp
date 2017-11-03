@@ -85,7 +85,7 @@ void BatchManager::setup()
         {"state_input", "int16", 1, 1, 0, "State"},
         {"time_input", "float", 1, 1, 0, "ResidenceTime"},
         {"site_input", "float", 1, 2, 0, "Site"} ,
-        // {"neighbor_input", "float", 1, 62, 0, "Neighbors"},
+        {"neighbor_input", "float", 1, 62, 0, "Neighbors"},
         {"keras_learning_phase", "bool", 0, 0, 0, "Scalar"}
     };
 

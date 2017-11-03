@@ -203,6 +203,7 @@ Batch * DNN::run(Batch *batch)
     const int top_n=10;
     std::vector<Tensor> outputs;
     STimer timr(lg, "DNN::run");
+    lg->debug("DNN: started execution for package {}.", batch->packageId());
 
     std::vector<std::pair<string, Tensor> > inputs;
     const std::list<InputTensorItem> &tdef = BatchManager::instance()->tensorDefinition();
@@ -216,7 +217,7 @@ Batch * DNN::run(Batch *batch)
     if (mDummyDNN) {
         lg->debug("DNN in debug mode... no action");
         // wait a bit...
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        //std::this_thread::sleep_for(std::chrono::milliseconds(10));
         // ... and produce a random result
         for (int i=0;i<batch->usedSlots();++i) {
             InferenceData &id=batch->inferenceData(i);
@@ -226,7 +227,7 @@ Batch * DNN::run(Batch *batch)
             id.setResult(s.id(), rt);
 
         }
-
+        batch->changeState(Batch::FinishedDNN);
         return batch;
     }
 
@@ -242,16 +243,16 @@ Batch * DNN::run(Batch *batch)
     timr.print("main dnn");
 
     // fake!
-//    for (int i=0; i<batch->usedSlots(); ++i) {
-//        InferenceData &id = batch->inferenceData(i);
-//        id.setResult(1, 10);
-//    }
-//    return true;
+    //    for (int i=0; i<batch->usedSlots(); ++i) {
+    //        InferenceData &id = batch->inferenceData(i);
+    //        id.setResult(1, 10);
+    //    }
+    //    return true;
 
 
-            //*top_k_tensor = outputs[0];
-            // run top-k labels
-            std::vector< Tensor > topk_output;
+    //*top_k_tensor = outputs[0];
+    // run top-k labels
+    std::vector< Tensor > topk_output;
     // top_k_session
     run_status = top_k_session->Run({ {"Const/Const" , outputs[0]} }, {"top_k:0", "top_k:1"},
     {}, &topk_output);
@@ -284,11 +285,17 @@ Batch * DNN::run(Batch *batch)
     for (int i=0; i<batch->usedSlots(); ++i) {
         InferenceData &id = batch->inferenceData(i);
         // residence time: at least one year
-        restime_t rt = static_cast<restime_t>( chooseProbabilisticIndex(out_time.example(i), static_cast<int>(out_time.n())) + 1 );
-        int index = chooseProbabilisticIndex(scores_flat.example(i), static_cast<int>(scores_flat.n())) ;
-        int state_index = indices_flat.example(i)[index];
-        state_t stateId = Model::instance()->states()->stateByIndex( state_index ).id();
-        id.setResult(stateId, rt);
+        restime_t rt = static_cast<restime_t>( chooseProbabilisticIndex(out_time.example(i), static_cast<int>(out_time.n())) ) + 1;
+        if (rt == out_time.n()) {
+            // the state will be the same for the next period (no change)
+            id.setResult(id.state(), rt);
+        } else {
+            // select the next state probalistically
+            int index = chooseProbabilisticIndex(scores_flat.example(i), static_cast<int>(scores_flat.n())) ;
+            int state_index = indices_flat.example(i)[index];
+            state_t stateId = Model::instance()->states()->stateByIndex( state_index ).id();
+            id.setResult(stateId, rt);
+        }
     }
 
     if (lg->should_log(spdlog::level::trace)) {
@@ -300,9 +307,9 @@ Batch * DNN::run(Batch *batch)
         s << "Residence time\n";
         float *t = out_time.example(0);
         for (int i=0; i<outputs[1].dim_size(1);++i)
-            s << i+1 << " yrs: " << (*t++)*100 << "%\n";
+            s << i+1 << " yrs: " << (*t++)*100 << "%" << (id.nextTime() - Model::instance()->year()==i+1 ? " ***": "")<< "\n";
 
-        s << "Selected: " << id.nextTime();
+        s << "Next update in year: " << id.nextTime();
         s << "\nClassifcation Results\n";
         for (int i=0;i <scores_flat.n(); ++i) {
             s << indices_flat.example(0)[i] << ": " <<  scores_flat.example(0)[i]*100.
@@ -316,6 +323,7 @@ Batch * DNN::run(Batch *batch)
 
     }
     lg->debug("DNN::run finished; package {}", batch->packageId());
+    batch->changeState(Batch::FinishedDNN);
     return batch;
 }
 

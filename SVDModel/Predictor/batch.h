@@ -14,7 +14,7 @@ public:
     ~Batch();
 
     /// the state of the batch
-    enum BatchState { Fill=0, DNN=1, Finished=2};
+    enum BatchState { Fill=0, DNN=1, Finished=2, FinishedDNN=3};
     BatchState state() const { return mState; }
     BatchState changeState(BatchState newState);
 
