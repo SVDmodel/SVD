@@ -14,6 +14,8 @@
 #include <vector>
 #include <iomanip>
 
+#include <queue>
+
 #pragma warning(push, 0)
 //Some includes with unfixable warnings: https://stackoverflow.com/questions/2541984/how-to-suppress-warnings-in-external-headers-in-visual-c
 
@@ -79,6 +81,7 @@ DNN::DNN()
         spdlog::get("dnn")->debug("DNN created: {#x}", (void*)this);
     session = nullptr;
     top_k_session = nullptr;
+    mTopK_tf = false; // TODO: more dynamic
 }
 
 DNN::~DNN()
@@ -117,6 +120,8 @@ bool DNN::setup()
     mDummyDNN = false;
     tensorflow::SessionOptions opts;
     opts.config.set_log_device_placement(true);
+    //opts.config.set_inter_op_parallelism_threads(8); // no big effect.... but uses more threads
+    //opts.config.set_intra_op_parallelism_threads(8);
     session = tensorflow::NewSession(opts); // no specific options: tensorflow::SessionOptions()
 
     lg->trace("attempting to load the graph...");
@@ -127,56 +132,55 @@ bool DNN::setup()
     }
     lg->trace("ok!");
 
-    lg->trace("build the top-k graph...");
+    if (mTopK_tf) {
+        lg->trace("build the top-k graph...");
+        // output_classes = new tensorflow::Tensor(dt, tensorflow::TensorShape({ static_cast<int>(mBatchSize), static_cast<int>(1418)}));
+        //output_classes = new tensorflow::Input();
+        int bs = BatchManager::instance()->batchSize();
+        // number of classes:
+        int ncls = static_cast<int>(Model::instance()->states()->states().size());
+        Tensor top_k_tensor(tensorflow::DT_FLOAT, tensorflow::TensorShape({bs, ncls}));
+        //top_k_tensor = new tensorflow::Tensor(tensorflow::DT_FLOAT, tensorflow::PartialTensorShape({-1, ncls}));
+        //new tensorflow::Tensor(dt, tensorflow::TensorShape({ static_cast<int>(mBatchSize), static_cast<int>(mRows), static_cast<int>(mCols)}));
+
+        const int n_top = 10; // TODO variable
+
+        auto root = tensorflow::Scope::NewRootScope();
+        string output_name = "top_k";
+        tensorflow::GraphDefBuilder b;
+        //string topk_input_name = "topk_input";
+
+        // tensorflow::Node* topk =
+        tensorflow::ops::TopK tk(root.WithOpName(output_name), top_k_tensor, n_top);
 
 
+        lg->trace("top-k-tensor: {}", top_k_tensor.DebugString());
+        //lg->trace("node: {}", topk->DebugString());
 
-    // output_classes = new tensorflow::Tensor(dt, tensorflow::TensorShape({ static_cast<int>(mBatchSize), static_cast<int>(1418)}));
-    //output_classes = new tensorflow::Input();
-    int bs = BatchManager::instance()->batchSize();
-    // number of classes:
-    int ncls = static_cast<int>(Model::instance()->states()->states().size());
-    Tensor top_k_tensor(tensorflow::DT_FLOAT, tensorflow::TensorShape({bs, ncls}));
-    //top_k_tensor = new tensorflow::Tensor(tensorflow::DT_FLOAT, tensorflow::PartialTensorShape({-1, ncls}));
-    //new tensorflow::Tensor(dt, tensorflow::TensorShape({ static_cast<int>(mBatchSize), static_cast<int>(mRows), static_cast<int>(mCols)}));
+        // This runs the GraphDef network definition that we've just constructed, and
+        // returns the results in the output tensors.
+        tensorflow::GraphDef graph;
+        Status tf_status;
+        tf_status = root.ToGraphDef(&graph);
 
-    const int n_top = 10; // TODO variable
+        if (!tf_status.ok()) {
+            lg->error("Error building top-k graph definition: {}", tf_status.error_message());
+            return false;
+        }
 
-    auto root = tensorflow::Scope::NewRootScope();
-    string output_name = "top_k";
-    tensorflow::GraphDefBuilder b;
-    //string topk_input_name = "topk_input";
+        lg->trace("TK NODES") ;
+        for (tensorflow::Node* node : root.graph()->nodes()) {
+            lg->trace("Node {}: {}",node->id(), node->DebugString());
+        }
 
-// tensorflow::Node* topk =
-    tensorflow::ops::TopK tk(root.WithOpName(output_name), top_k_tensor, n_top);
+        top_k_session = tensorflow::NewSession(tensorflow::SessionOptions());
 
-
-    lg->trace("top-k-tensor: {}", top_k_tensor.DebugString());
-    //lg->trace("node: {}", topk->DebugString());
-
-    // This runs the GraphDef network definition that we've just constructed, and
-    // returns the results in the output tensors.
-    tensorflow::GraphDef graph;
-    Status tf_status;
-    tf_status = root.ToGraphDef(&graph);
-
-    if (!tf_status.ok()) {
-        lg->error("Error building top-k graph definition: {}", tf_status.error_message());
-        return false;
-    }
-
-    lg->trace("TK NODES") ;
-    for (tensorflow::Node* node : root.graph()->nodes()) {
-         lg->trace("Node {}: {}",node->id(), node->DebugString());
-     }
-
-    top_k_session = tensorflow::NewSession(tensorflow::SessionOptions());
-
-    tf_status = top_k_session->Create(graph);
-    //tf_status = session->Create(graph);
-    if (!tf_status.ok()) {
-        lg->error("Error creating top-k graph: {}", tf_status.error_message());
-        return false;
+        tf_status = top_k_session->Create(graph);
+        //tf_status = session->Create(graph);
+        if (!tf_status.ok()) {
+            lg->error("Error creating top-k graph: {}", tf_status.error_message());
+            return false;
+        }
     }
 
 
@@ -242,30 +246,36 @@ Batch * DNN::run(Batch *batch)
     }
     timr.print("main dnn");
 
-    // fake!
-    //    for (int i=0; i<batch->usedSlots(); ++i) {
-    //        InferenceData &id = batch->inferenceData(i);
-    //        id.setResult(1, 10);
-    //    }
-    //    return true;
-
-
-    //*top_k_tensor = outputs[0];
-    // run top-k labels
+    tensorflow::Tensor *scores= nullptr;
+    tensorflow::Tensor *indices = nullptr;
     std::vector< Tensor > topk_output;
-    // top_k_session
-    run_status = top_k_session->Run({ {"Const/Const" , outputs[0]} }, {"top_k:0", "top_k:1"},
-    {}, &topk_output);
-    if (!run_status.ok()) {
-        lg->trace("{}", batch->inferenceData(0).dumpTensorData());
-        lg->error("Tensorflow error (run top-k): {}", run_status.error_message());
-        batch->setError(true);
-        return batch;
-    }
-    timr.print("topk dnn");
+    if (mTopK_tf) {
+        // run top-k labels
+        // top_k_session
+        run_status = top_k_session->Run({ {"Const/Const" , outputs[0]} }, {"top_k:0", "top_k:1"},
+        {}, &topk_output);
+        if (!run_status.ok()) {
+            lg->trace("{}", batch->inferenceData(0).dumpTensorData());
+            lg->error("Tensorflow error (run top-k): {}", run_status.error_message());
+            batch->setError(true);
+            return batch;
+        }
+        timr.print("topk dnn");
+        scores = &topk_output[0];
+        indices = &topk_output[1];
+    } else {
+        // use CPU to extract top-k results
+        // outputs[0] is the output tensor with the state probabilities
+        scores = new Tensor(tensorflow::DT_FLOAT, tensorflow::TensorShape({  batch->batchSize(), top_n}));
+        indices = new Tensor(tensorflow::DT_INT32, tensorflow::TensorShape({  batch->batchSize(), top_n}));
 
-    tensorflow::Tensor *scores = &topk_output[0];
-    tensorflow::Tensor *indices = &topk_output[1];
+        // run the top-k on CPU
+        getTopClasses(outputs[0], batch->batchSize(), top_n, indices, scores);
+        timr.print("topk cpu");
+
+
+    }
+
 
 
     lg->debug("DNN result: {} output tensors. package {}", outputs.size(), batch->packageId());
@@ -291,7 +301,16 @@ Batch * DNN::run(Batch *batch)
             id.setResult(id.state(), rt);
         } else {
             // select the next state probalistically
-            int index = chooseProbabilisticIndex(scores_flat.example(i), static_cast<int>(scores_flat.n())) ;
+            // the next state is not allowed to stay the same
+            int self_index = -1;
+            int this_state_index = id.state() - 1; // 0-based
+            for (int j=0;j<indices_flat.n();++j) {
+                if (indices_flat.example(i)[j] == this_state_index) {
+                    self_index = j;
+                    break;
+                }
+            }
+            int index = chooseProbabilisticIndex(scores_flat.example(i), static_cast<int>(scores_flat.n()), self_index ) ;
             int state_index = indices_flat.example(i)[index];
             state_t stateId = Model::instance()->states()->stateByIndex( state_index ).id();
             id.setResult(stateId, rt);
@@ -322,12 +341,19 @@ Batch * DNN::run(Batch *batch)
 
 
     }
+
+    // cleanup
+    if (!mTopK_tf) {
+        delete scores;
+        delete indices;
+    }
+
     lg->debug("DNN::run finished; package {}", batch->packageId());
     batch->changeState(Batch::FinishedDNN);
     return batch;
 }
 
-tensorflow::Status DNN::getTopClasses(const tensorflow::Tensor &classes, const int n_top, tensorflow::Tensor *indices, tensorflow::Tensor *scores)
+tensorflow::Status DNN::getTopClassesOldCode(const tensorflow::Tensor &classes, const int n_top, tensorflow::Tensor *indices, tensorflow::Tensor *scores)
 {
     auto root = tensorflow::Scope::NewRootScope();
     using namespace ::tensorflow::ops;  // NOLINT(build/namespaces)
@@ -356,19 +382,77 @@ tensorflow::Status DNN::getTopClasses(const tensorflow::Tensor &classes, const i
 
 }
 
-int DNN::chooseProbabilisticIndex(float *values, int n)
+class ComparisonClassTopK {
+public:
+    bool operator() (const std::pair<float, size_t> &p1, const std::pair<float, size_t> &p2) {
+        //comparison code here: we want to keep track of the smallest element in the list
+        return p1.first>p2.first;
+    }
+};
+
+void DNN::getTopClasses( tensorflow::Tensor &classes, const int batch_size, const int n_top, tensorflow::Tensor *indices, tensorflow::Tensor *scores)
+{
+    std::priority_queue< std::pair<float, size_t>, std::vector<std::pair<float, size_t> >, ComparisonClassTopK > queue;
+
+    lg->debug("CPU-TopK: Classes: x={}, y={}, Indices: x={}, y={}", classes.dim_size(0), classes.dim_size(1), indices->dim_size(0), indices->dim_size(1));
+    lg->debug("classes : {}", classes.DebugString());
+    lg->debug("indicies: {}", indices->DebugString());
+    lg->debug("scores  : {}", scores->DebugString());
+
+    int n_cls = classes.dim_size(1);
+    TensorWrap2d<float> cls_dat(classes);
+    TensorWrap2d<int32> res_ind(*indices);
+    TensorWrap2d<float> res_scores(*scores);
+    for (int i=0; i<batch_size; i++) {
+
+        float *p = cls_dat.example(i);
+        for (int j=0; j<n_cls; ++j, ++p) {
+            if (queue.size()<n_top || *p > queue.top().first) {
+                if (queue.size() == n_top)
+                    queue.pop();
+                queue.push( std::pair<float, size_t>(*p,j));
+            }
+        }
+        // write back results... and empty the queue
+        int j=0;
+        while( !queue.empty() ) {
+            res_ind.example(i)[j] = queue.top().second; // the index
+            res_scores.example(i)[j] = queue.top().first; // the score
+            queue.pop();
+            ++j;
+        }
+
+    }
+    if (lg->should_log(spdlog::level::trace)) {
+        // output details for the first example.....
+        lg->trace("Top-K-calculation (CPU):");
+        std::stringstream s;
+        for (int i=0;i<n_cls;++i)
+            s << cls_dat.example(0)[i] << ", ";
+
+        lg->trace("{}", s.str());
+        for (int i=0;i<n_top;++i) {
+            lg->trace("Index: {}, Score: {} %", res_ind.example(0)[i], res_scores.example(0)[i]*100.);
+        }
+    }
+
+}
+
+// choose randomly a value in *values (length=n), return the index.
+// if 'skip_index' != -1, then this index is not allowed (and the skipped)
+int DNN::chooseProbabilisticIndex(float *values, int n, int skip_index)
 {
 
     // calculate the sum of probs
     double p_sum = 0.;
     for (int i=0;i<n;++i)
-        p_sum+=values[i];
+        p_sum+= (i!=skip_index ? values[i] : 0. );
 
     double p = nrandom(0., p_sum);
 
     p_sum = 0.;
-    for (int i=0;i<n;++i) {
-        p_sum += *values++;
+    for (int i=0;i<n;++i, ++values) {
+        p_sum += (i!=skip_index ? *values : 0. );
         if (p < p_sum)
             return i;
     }

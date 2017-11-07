@@ -21,9 +21,7 @@ DNNShell::DNNShell()
 DNNShell::~DNNShell()
 {
     delete mThreads;
-    for (auto &f : mWatchers)
-        delete f.first;
-    mWatchers.clear();
+
 }
 
 
@@ -44,11 +42,18 @@ void DNNShell::setup(QString fileName)
         RunState::instance()->dnnState()=ModelRunState::ErrorDuringSetup;
         return;
     }
+    int n_threads = Model::instance()->settings().valueInt("dnn.threads", -1);
+    if (n_threads>-1) {
+        mThreads->setMaxThreadCount(n_threads);
+        lg->debug("setting DNN threads to {}.", n_threads);
+    }
     lg->debug("Thread pool for DNN: using {} threads.", mThreads->maxThreadCount());
     mBatchesProcessed = 0;
     mCellsProcessed = 0;
+    mProcessing = 0;
 
     RunState::instance()->dnnState()=ModelRunState::ReadyToRun;
+
 
 }
 
@@ -66,12 +71,18 @@ void DNNShell::doWork(Batch *batch, int packageId)
     }
 
     // find a suitable watcher
-    QFutureWatcher<Batch*> *watcher=getFutureWatcher();
-    QFuture<Batch*> dnn_result;
+    //QFutureWatcher<Batch*> *watcher=getFutureWatcher(batch);
+    //QFuture<Batch*> dnn_result;
     batch->changeState(Batch::DNN);
-    lg->debug("DNNShell: received package {}. Starting DNN (batch: {}, state: {}) ", batch->packageId(), (void*)batch, batch->state());
-    dnn_result = QtConcurrent::run( mThreads, [this, batch]{ return mDNN->run(batch);});
-    watcher->setFuture(dnn_result);
+    mProcessing++;
+    lg->debug("DNNShell: received package {}. Starting DNN (batch: {}, state: {}, active threads now: {}, #processing: {}) ", batch->packageId(), (void*)batch, batch->state(), mThreads->activeThreadCount(), mProcessing);
+    QtConcurrent::run( mThreads, [this, batch]{  mDNN->run(batch);
+
+                                                if (!QMetaObject::invokeMethod(this, "dnnFinished", Qt::QueuedConnection,
+                                                                          Q_ARG(void*, static_cast<void*>(batch))) )
+                                                    batch->setError(true);
+                                                            });
+    //watcher->setFuture(dnn_result);
 
 
 
@@ -80,18 +91,19 @@ void DNNShell::doWork(Batch *batch, int packageId)
     //QCoreApplication::processEvents();
 }
 
-void DNNShell::dnnFinished()
+void DNNShell::dnnFinished(void *vbatch)
 {
+    Batch * batch = static_cast<Batch*>(vbatch);
+    mProcessing--;
     // get the batch from the future watcher
-    QFutureWatcher<Batch*> *watcher = getFinishedWatcher();
+    //Batch *batch = getFinishedBatch();
     //QFutureWatcher<Batch*> *watcher = static_cast< QFutureWatcher<Batch*> * >(sender());
-    if (!watcher) {
+    if (!batch) {
         RunState::instance()->setError("Error in DNN (no watcher)", RunState::instance()->dnnState());
         return;
     }
 
 
-    Batch *batch = watcher->future().result();
     if (batch->hasError()) {
         RunState::instance()->setError("Error in DNN", RunState::instance()->dnnState());
         emit workDone(batch, batch->packageId());
@@ -112,53 +124,6 @@ void DNNShell::dnnFinished()
     if (!isRunnig())
         RunState::instance()->dnnState() = ModelRunState::ReadyToRun;
 
-    //QCoreApplication::processEvents();
-
-}
-
-
-std::mutex _watcher_mutex;
-QFutureWatcher<Batch*> *DNNShell::getFutureWatcher()
-{
-    std::lock_guard<std::mutex> guard(_watcher_mutex);
-
-    // return a pointer to a future watcher which is not busy right now.
-    QFutureWatcher<Batch*> *fw=nullptr;
-    for (std::pair<QFutureWatcher<Batch*>*, bool> &f : mWatchers) {
-        if (f.second == false) {
-            fw=f.first;
-            f.second = true; // lock!
-            //connect(fw, &QFutureWatcher<Batch*>::finished, this, &DNNShell::dnnFinished);
-            break;
-        }
-    }
-    if (fw)
-        return fw;
-    // create a new watcher
-    fw=new QFutureWatcher<Batch*>();
-    mWatchers.push_back(std::pair<QFutureWatcher<Batch*>*, bool>( fw, true ) );
-    connect(fw, &QFutureWatcher<Batch*>::finished, this, &DNNShell::dnnFinished);
-    lg->debug("Created FutureWatcher (list contains now {} watchers)", mWatchers.size());
-    return fw;
-
-}
-
-QFutureWatcher<Batch *> *DNNShell::getFinishedWatcher()
-{
-    std::lock_guard<std::mutex> guard(_watcher_mutex);
-    for (std::pair<QFutureWatcher<Batch*>*, bool> &f : mWatchers) {
-        if (f.second == true && f.first->isFinished() && f.first->result() && f.first->result()->state()==Batch::FinishedDNN) {
-            f.second = false; // unlock the watcher
-            return f.first;
-        }
-    }
-    // debug output
-    lg->debug("Error in getFinishedWatcher: no watcher found. ");
-    for (std::pair<QFutureWatcher<Batch*>*, bool> &f : mWatchers) {
-        lg->debug("Lock: {}, watcher: {}, Batch: {}, Batchstate: {}", ( f.second?"true":"false"), (void*)f.first, (void*)f.first->result(),
-                  int(f.first->result()?f.first->result()->state() : -1));
-    }
-    return nullptr;
 
 }
 
@@ -166,11 +131,7 @@ QFutureWatcher<Batch *> *DNNShell::getFinishedWatcher()
 
 bool DNNShell::isRunnig()
 {
-    for (auto f : mWatchers) {
-        if (f.second == true)
-            return true;
-    }
-    return false;
+    return mProcessing > 0;
 }
 
 

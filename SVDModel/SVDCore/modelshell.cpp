@@ -328,7 +328,8 @@ void ModelShell::buildInferenceData(Cell *cell)
 
         assert(BatchManager::instance()!=nullptr);
         std::pair<Batch*, int> newslot = BatchManager::instance()->validSlot();
-        if (!newslot.first) {
+        Batch *batch = newslot.first;
+        if (!batch) {
             if (newslot.second==0)
                 return; // cancel operation
             else {
@@ -337,12 +338,14 @@ void ModelShell::buildInferenceData(Cell *cell)
                 return;
             }
         }
-        InferenceData &id = newslot.first->inferenceData(newslot.second);
+        InferenceData &id = batch->inferenceData(newslot.second);
 
         // populate the InferenceData with the required data
-        id.fetchData(cell, newslot.first, newslot.second);
+        id.fetchData(cell, batch, newslot.second);
 
-        checkBatch(newslot.first);
+        batch->finishedCellProcessing();
+
+        checkBatch(batch);
 
 
     } catch (const std::exception &e) {
@@ -360,7 +363,7 @@ void ModelShell::checkBatch(Batch *batch)
         cancel();
         return;
     }
-    if (batch->freeSlots()<=0) {
+    if (batch->allCellsProcessed()) {
         mPackageId++;
         mModel->stats.NPackagesSent ++;
         ++mPackagesBuilt;

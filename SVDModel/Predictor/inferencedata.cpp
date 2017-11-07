@@ -134,7 +134,8 @@ void InferenceData::fetchResidenceTime(const InputTensorItem &def)
     TensorWrapper *t = mBatch->tensor(def.index);
     TensorWrap2d<float> *tw = static_cast<TensorWrap2d<float>*>(t);
     float *p = tw->example(mSlot);
-    *p = static_cast<float>(mResidenceTime);
+    // TODO: residence time, now fixed divide by 10
+    *p = static_cast<float>(mResidenceTime / 10.f);
 }
 
 void InferenceData::fetchNeighbors(const InputTensorItem &def)

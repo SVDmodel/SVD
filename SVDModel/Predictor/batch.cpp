@@ -9,6 +9,7 @@ Batch::Batch(int batch_size)
 {
 
     mCurrentSlot = 0;
+    mCurrentlyProcessing = 0;
     mBatchSize = batch_size;
     mInferenceData.resize(mBatchSize);
     mState=Fill;
@@ -29,6 +30,7 @@ Batch::BatchState Batch::changeState(Batch::BatchState newState)
 {
     if (newState==Fill) {
         mCurrentSlot = 0;
+        mCurrentlyProcessing = 0;
         mState = newState;
     } else {
         mState = newState;
@@ -40,6 +42,7 @@ int Batch::acquireSlot()
 {
     // use an atomic operation
     int slot = mCurrentSlot.fetch_add(1); // read first, than add 1
+    ++mCurrentlyProcessing;
     if (slot >= mBatchSize)
         throw std::logic_error("Batch::acquireSlot: batch full!");
     return slot;
@@ -49,4 +52,17 @@ int Batch::freeSlots()
 {
     int slot = mCurrentSlot;
     return mBatchSize - slot;
+}
+
+void Batch::finishedCellProcessing()
+{
+    --mCurrentlyProcessing;
+}
+
+bool Batch::allCellsProcessed()
+{
+    if (freeSlots()<=0 && mCurrentlyProcessing==0)
+        return true;
+
+    return false;
 }

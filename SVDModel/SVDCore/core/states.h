@@ -5,6 +5,7 @@
 #include <vector>
 #include <unordered_map>
 
+/// state_t:
 typedef short int state_t;
 typedef short int restime_t;
 

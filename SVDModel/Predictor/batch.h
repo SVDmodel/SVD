@@ -23,6 +23,7 @@ public:
 
     int packageId() const { return mPackageId; }
     void setPackageId(int id) { mPackageId = id; }
+    int batchSize() const { return mBatchSize; }
 
     /// get slot number in the batch (atomic access)
     int acquireSlot();
@@ -30,6 +31,12 @@ public:
     int freeSlots();
     /// number of slots currently in use
     int usedSlots() { return mCurrentSlot; }
+
+    /// is called when a cell is finished (decrease the atomic counter)
+    void finishedCellProcessing();
+
+    /// returns true if the batch is full and all cells are processed
+    bool allCellsProcessed();
 
     /// get a specific tensor from the batch
     /// the 'index' is stored in the tensor definition.
@@ -46,6 +53,7 @@ private:
     /// the tensors associated with this batch of data
     std::vector<TensorWrapper*> mTensors;
     std::atomic<int> mCurrentSlot; ///< atomic access; number of currently used slots (not the index!)
+    std::atomic<int> mCurrentlyProcessing; ///< number of cells which are currently processed (filling)
     int mBatchSize;
     int mPackageId;
     friend class BatchManager;

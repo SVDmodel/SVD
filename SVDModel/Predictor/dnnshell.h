@@ -29,17 +29,12 @@ public slots:
     void setup(QString fileName);
     void doWork(Batch *batch, int packageId);
 
-    void dnnFinished();
+    void dnnFinished(void *vbatch);
 signals:
     void workDone(Batch *batch, int packageId);
 
 private:
-    /// get a future watcher and lock it
-    QFutureWatcher<Batch*> *getFutureWatcher();
-    /// get a finished watcher and unlock
-    QFutureWatcher<Batch*> *getFinishedWatcher();
-
-
+    /// thread pool for running the DNN
     QThreadPool *mThreads;
 
     // loggers
@@ -47,9 +42,10 @@ private:
 
     std::unique_ptr<BatchManager> mBatchManager;
     std::unique_ptr<DNN> mDNN;
+    std::atomic<int> mProcessing;
 
     // store a watcher and a flag if the watcher is used (=true) or free (false)
-    std::vector<std::pair<QFutureWatcher<Batch*>*, bool> > mWatchers;
+    //std::vector<std::pair<QFutureWatcher<Batch*>*, Batch*> > mWatchers;
     int mBatchesProcessed;
     int mCellsProcessed;
 
