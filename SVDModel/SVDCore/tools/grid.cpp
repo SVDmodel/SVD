@@ -21,6 +21,67 @@
 //#include "global.h"
 #include <string>
 
+struct SCoordTrans {
+    SCoordTrans() { setupTransformation(0.,0.,0.,0.); }
+    double RotationAngle;
+    double sinRotate, cosRotate;
+    double sinRotateReverse, cosRotateReverse;
+    double offsetX, offsetY, offsetZ;
+    void setupTransformation(double new_offsetx, double new_offsety, double new_offsetz, double angle_degree)
+    {
+        const double M_PI = 3.141592653589793;
+        offsetX = new_offsetx;
+        offsetY = new_offsety;
+        offsetZ = new_offsetz;
+        RotationAngle=angle_degree * M_PI / 180.;
+        sinRotate=sin(RotationAngle);
+        cosRotate=cos(RotationAngle);
+        sinRotateReverse=sin(-RotationAngle);
+        cosRotateReverse=cos(-RotationAngle);
+    }
+} GISCoordTrans;
+
+// setup of global GIS transformation
+// not a good place to put that code here.... please relocate!
+void setupGISTransformation(double offsetx, double offsety, double offsetz, double angle_degree)
+{
+    GISCoordTrans.setupTransformation(offsetx, offsety, offsetz, angle_degree);
+}
+
+void worldToModel(const Vector3D &From, Vector3D &To)
+{
+    double x=From.x() - GISCoordTrans.offsetX;
+    double y=From.y() - GISCoordTrans.offsetY;
+    To.setZ( From.z() - GISCoordTrans.offsetZ );
+    To.setX( x * GISCoordTrans.cosRotate - y*GISCoordTrans.sinRotate);
+    To.setY( x * GISCoordTrans.sinRotate + y*GISCoordTrans.cosRotate);
+    //To.setY(-To.y()); // spiegeln
+}
+void modelToWorld(const Vector3D &From, Vector3D &To)
+{
+    double x=From.x();
+    double y=From.y(); // spiegeln
+    To.setX( x * GISCoordTrans.cosRotateReverse - y*GISCoordTrans.sinRotateReverse + GISCoordTrans.offsetX);
+    To.setY( x * GISCoordTrans.sinRotateReverse + y*GISCoordTrans.cosRotateReverse  + GISCoordTrans.offsetY);
+    To.setZ( From.z() + GISCoordTrans.offsetZ );
+}
+
+PointF modelToWorld(PointF model_coordinates)
+{
+    Vector3D to;
+    modelToWorld(Vector3D(model_coordinates.x(), model_coordinates.y(), 0.), to);
+    return PointF(to.x(), to.y());
+}
+
+PointF worldToModel(PointF world_coordinates)
+{
+    Vector3D to;
+    worldToModel(Vector3D(world_coordinates.x(), world_coordinates.y(), 0.), to);
+    return PointF(to.x(), to.y());
+
+}
+
+
 std::string gridToString(const DoubleGrid &grid, const char sep, const int newline_after)
 {
 

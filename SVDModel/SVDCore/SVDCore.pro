@@ -28,7 +28,6 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     modelshell.cpp \
     toymodel.cpp \
-    tools/gisgrid.cpp \
     tools/grid.cpp \
     tools/strtools.cpp \
     tools/filereader.cpp \
@@ -44,12 +43,12 @@ SOURCES += \
     modelrunstate.cpp \
     outputs/output.cpp \
     outputs/outputmanager.cpp \
-    outputs/stategridout.cpp
+    outputs/stategridout.cpp \
+    outputs/restimegridout.cpp
 
 HEADERS += \
     modelshell.h \
     toymodel.h \
-    tools/gisgrid.h \
     tools/grid.h \
     tools/strtools.h \
     tools/filereader.h \
@@ -65,7 +64,8 @@ HEADERS += \
     modelrunstate.h \
     outputs/output.h \
     outputs/outputmanager.h \
-    outputs/stategridout.h
+    outputs/stategridout.h \
+    outputs/restimegridout.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

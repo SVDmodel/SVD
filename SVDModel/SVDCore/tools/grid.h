@@ -22,6 +22,7 @@
 
 
 #include <vector>
+#include <set>
 #include <algorithm>
 #include <functional>
 
@@ -29,6 +30,7 @@
 #include <limits>
 #include <string>
 
+#include "strtools.h"
 
 class Point {
 public:
@@ -99,6 +101,10 @@ public:
     Grid(double cellsize, int sizex, int sizey) { mData=0; setup(cellsize, sizex, sizey); }
     /// create from a metric rect
     Grid(const RectF rect_metric, const double cellsize) { mData=0; setup(rect_metric,cellsize); }
+    /// load a grid from an ASCII grid file
+    /// the coordinates and cell size remain as in the grid file.
+    bool loadGridFromFile(const std::string &fileName);
+
     // copy ctor
     Grid(const Grid<T>& toCopy);
     ~Grid() { clear(); }
@@ -134,6 +140,7 @@ public:
     int count() const { return mCount; } ///< returns the number of elements of the grid
     bool isEmpty() const { return mData==NULL; } ///< returns false if the grid was not setup
     // operations
+
     // query
     /// access (const) with index variables. use int.
     inline const T& operator()(const int ix, const int iy) const { return constValueAtIndex(ix, iy); }
@@ -192,6 +199,10 @@ public:
     RectF cellRect(const Point &pos) const { RectF r( PointF(mRect.left() + mCellsize*pos.x(), mRect.top() + pos.y()*mCellsize),
                                                       QSizeF(mCellsize, mCellsize)); return r; } ///< return coordinates of rect given by @param pos.
 
+    /// nullValue is the value for empty/null/NA
+    static T nullValue() { return std::numeric_limits<T>::min(); }
+    bool isNull(const T &value) const {return value==nullValue(); }
+
     inline  T* begin() const { return mData; } ///< get "iterator" pointer
     inline  T* end() const { return mEnd; } ///< get iterator end-pointer
     inline Point indexOf(const T* element) const; ///< retrieve index (x/y) of the pointer element. returns -1/-1 if element is not valid.
@@ -216,6 +227,12 @@ public:
     T* ptr(int x, int y) { return &(mData[y*mSizeX + x]); } ///< get a pointer to the element indexed by "x" and "y"
     inline double distance(const Point &p1, const Point &p2); ///< distance (metric) between p1 and p2
     const Point randomPosition() const; ///< returns a (valid) random position within the grid
+
+    /// retrieve all unique non-null values
+    std::set<T> uniqueValues() const;
+    /// count of cells which are not null
+    int countNotNull();
+
 private:
 
     T* mData;
@@ -544,6 +561,25 @@ const Point Grid<T>::randomPosition() const
     return Point(irandom(0,mSizeX), irandom(0, mSizeY));
 }
 
+
+/** GIS Transformation
+    The transformation is defined by three offsets (x,y,z) and a rotation information.
+    the (x/y) denotes the real-world coordinates of the left lower edge of the grid (at least for the northern hemisphere), i.e. the (0/0).
+    The z-offset is currently not used.
+
+  */
+// setup routine -- give a vector with offsets [m] and rotation angle.
+void setupGISTransformation(const double offsetx,
+                            const double offsety,
+                            const double offsetz,
+                            const double angle_degree);
+// transformation routines.
+void worldToModel(const Vector3D &From, Vector3D &To);
+void modelToWorld(const Vector3D &From, Vector3D &To);
+PointF modelToWorld(PointF model_coordinates);
+PointF worldToModel(PointF world_coordinates);
+
+
 ////////////////////////////////////////////////////////////
 // grid runner
 ////////////////////////////////////////////////////////////
@@ -739,6 +775,124 @@ std::string gridToESRIRaster(const Grid<T> &grid )
                     .arg(grid.cellsize()).arg(-9999);
             QString line = gridToString(grid, QChar(' ')); // for normal grids (e.g. double) */
     return result + line;
+}
+
+
+template <typename T>
+bool Grid<T>::loadGridFromFile(const std::string &fileName)
+{
+
+    std::vector<std::string> lines = readFile(fileName);
+    std::vector<std::string>::iterator l = lines.begin();
+
+    bool in_header=true;
+    std::string key;
+    std::string strValue;
+    T value;
+    double cell_size;
+    int n_rows, n_cols;
+    double ox=0., oy=0.;
+    double no_data_val=0.;
+
+    do {
+        if (l == lines.end())
+            throw std::logic_error(std::string("Error in loading grid from file: unexpected end of file: ") + fileName);
+
+        size_t str_pos = (*l).find(" ");
+        key = (*l).substr(0, str_pos);
+
+        if (!isalpha(key[0])) {
+            in_header=false; // we reachted datalines
+        } else {
+            strValue = (*l).substr(str_pos+1);
+            value = static_cast<T>(atof(strValue.c_str()));
+            if (key=="ncols")
+                n_cols=int(value);
+            else if (key=="nrows")
+                n_rows=int(value);
+            else if (key=="xllcorner")
+                ox = value;
+            else if (key=="yllcorner")
+                oy = value;
+            else if (key=="cellsize")
+                cell_size = value;
+            else if (key=="NODATA_value")
+                no_data_val=value;
+            else
+                throw std::logic_error(std::string("Grid: invalid key ") + key);
+            ++l;
+        }
+    } while (in_header);
+
+    // create the underlying grid
+
+    RectF rect(ox, oy, ox + n_cols*cell_size, oy + n_rows*cell_size );
+    setup(rect, cell_size);
+    //setup(cell_size, n_cols, n_rows);
+
+
+    // loop thru datalines
+    int i,j;
+    const char *p=0;
+    const char *p2;
+
+    --l;
+    for (i=1;i<=n_rows;++i)
+        for (j=0;j<n_cols;j++) {
+            // copy next value to buffer, change "," to "."
+            if (!p || *p==0) {
+                ++l;
+                if (l==lines.end())
+                    throw std::logic_error("Grid: Unexpected End of File! In file: " + fileName );
+                p=(*l).c_str();
+                // replace chars
+                p2=p;
+                while (*p2) {
+                    if (*p2==',')
+                        *const_cast<char*>(p2)='.';
+                    p2++;
+                }
+            }
+            // skip spaces
+            while (*p && strchr(" \r\n\t", *p))
+                p++;
+            if (*p) {
+                value = static_cast<T>(atof(p));
+                if (value==no_data_val) {
+                    value = nullValue();
+                }
+                valueAtIndex(j, n_rows - i) = value;
+                // skip text...
+                while (*p && !strchr(" \r\n\t", *p))
+                    p++;
+            } else
+                j--;
+        }
+
+
+    return true;
+}
+
+template<typename T>
+std::set<T> Grid<T>::uniqueValues() const
+{
+    std::set<T> unique_values;
+    for (T* p=begin(); p!=end(); ++p) {
+        if (*p != nullValue())
+            unique_values.insert(*p);
+    }
+    return unique_values;
+}
+
+template<typename T>
+int Grid<T>::countNotNull()
+{
+    int result = 0;
+    for (T* p=begin(); p!=end(); ++p)
+        if (*p != nullValue())
+            ++result;
+
+    return result;
 }
 
 #endif // GRID_H

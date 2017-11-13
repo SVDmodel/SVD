@@ -34,7 +34,7 @@ void States::setup()
 
 const State &States::randomState() const
 {
-    size_t i = static_cast<size_t>(  irandom(0, mStates.size()) );
+    size_t i = static_cast<size_t>(  irandom(0, static_cast<int>(mStates.size())) );
     return mStates[i];
 }
 

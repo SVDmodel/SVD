@@ -7,10 +7,12 @@
 
 // the individual outputs
 #include "stategridout.h"
+#include "restimegridout.h"
 
 OutputManager::OutputManager()
 {
     mOutputs.push_back(new StateGridOut());
+    mOutputs.push_back(new ResTimeGridOut());
 }
 
 OutputManager::~OutputManager()

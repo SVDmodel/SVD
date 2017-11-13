@@ -1,5 +1,4 @@
 #include "integratetest.h"
-#include "../SVDCore/tools/gisgrid.h"
 #include "../SVDCore/tools/filereader.h"
 #include "../SVDCore/tools/settings.h"
 #include "../SVDCore/tools/randomgen.h"
@@ -45,14 +44,12 @@ void IntegrateTest::testGrid()
     qDebug() << gridToString(itest);
 
     qDebug() << "---- grid ----";
-    GisGrid<double> gg;
+    Grid<double> gg;
     qDebug() << gg.cellsize() << ", " << gg.sizeX() << "," << gg.sizeY();
     std::string fname="E:\\Daten\\Projekte\\staff\\masterarbeit_lea\\height_10.asc";
-    gg.loadFromFile(fname);
+    gg.loadGridFromFile(fname);
     //qDebug() << gridToString(gg).substr(0,1000);
 
-    GisGrid2 testg;
-    testg.loadFromFile(fname);
 
     Vector3D a,b;
     modelToWorld(a,b);

@@ -4,7 +4,6 @@
 #include "filereader.h"
 #include "settings.h"
 #include "tools.h"
-#include "gisgrid.h"
 #include "strtools.h"
 #include "randomgen.h"
 
@@ -28,10 +27,10 @@ void Landscape::setup()
         throw std::logic_error("Landscape setup: '" + grid_file_name + "' (landscape.grid) does not exist!");
 
 
-    GisGrid<int> grid;
-    grid.loadFromFile(grid_file_name);
+    Grid<int> grid;
+    grid.loadGridFromFile(grid_file_name);
 
-    lg->info("Loaded the grid '{}'. Dimensions: {} x {}, with cell size: {}m. Min-value: '{}', max-value: '{}'. ", grid_file_name, grid.sizeX(), grid.sizeY(), grid.cellsize(), grid.minValue(), grid.maxValue());
+    lg->info("Loaded the grid '{}'. Dimensions: {} x {}, with cell size: {}m. ", grid_file_name, grid.sizeX(), grid.sizeY(), grid.cellsize());
     lg->info("Metric rectangle with {}x{}m. Left-Right: {}m - {}m, Top-Bottom: {}m - {}m.  ", grid.metricRect().width(), grid.metricRect().height(), grid.metricRect().left(), grid.metricRect().right(), grid.metricRect().top(), grid.metricRect().bottom());
     if (lg->should_log(spdlog::level::trace)) {
         // some statistics:
