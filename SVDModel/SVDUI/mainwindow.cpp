@@ -54,7 +54,7 @@ MainWindow::~MainWindow()
 void MainWindow::modelStateChanged(QString s)
 {
     // stop the update timer...
-    if (!mMC->state()->isModelRunning()) {
+    if (mMC->state()->isModelFinished()) {
         mUpdateModelTimer.stop();
         modelUpdate();
     }
@@ -63,8 +63,13 @@ void MainWindow::modelStateChanged(QString s)
 
 void MainWindow::modelUpdate()
 {
-    ui->lModelState->setText(QString("%1 - %2").arg( QTime::currentTime().toString(Qt::ISODate) ).arg(QString::fromStdString(RunState::instance()->asString())));
+    int stime = ui->lModelState->property("starttime").toTime().elapsed();
+    //QTime().addMSecs(stime).toString(Qt::ISODateWithMs)
+    ui->lModelState->setText(QString("%1 - %2").arg( QTime(0,0).addMSecs(stime).toString(Qt::ISODate) ).arg(QString::fromStdString(RunState::instance()->asString())));
     on_pbUpdateStats_clicked();
+    if (mMC->state()->isModelFinished()) {
+        mUpdateModelTimer.stop();
+    }
 }
 
 
@@ -224,7 +229,7 @@ void MainWindow::on_pbLoad_clicked()
         if (QMessageBox::question(this, "Confirm reload", "The model is already created. Create a new model?")==QMessageBox::No)
             return;
     }
-
+    ui->lModelState->setProperty("starttime", QTime::currentTime());
     mMC.reset();
     mMC.reset(new ModelController()); // this frees the current model
     initiateModelController();
@@ -243,6 +248,7 @@ void MainWindow::on_pbRunModel_clicked()
     ui->progressBar->reset();
     ui->progressBar->setMaximum( ui->sYears->value() );
     mMC->run( ui->sYears->value() );
+    ui->lModelState->setProperty("starttime", QTime::currentTime());
     mUpdateModelTimer.start(100);
 }
 
@@ -268,4 +274,10 @@ void MainWindow::on_pbUpdateStats_clicked()
         ui->listStatus->setItem(r,1, new QTableWidgetItem(QString::fromStdString(s.second)));
         ++r;
     }
+}
+
+void MainWindow::on_pbCancel_clicked()
+{
+    if (mMC && mMC->model())
+        mMC->shutdown();
 }

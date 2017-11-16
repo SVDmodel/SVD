@@ -81,7 +81,7 @@ DNN::DNN()
         spdlog::get("dnn")->debug("DNN created: {#x}", (void*)this);
     session = nullptr;
     top_k_session = nullptr;
-    mTopK_tf = false; // TODO: more dynamic
+    mTopK_tf = true; // TODO: more dynamic
 }
 
 DNN::~DNN()
@@ -313,6 +313,10 @@ Batch * DNN::run(Batch *batch)
             int index = chooseProbabilisticIndex(scores_flat.example(i), static_cast<int>(scores_flat.n()), self_index ) ;
             int state_index = indices_flat.example(i)[index];
             state_t stateId = Model::instance()->states()->stateByIndex( state_index ).id();
+            if (stateId == 0) {
+                lg->warn("Warning: state 0 result in DNN - setting to state 1");
+                stateId = 1;
+            }
             id.setResult(stateId, rt);
         }
     }

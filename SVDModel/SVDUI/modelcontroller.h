@@ -70,6 +70,7 @@ private:
 
     int mYearsToRun;
     int mCurrentStep;
+    QTime mStopWatch;
 
 };
 

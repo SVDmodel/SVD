@@ -44,7 +44,8 @@ SOURCES += \
     outputs/output.cpp \
     outputs/outputmanager.cpp \
     outputs/stategridout.cpp \
-    outputs/restimegridout.cpp
+    outputs/restimegridout.cpp \
+    core/externalseeds.cpp
 
 HEADERS += \
     modelshell.h \
@@ -65,7 +66,8 @@ HEADERS += \
     outputs/output.h \
     outputs/outputmanager.h \
     outputs/stategridout.h \
-    outputs/restimegridout.h
+    outputs/restimegridout.h \
+    core/externalseeds.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

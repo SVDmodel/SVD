@@ -61,6 +61,13 @@ void Cell::setState(state_t new_state)
         mState = &Model::instance()->states()->stateById(new_state);
 }
 
+void Cell::setExternalState(state_t state)
+{
+    // external seed cells have a state ptr, but stateId=-1
+    mState = &Model::instance()->states()->stateById(state);
+    mStateId = -1;
+}
+
 std::vector<double> Cell::neighborSpecies() const
 {
     auto &grid =  Model::instance()->landscape()->grid();
@@ -72,8 +79,11 @@ std::vector<double> Cell::neighborSpecies() const
     for (const auto &p : mLocalNeighbors) {
         if (grid.isIndexValid(center + p)) {
             Cell &cell = grid.valueAtIndex(center + p);
-            if (cell.state()) {
-                auto shares = cell.state()->speciesShares();
+            if (cell.state() || cell.externalSeedType()>=0) {
+                // note for external seeds:
+                // if the cell is in 'species-shares' mode, then state() is null
+                // if the cell is in 'state' mode, a (constant) state is assigned
+                auto shares = cell.state()? cell.state()->speciesShares() : Model::instance()->externalSeeds().speciesShares(cell.externalSeedType());
                 for (int i=0; i<n_species;++i)
                     result[i*2] += shares[i];
                 ++n_local;
@@ -89,8 +99,8 @@ std::vector<double> Cell::neighborSpecies() const
     for (const auto &p : mLocalNeighbors) {
         if (grid.isIndexValid(center + p)) {
             Cell &cell = grid.valueAtIndex(center + p);
-            if (cell.state()) {
-                auto shares = cell.state()->speciesShares();
+            if (cell.state() || cell.externalSeedType()>=0) {
+                auto shares = cell.state()? cell.state()->speciesShares() : Model::instance()->externalSeeds().speciesShares(cell.externalSeedType());
                 for (int i=0; i<n_species;++i)
                     result[i*2+1] += shares[i];
                 ++n_mid;

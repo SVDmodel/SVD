@@ -53,6 +53,8 @@ bool Model::setup()
     mLandscape = std::shared_ptr<Landscape>(new Landscape());
     mLandscape->setup();
 
+    mExternalSeeds.setup();
+
     // set up outputs
     mOutputManager = std::shared_ptr<OutputManager>(new OutputManager());
     mOutputManager->setup();

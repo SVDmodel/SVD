@@ -11,6 +11,7 @@
 #include "states.h"
 #include "climate.h"
 #include "landscape.h"
+#include "externalseeds.h"
 #include "outputs/outputmanager.h"
 
 
@@ -47,6 +48,7 @@ public:
     const std::vector<std::string> &species() { return mSpeciesList; }
     std::shared_ptr<Landscape> &landscape() { return mLandscape; }
     std::shared_ptr<Climate> &climate() { return mClimate; }
+    const ExternalSeeds &externalSeeds() {return mExternalSeeds; }
 
 
     /// access to the output machinery
@@ -84,6 +86,7 @@ private:
     std::shared_ptr<States> mStates;
     std::shared_ptr<Climate> mClimate;
     std::shared_ptr<Landscape> mLandscape;
+    ExternalSeeds mExternalSeeds;
     std::shared_ptr<OutputManager> mOutputManager;
     // loggers
     std::shared_ptr<spdlog::logger> lg_main;

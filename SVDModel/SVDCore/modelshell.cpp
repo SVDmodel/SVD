@@ -136,6 +136,14 @@ std::string ModelShell::run_test_op(std::string what)
         return result;
     }
 
+    if (what=="ext_seed") {
+        auto &grid = Model::instance()->landscape()->grid();
+        std::string result = gridToESRIRaster<Cell>(grid, [](const Cell &c)
+        {
+                return std::to_string(c.externalSeedType()); }
+        );
+        return result;
+    }
 
     return "invalid method";
 }

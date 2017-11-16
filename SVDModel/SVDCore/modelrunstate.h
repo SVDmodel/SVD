@@ -57,6 +57,7 @@ public:
 
     // semantic queries
     bool isModelRunning() const { return mModel.in({ModelRunState::Creating, ModelRunState::Running, ModelRunState::Stopping}); }
+    bool isModelFinished() const { return mModel.in({ModelRunState::Error, ModelRunState::ErrorDuringSetup, ModelRunState::Finished, ModelRunState::Canceled});}
 private:
     ModelRunState mModel;
     ModelRunState mDNN;

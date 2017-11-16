@@ -799,7 +799,7 @@ bool Grid<T>::loadGridFromFile(const std::string &fileName)
             throw std::logic_error(std::string("Error in loading grid from file: unexpected end of file: ") + fileName);
 
         size_t str_pos = (*l).find(" ");
-        key = (*l).substr(0, str_pos);
+        key = lowercase((*l).substr(0, str_pos));
 
         if (!isalpha(key[0])) {
             in_header=false; // we reachted datalines
@@ -816,7 +816,7 @@ bool Grid<T>::loadGridFromFile(const std::string &fileName)
                 oy = value;
             else if (key=="cellsize")
                 cell_size = value;
-            else if (key=="NODATA_value")
+            else if (key=="nodata_value")
                 no_data_val=value;
             else
                 throw std::logic_error(std::string("Grid: invalid key ") + key);

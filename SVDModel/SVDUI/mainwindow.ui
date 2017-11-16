@@ -123,7 +123,7 @@
           <widget class="QComboBox" name="cbOption">
            <property name="geometry">
             <rect>
-             <x>200</x>
+             <x>270</x>
              <y>70</y>
              <width>141</width>
              <height>22</height>
@@ -149,11 +149,16 @@
              <string>grid_N</string>
             </property>
            </item>
+           <item>
+            <property name="text">
+             <string>ext_seed</string>
+            </property>
+           </item>
           </widget>
           <widget class="QLineEdit" name="lParam">
            <property name="geometry">
             <rect>
-             <x>352</x>
+             <x>422</x>
              <y>70</y>
              <width>201</width>
              <height>20</height>
@@ -166,7 +171,7 @@
           <widget class="QPushButton" name="pbRun">
            <property name="geometry">
             <rect>
-             <x>560</x>
+             <x>630</x>
              <y>70</y>
              <width>75</width>
              <height>23</height>
@@ -210,7 +215,7 @@
           <widget class="QPushButton" name="pbUpdateStats">
            <property name="geometry">
             <rect>
-             <x>640</x>
+             <x>710</x>
              <y>70</y>
              <width>75</width>
              <height>23</height>
@@ -218,6 +223,19 @@
            </property>
            <property name="text">
             <string>Update stats</string>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="pbCancel">
+           <property name="geometry">
+            <rect>
+             <x>170</x>
+             <y>70</y>
+             <width>75</width>
+             <height>23</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Stop</string>
            </property>
           </widget>
          </widget>

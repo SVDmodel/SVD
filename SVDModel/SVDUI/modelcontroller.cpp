@@ -140,6 +140,7 @@ std::unordered_map<std::string, std::string> ModelController::systemStatus()
     result["dnnRunning"] = dnnShell()->isRunnig() ? "yes" : "no";
     result["dnnBatchesProcessed"] = to_string(dnnShell()->batchesProcessed());
     result["dnnCellsProcessed"] = to_string(dnnShell()->cellsProcessed());
+    result["cellsPerSecond"] = to_string(dnnShell()->cellsProcessed() / (mStopWatch.elapsed()>0 ? mStopWatch.elapsed()/1000. : 1.));
 
     int n_fill=0, n_finished=0, n_dnn=0;
     int n_open_slots = 0;
@@ -188,6 +189,7 @@ void ModelController::run(int n_years)
 {
     mYearsToRun = n_years;
     mCurrentStep = 1;
+    mStopWatch.start();
     QMetaObject::invokeMethod(mModelShell, "run", Qt::QueuedConnection, Q_ARG(int,n_years));
 }
 
@@ -198,6 +200,7 @@ void ModelController::finishedStep(int n)
     if (mCurrentStep >= mYearsToRun) {
         // finished
         log(QString("Finished!"));
+        RunState::instance()->modelState()=ModelRunState::Finished;
         emit finished();
         return;
     } else {
