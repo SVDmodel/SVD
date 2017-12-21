@@ -12,7 +12,6 @@ TEMPLATE = lib
 CONFIG += staticlib
 
 INCLUDEPATH += third_party tools core ../core ../tools ../outputs
-
 CONFIG += c++14
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked as deprecated (the exact warnings
@@ -45,7 +44,10 @@ SOURCES += \
     outputs/outputmanager.cpp \
     outputs/stategridout.cpp \
     outputs/restimegridout.cpp \
-    core/externalseeds.cpp
+    core/externalseeds.cpp \
+    outputs/statechangeout.cpp \
+    tools/expression.cpp \
+    tools/expressionwrapper.cpp
 
 HEADERS += \
     modelshell.h \
@@ -67,7 +69,10 @@ HEADERS += \
     outputs/outputmanager.h \
     outputs/stategridout.h \
     outputs/restimegridout.h \
-    core/externalseeds.h
+    core/externalseeds.h \
+    outputs/statechangeout.h \
+    tools/expression.h \
+    tools/expressionwrapper.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

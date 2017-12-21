@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="mainicon">svd_icon1.png</file>
+    </qresource>
+</RCC>

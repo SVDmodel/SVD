@@ -45,6 +45,7 @@ public:
     /// get a vector with species shares (local, mid-range) for the current cell
     std::vector<double> neighborSpecies() const;
 private:
+    void dumpDebugData();
     state_t mStateId; ///< the numeric ID of the state the cell is in
     restime_t mResidenceTime;
     int mNextUpdateTime; ///< the year (see Model::year()) when the next update of this cell is scheduled

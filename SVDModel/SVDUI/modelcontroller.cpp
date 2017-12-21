@@ -72,7 +72,7 @@ void ToyModelController::finishedRun()
 //***************** Model Controller ******************
 
 
-ModelController::ModelController(QObject *parent)
+ModelController::ModelController(QObject *)
 {
     mState = std::unique_ptr<RunState>(new RunState());
 
@@ -92,8 +92,8 @@ ModelController::ModelController(QObject *parent)
     connect(dnnThread, &QThread::finished, mDNNShell, &QObject::deleteLater);
 
     // connection between main model and DNN: [this requires the old way of connect, because there are errors with Batch* otherwise]
-    QObject::connect(mModelShell, SIGNAL(newPackage(Batch*,int)), mDNNShell, SLOT(doWork(Batch*,int)), Qt::QueuedConnection);
-    QObject::connect(mDNNShell, SIGNAL(workDone(Batch*,int)), mModelShell, SLOT(processedPackage(Batch*,int)), Qt::QueuedConnection);
+    QObject::connect(mModelShell, SIGNAL(newPackage(Batch*)), mDNNShell, SLOT(doWork(Batch*)), Qt::QueuedConnection);
+    QObject::connect(mDNNShell, SIGNAL(workDone(Batch*)), mModelShell, SLOT(processedPackage(Batch*)), Qt::QueuedConnection);
     //connect(mModelShell, &ModelShell::newPackage, mModelInterface, &ModelInterface::doWork);
     //connect(mModelInterface, &ModelInterface::workDone, mModelShell, &ModelShell::processedPackage);
     //connect(mModelShell, &ModelShell::finished, this, &ModelController::finishedRun, Qt::QueuedConnection);

@@ -53,7 +53,7 @@ private:
     /// the tensors associated with this batch of data
     std::vector<TensorWrapper*> mTensors;
     std::atomic<int> mCurrentSlot; ///< atomic access; number of currently used slots (not the index!)
-    std::atomic<int> mCurrentlyProcessing; ///< number of cells which are currently processed (filling)
+    std::atomic<int> mCellsFinished; ///< number of cells which already finished during the "filling"
     int mBatchSize;
     int mPackageId;
     friend class BatchManager;

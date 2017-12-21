@@ -251,11 +251,11 @@ void ModelShell::setState(ModelRunState::State new_state, QString msg)
 
 
 QMutex lock_processed_package;
-void ModelShell::processedPackage(Batch *batch, int packageId)
+void ModelShell::processedPackage(Batch *batch)
 {
     if (RunState::instance()->cancel() || batch->hasError()) {
         mPackagesProcessed++;
-        lg->debug("error/cancel packages: all built: {}, #built: {}, #processed: {}, batch-id: {}", mAllPackagesBuilt, mPackagesBuilt, mPackagesProcessed, packageId);
+        lg->debug("error/cancel packages: all built: {}, #built: {}, #processed: {}, batch-id: {}", mAllPackagesBuilt, mPackagesBuilt, mPackagesProcessed, batch->packageId());
         if (mPackagesBuilt==mPackagesProcessed) {
             finalizeCycle();
         }
@@ -264,7 +264,15 @@ void ModelShell::processedPackage(Batch *batch, int packageId)
 
 
     // DNN delivered processed package....
-    lg->debug("Model: received package {} (from DNN). Writing back data.", packageId);
+    lg->debug("Model: received package {} [{}](from DNN). Writing back data.", batch->packageId(), (void*)batch);
+
+    // check data:
+    for (int i=0;i<batch->usedSlots();++i) {
+        if (batch->inferenceData(i).nextTime() == 0 || batch->inferenceData(i).nextState()==0) {
+            lg->error("bad data in batch {} with {} used slots. item {}: update-time: {}, update-state: {}", batch->packageId(), batch->usedSlots(), i, batch->inferenceData(i).nextTime(), batch->inferenceData(i).nextState());
+        }
+    }
+
 
     for (int i=0;i<batch->usedSlots();++i) {
         batch->inferenceData(i).writeResult();
@@ -323,6 +331,9 @@ void ModelShell::internalRun()
 
 }
 
+// this function is executed for each cell on the landscape
+// if a cell needs an update, the data is collected and the cell
+// is stored within a batch.
 void ModelShell::buildInferenceData(Cell *cell)
 {
     if (RunState::instance()->cancel())
@@ -352,9 +363,9 @@ void ModelShell::buildInferenceData(Cell *cell)
         // populate the InferenceData with the required data
         id.fetchData(cell, batch, newslot.second);
 
-        batch->finishedCellProcessing();
-
-        checkBatch(batch);
+        // check if batch is finished and send if this is the case
+        if (checkBatch(batch))
+            lg->debug("sent package [{}] when processing slot {} (used slots: {})", (void*)batch, newslot.second, batch->usedSlots());
 
 
     } catch (const std::exception &e) {
@@ -364,22 +375,31 @@ void ModelShell::buildInferenceData(Cell *cell)
 }
 
 
-
-
-void ModelShell::checkBatch(Batch *batch)
+QMutex _check_batch;
+/// sends a package to the Inference process when all slots are filled.
+bool ModelShell::checkBatch(Batch *batch)
 {
     if (RunState::instance()->cancel()) {
         cancel();
-        return;
+        return false;
     }
+
+    QMutexLocker lock(&_check_batch);
+    batch->finishedCellProcessing();
     if (batch->allCellsProcessed()) {
-        mPackageId++;
+        if (batch->state()!=Batch::Fill) {
+            lg->warn("Package [{}] already sent!", (void*)batch);
+            return false;
+        }
+        batch->setPackageId(++mPackageId);
         mModel->stats.NPackagesSent ++;
         ++mPackagesBuilt;
-        lg->debug("sending package {} to Inference (built total: {})", mPackageId, mPackagesBuilt);
-        emit newPackage(batch, mPackageId);
+        lg->debug("sending package {} [{}] to Inference (built total: {})", mPackageId, (void*)batch, mPackagesBuilt);
+        emit newPackage(batch);
+        return true;
 
     }
+    return false;
 }
 
 
@@ -393,11 +413,11 @@ void ModelShell::sendPendingBatches()
 
     for (auto e : BatchManager::instance()->batches()) {
         if (e->state()==Batch::Fill && e->usedSlots()>0) {
-            mPackageId++;
+            e->setPackageId(++mPackageId);
             mModel->stats.NPackagesSent ++;
             ++mPackagesBuilt;
-            lg->debug("sending pending package {} to Inference. (total. {}, size queue: {})", mPackageId, mPackagesBuilt, BatchManager::instance()->batches().size());
-            emit newPackage(e, mPackageId);
+            lg->debug("sending pending package {} [{}] to Inference. (total. {}, size queue: {})", mPackageId, (void*)e, mPackagesBuilt, BatchManager::instance()->batches().size());
+            emit newPackage(e);
         }
     }
 }

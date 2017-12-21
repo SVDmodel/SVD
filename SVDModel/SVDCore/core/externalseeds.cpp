@@ -124,7 +124,7 @@ int ExternalSeeds::setupFromStates(FileReader &rdr, Grid<int> &eseed)
 
         }
     }
-    return item_map.size();
+    return static_cast<int>(item_map.size());
 
 }
 
@@ -185,6 +185,6 @@ int ExternalSeeds::setupFromSpeciesShares(FileReader &rdr, Grid<int> &eseed)
 
         }
     }
-    return mExternalSeedTypes.size()-1; // without the "0"-type
+    return static_cast<int>(mExternalSeedTypes.size())-1; // without the "0"-type
 
 }

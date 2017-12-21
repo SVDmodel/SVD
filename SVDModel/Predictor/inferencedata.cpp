@@ -20,6 +20,8 @@ void InferenceData::fetchData(Cell *cell, Batch *batch, int slot)
 
 void InferenceData::setResult(state_t state, restime_t time)
 {
+    if (state==0)
+        spdlog::get("main")->error("InferenceData::setResult, state=0!");
     mNextState=state;
     // time is the number of years the next update should happen
     // we change to the absolute year:
@@ -39,6 +41,11 @@ void InferenceData::writeResult()
 const EnvironmentCell &InferenceData::environmentCell() const
 {
     return Model::instance()->landscape()->environmentCell(mIndex);
+}
+
+const Cell &InferenceData::cell() const
+{
+    return Model::instance()->landscape()->grid()[mIndex];
 }
 
 std::string InferenceData::dumpTensorData()

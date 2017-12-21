@@ -8,11 +8,14 @@
 // the individual outputs
 #include "stategridout.h"
 #include "restimegridout.h"
+#include "statechangeout.h"
 
 OutputManager::OutputManager()
 {
+    mIsSetup = false;
     mOutputs.push_back(new StateGridOut());
     mOutputs.push_back(new ResTimeGridOut());
+    mOutputs.push_back(new StateChangeOut());
 }
 
 OutputManager::~OutputManager()
@@ -48,22 +51,7 @@ void OutputManager::setup()
         }
     }
 
-//    std::string file_name = Tools::path(Model::instance()->settings().valueString("states.file"));
-//    FileReader rdr(file_name);
-//    rdr.requiredColumns({"stateId", "composition", "structure", "fct"});
-
-//    while (rdr.next()) {
-//        // read line
-//        state_t id = state_t( rdr.value("stateId") );
-//        mStates.push_back( State(id,
-//                rdr.valueString("composition"),
-//                int(rdr.value("structure")),
-//                int(state_t(rdr.value("fct"))))
-//                           );
-//        mStateSet.insert({id, mStates.size()-1}); // save id and index
-
-//    }
-//    spdlog::get("setup")->debug("Loaded {} states from file '{}'", mStates.size(), file_name);
+    mIsSetup = true;
 
 }
 
@@ -77,9 +65,10 @@ bool OutputManager::run(const std::string &output_name)
     return o->enabled();
 }
 
-void OutputManager::run()
+void OutputManager::yearEnd()
 {
-
+    for (auto o : mOutputs)
+        o->flush();
 }
 
 Output *OutputManager::find(std::string output_name)

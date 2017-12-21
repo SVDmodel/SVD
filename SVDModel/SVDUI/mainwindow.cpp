@@ -266,7 +266,7 @@ void MainWindow::on_pbUpdateStats_clicked()
     auto stats = mMC->systemStatus();
     ui->listStatus->clear();
     ui->listStatus->setHorizontalHeaderLabels({"Statistic", "Value"});
-    ui->listStatus->setRowCount(stats.size());
+    ui->listStatus->setRowCount(static_cast<int>(stats.size()));
     ui->listStatus->setColumnCount(2);
     int r=0;
     for (std::pair<std::string, std::string> s : stats) {
@@ -280,4 +280,18 @@ void MainWindow::on_pbCancel_clicked()
 {
     if (mMC && mMC->model())
         mMC->shutdown();
+}
+
+void MainWindow::on_pbTestTF_clicked()
+{
+    initiateLogging();
+    PredTest it;
+    it.testDevicePlacement();
+}
+
+void MainWindow::on_pbTestExpre_clicked()
+{
+    initiateLogging();
+    IntegrateTest it;
+    it.testExpression();
 }

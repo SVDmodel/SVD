@@ -12,6 +12,7 @@ public:
     void testLogging();
     void testRandom();
     void testTensor();
+    void testExpression();
 
 };
 

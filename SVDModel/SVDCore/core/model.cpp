@@ -37,10 +37,20 @@ bool Model::setup()
 {
     // general setup
     bool mt = settings().valueBool("model.multithreading",true);
-    if (mt)
-        QThreadPool::globalInstance()->setMaxThreadCount( QThread::idealThreadCount() );
-    else
+    if (mt) {
+        int n_threads = settings().valueInt("model.threads", -1);
+        if (n_threads == -1)
+            n_threads = QThread::idealThreadCount();
+        QThreadPool::globalInstance()->setMaxThreadCount( n_threads );
+        lg_setup->info("Enabled multithreading for the model (# threads={}).", n_threads);
+    } else {
         QThreadPool::globalInstance()->setMaxThreadCount( 1 );
+        lg_setup->info("Disabled multithreading for the model.");
+    }
+
+    // set up outputs
+    mOutputManager = std::shared_ptr<OutputManager>(new OutputManager());
+    mOutputManager->setup();
 
     // set up model components
     setupSpecies();
@@ -55,9 +65,6 @@ bool Model::setup()
 
     mExternalSeeds.setup();
 
-    // set up outputs
-    mOutputManager = std::shared_ptr<OutputManager>(new OutputManager());
-    mOutputManager->setup();
 
     mYear = 0; // model is set up, ready to run
     return true;
@@ -74,6 +81,7 @@ void Model::finalizeYear()
         }
     }
 
+    outputManager()->yearEnd();
 
     stats.NPackagesTotalSent += stats.NPackagesSent;
     stats.NPackagesTotalDNN += stats.NPackagesDNN;

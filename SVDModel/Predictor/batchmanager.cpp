@@ -49,7 +49,7 @@ BatchManager::BatchManager()
         throw std::logic_error("Creation of batch manager: instance ptr is not 0.");
     mInstance = this;
     if (spdlog::get("dnn"))
-        spdlog::get("dnn")->debug("Batch manager created: {#x}", (void*)this);
+        spdlog::get("dnn")->debug("Batch manager created: {}", (void*)this);
 
 }
 
@@ -60,7 +60,7 @@ BatchManager::~BatchManager()
         delete b;
 
     if (spdlog::get("dnn"))
-        spdlog::get("dnn")->debug("Batch manager destroyed: {#x}", (void*)this);
+        spdlog::get("dnn")->debug("Batch manager destroyed: {x}", (void*)this);
 
     mInstance = nullptr;
 }
@@ -81,7 +81,8 @@ void BatchManager::setup()
 //        {"test2", InputTensorItem::DT_INT16, 1, 1, 0, InputTensorItem::State}
 //    };
     mTensorDef =  {
-        {"clim_input", "float", 2, 10, 40, "Climate"},
+        // {"clim_input", "float", 2, 10, 40, "Climate"}, // GPP Climate
+        {"clim_input", "float", 2, 10, 24, "Climate"}, // monthly climate
         {"state_input", "int16", 1, 1, 0, "State"},
         {"time_input", "float", 1, 1, 0, "ResidenceTime"},
         {"site_input", "float", 1, 2, 0, "Site"} ,
@@ -149,7 +150,7 @@ std::pair<Batch *, int> BatchManager::findValidSlot()
 
     // look for a batch which is currently not in the DNN processing chain
     Batch *batch = nullptr;
-    for (auto b : mBatches) {
+    for (const auto &b : mBatches) {
         if (b->state()==Batch::Fill && b->freeSlots()>0) {
             batch=b;
             break;
@@ -177,7 +178,11 @@ std::pair<Batch *, int> BatchManager::findValidSlot()
     std::pair<Batch *, int> result;
     result.first = batch;
     result.second = batch->acquireSlot();
+    if (result.second==0) {
+        lg->debug("Started to fill batch {} [{}] (first slot acquired)", batch->packageId(), (void*)batch);
+    }
     return result;
+
 
 }
 

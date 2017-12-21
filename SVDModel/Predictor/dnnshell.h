@@ -27,11 +27,11 @@ public:
 private:
 public slots:
     void setup(QString fileName);
-    void doWork(Batch *batch, int packageId);
+    void doWork(Batch *batch);
 
     void dnnFinished(void *vbatch);
 signals:
-    void workDone(Batch *batch, int packageId);
+    void workDone(Batch *batch);
 
 private:
     /// thread pool for running the DNN

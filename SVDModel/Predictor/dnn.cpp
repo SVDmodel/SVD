@@ -7,6 +7,7 @@
 #include "batch.h"
 #include "batchmanager.h"
 #include "randomgen.h"
+#include "outputs/statechangeout.h"
 
 // Tensorflow includes
 //  from inception demo
@@ -36,9 +37,15 @@
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/core/public/session.h"
 #include "tensorflow/core/util/command_line_flags.h"
+#include "tensorflow/core/framework/op_kernel.h"
 
 #pragma warning(pop)
 
+// CUDA Profiling
+// #define CUDA_PROFILING
+#ifdef CUDA_PROFILING
+#include "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v8.0/include/cuda_profiler_api.h"
+#endif
 
 // These are all common classes it's handy to reference with no namespace.
 using tensorflow::Flag;
@@ -78,9 +85,10 @@ DNN::DNN()
         throw std::logic_error("Creation of DNN: instance ptr is not 0.");
     mInstance = this;
     if (spdlog::get("dnn"))
-        spdlog::get("dnn")->debug("DNN created: {#x}", (void*)this);
+        spdlog::get("dnn")->debug("DNN created: {}", (void*)this);
     session = nullptr;
     top_k_session = nullptr;
+    mSCOut = nullptr;
     mTopK_tf = true; // TODO: more dynamic
 }
 
@@ -95,6 +103,10 @@ DNN::~DNN()
 
 bool DNN::setup()
 {
+#ifdef CUDA_PROFILING
+    cudaProfilerStop();
+#endif
+
     lg = spdlog::get("dnn");
     auto settings = Model::instance()->settings();
     if (!lg)
@@ -120,8 +132,8 @@ bool DNN::setup()
     mDummyDNN = false;
     tensorflow::SessionOptions opts;
     opts.config.set_log_device_placement(true);
-    //opts.config.set_inter_op_parallelism_threads(8); // no big effect.... but uses more threads
-    //opts.config.set_intra_op_parallelism_threads(8);
+    //opts.config.set_inter_op_parallelism_threads(16); // no big effect.... but uses more threads
+    //opts.config.set_intra_op_parallelism_threads(16);
     session = tensorflow::NewSession(opts); // no specific options: tensorflow::SessionOptions()
 
     lg->trace("attempting to load the graph...");
@@ -157,8 +169,6 @@ bool DNN::setup()
         lg->trace("top-k-tensor: {}", top_k_tensor.DebugString());
         //lg->trace("node: {}", topk->DebugString());
 
-        // This runs the GraphDef network definition that we've just constructed, and
-        // returns the results in the output tensors.
         tensorflow::GraphDef graph;
         Status tf_status;
         tf_status = root.ToGraphDef(&graph);
@@ -181,7 +191,47 @@ bool DNN::setup()
             lg->error("Error creating top-k graph: {}", tf_status.error_message());
             return false;
         }
+
+
+        // TEST
+//        auto tsess = tensorflow::NewSession(opts);
+//        auto troot = tensorflow::Scope::NewRootScope();
+//        auto tscope = troot.WithDevice("/device:GPU:0");
+//        tensorflow::GraphDef tgraph;
+
+//        tensorflow::ops::Softmax sm(tscope.WithOpName("tsoftmax"),top_k_tensor);
+//        tf_status = tscope.ToGraphDef(&tgraph);
+//        if (!tf_status.ok())
+//            lg->error("Error building graph definition: {}", tf_status.error_message());
+//        tf_status = tsess->Create(tgraph);
+//        if (!tf_status.ok())
+//            lg->error("Error creating graph in session: {}", tf_status.error_message());
+
+//        lg->trace("TK NODES2") ;
+//        for (tensorflow::Node* node : troot.graph()->nodes()) {
+//            lg->trace("Node {}: {}",node->id(), node->DebugString());
+//        }
+//        std::vector< Tensor > tmp;
+//        tf_status = tsess->Run({ {"Const/Const" , top_k_tensor} }, {"tsoftmax:0"},
+//        {}, &tmp);
+//        if (!tf_status.ok())
+//            lg->error("Error running: {}", tf_status.error_message());
+
+//        tensorflow::LogAllRegisteredKernels();
     }
+
+    // setup output: store ptr only when output is enabled
+    double sleep_time=0.;
+    while (Model::instance()->outputManager()==nullptr || Model::instance()->outputManager()->isSetup()==false) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(50)); sleep_time+=0.05;
+        if (sleep_time>60) { // one minute
+            lg->error("DNN setup: output manager not ready after 60 sec - time out.");
+            return false;
+        }
+    }
+    mSCOut = dynamic_cast<StateChangeOut*>( Model::instance()->outputManager()->find("StateChange") );
+    if (mSCOut && !mSCOut->enabled())
+        mSCOut = nullptr;
 
 
     lg->info("DNN Setup complete.");
@@ -193,20 +243,43 @@ bool DNN::setup()
 class STimer {
 public:
     STimer(std::shared_ptr<spdlog::logger> logger, std::string name) { start_time = std::chrono::system_clock::now(); _logger=logger; _name=name; }
-    int elapsed() { return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start_time).count(); }
-    void print(std::string s) { _logger->debug("Timer {}: {}: {}us", _name, s, elapsed()); }
-    ~STimer() { _logger->debug("Timer {}: {} us.", _name, elapsed()); }
+    size_t elapsed() { return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start_time).count(); }
+    void print(std::string s) { _logger->debug("[{}] Timer {}: {}: {}us", std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now()).time_since_epoch().count(),  _name, s, elapsed()) ; }
+    void now() { _logger->debug("Timepoint: {}us", std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() ));}
+    ~STimer() { print("destroyed"); }
 private:
     std::shared_ptr<spdlog::logger> _logger;
     std::string _name;
     std::chrono::system_clock::time_point start_time;
 };
 
+/// create an output line for the item 'n'
+std::string stateChangeOutput(const TensorWrap2d<int32> &state_index, const TensorWrap2d<float> &scores, const TensorWrap2d<float> &time, Batch *batch, size_t index)
+{
+    std::stringstream s;
+    char sep=',';
+    // selected state/residence time
+    const auto &id = batch->inferenceData(index);
+    s << Model::instance()->year() << sep << id.state() << sep << id.cell().residenceTime() << sep << id.nextState() << sep << id.nextTime();
+    // states / probs
+    for (size_t i=0;i<state_index.n();++i)
+        s <<  sep << Model::instance()->states()->stateByIndex(state_index.example(index)[i]).id()
+           << sep << scores.example(index)[i];
+   for (size_t i=0;i<time.n();++i)
+       s << sep << time.example(index)[i];
+
+   return s.str();
+
+}
+
 Batch * DNN::run(Batch *batch)
 {
+#ifdef CUDA_PROFILING
+    cudaProfilerStart();
+#endif
     const int top_n=10;
     std::vector<Tensor> outputs;
-    STimer timr(lg, "DNN::run");
+    STimer timr(lg, "DNN::run:" + to_string(batch->packageId()));
     lg->debug("DNN: started execution for package {}.", batch->packageId());
 
     std::vector<std::pair<string, Tensor> > inputs;
@@ -237,6 +310,8 @@ Batch * DNN::run(Batch *batch)
 
     /* Run Tensorflow */
     timr.print("before main dnn");
+    //timr.now();
+
     Status run_status = session->Run(inputs, {"out/Softmax", "time_out/Softmax"}, {}, &outputs);
     if (!run_status.ok()) {
         lg->trace("{}", batch->inferenceData(0).dumpTensorData());
@@ -245,6 +320,7 @@ Batch * DNN::run(Batch *batch)
         return batch;
     }
     timr.print("main dnn");
+    //timr.now();
 
     tensorflow::Tensor *scores= nullptr;
     tensorflow::Tensor *indices = nullptr;
@@ -276,9 +352,12 @@ Batch * DNN::run(Batch *batch)
 
     }
 
+#ifdef CUDA_PROFILING
+    cudaProfilerStop();
+#endif
 
 
-    lg->debug("DNN result: {} output tensors. package {}", outputs.size(), batch->packageId());
+    lg->debug("DNN result: {} output tensors. package {}, {} slots.", outputs.size(), batch->packageId(), batch->usedSlots());
     lg->debug("out:  {}", outputs[0].DebugString());
     lg->debug("time: {}", outputs[1].DebugString());
     // output tensors: 2dim; 1x batch, 1x data
@@ -318,6 +397,15 @@ Batch * DNN::run(Batch *batch)
                 stateId = 1;
             }
             id.setResult(stateId, rt);
+        }
+    }
+
+
+    // output
+    if (mSCOut) {
+        for (int i=0;i<batch->usedSlots(); ++i) {
+            if (mSCOut->shouldWriteOutput(batch->inferenceData(i)))
+                mSCOut->writeLine(stateChangeOutput(indices_flat, scores_flat, out_time, batch, i));
         }
     }
 
@@ -388,7 +476,7 @@ tensorflow::Status DNN::getTopClassesOldCode(const tensorflow::Tensor &classes, 
 
 class ComparisonClassTopK {
 public:
-    bool operator() (const std::pair<float, size_t> &p1, const std::pair<float, size_t> &p2) {
+    bool operator() (const std::pair<float, int> &p1, const std::pair<float, int> &p2) {
         //comparison code here: we want to keep track of the smallest element in the list
         return p1.first>p2.first;
     }
@@ -396,14 +484,14 @@ public:
 
 void DNN::getTopClasses( tensorflow::Tensor &classes, const int batch_size, const int n_top, tensorflow::Tensor *indices, tensorflow::Tensor *scores)
 {
-    std::priority_queue< std::pair<float, size_t>, std::vector<std::pair<float, size_t> >, ComparisonClassTopK > queue;
+    std::priority_queue< std::pair<float, int>, std::vector<std::pair<float, int> >, ComparisonClassTopK > queue;
 
     lg->debug("CPU-TopK: Classes: x={}, y={}, Indices: x={}, y={}", classes.dim_size(0), classes.dim_size(1), indices->dim_size(0), indices->dim_size(1));
     lg->debug("classes : {}", classes.DebugString());
     lg->debug("indicies: {}", indices->DebugString());
     lg->debug("scores  : {}", scores->DebugString());
 
-    int n_cls = classes.dim_size(1);
+    int n_cls = static_cast<int>(classes.dim_size(1));
     TensorWrap2d<float> cls_dat(classes);
     TensorWrap2d<int32> res_ind(*indices);
     TensorWrap2d<float> res_scores(*scores);
@@ -414,7 +502,7 @@ void DNN::getTopClasses( tensorflow::Tensor &classes, const int batch_size, cons
             if (queue.size()<n_top || *p > queue.top().first) {
                 if (queue.size() == n_top)
                     queue.pop();
-                queue.push( std::pair<float, size_t>(*p,j));
+                queue.push( std::pair<float, int>(*p,j));
             }
         }
         // write back results... and empty the queue

@@ -62,7 +62,7 @@ signals:
     void log(QString s);
 
 
-    void newPackage(Batch *batch, int packageId);
+    void newPackage(Batch *batch);
 
 
 public slots:
@@ -73,13 +73,13 @@ public slots:
     void abort();
     //ModelRunState state() { return *mState; }
 
-    void processedPackage(Batch *batch, int packageId);
+    void processedPackage(Batch *batch);
     void allPackagesBuilt();
 
 private:
     void internalRun();
     void buildInferenceData(Cell *cell);
-    void checkBatch(Batch *batch);
+    bool checkBatch(Batch *batch);
     void sendPendingBatches();
     void finalizeCycle();
     void cancel();

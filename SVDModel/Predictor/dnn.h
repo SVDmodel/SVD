@@ -8,7 +8,8 @@ class Tensor;
 class Status;
 class Input;
 }
-class Batch;
+class Batch; // forward
+class StateChangeOut; // forward
 
 class DNN
 {
@@ -46,6 +47,9 @@ private:
 
     /// select randomly an index 0..n-1, with values the weights.
     int chooseProbabilisticIndex(float *values, int n, int skip_index=-1);
+
+    /// link to detailed output
+    StateChangeOut *mSCOut;
 
 
 };

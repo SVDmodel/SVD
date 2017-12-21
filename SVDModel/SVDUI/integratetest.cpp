@@ -3,6 +3,7 @@
 #include "../SVDCore/tools/settings.h"
 #include "../SVDCore/tools/randomgen.h"
 #include "../Predictor/predictortest.h"
+#include "tools/expression.h"
 
 #include "spdlog/spdlog.h"
 
@@ -173,5 +174,16 @@ void IntegrateTest::testTensor()
 
     PredictorTest pt;
     pt.tensorTest();
+
+}
+
+void IntegrateTest::testExpression()
+{
+    auto console = spdlog::get("main");
+    Expression e("sin(x*2.434)");
+    for (double x=0.; x<3; x+=0.1) {
+        double res = e.calculate(x);
+        console->debug("x: {} y: {}", x, res);
+    }
 
 }

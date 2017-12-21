@@ -24,6 +24,7 @@ public:
 
     // access
     const EnvironmentCell &environmentCell() const;
+    const Cell &cell() const;
 
     /// get a human readable string from the data in the tensors for the example in 'slot'
     std::string dumpTensorData();

@@ -11,11 +11,12 @@ public:
     ~OutputManager();
     /// set up the outputs
     void setup();
+    bool isSetup() const { return mIsSetup; }
 
     /// executes the output 'output_name'.
     bool run(const std::string &output_name);
 
-    void run();
+    void yearEnd();
 
     // access
 
@@ -24,6 +25,7 @@ public:
     Output *find(std::string output_name);
 private:
     std::vector<Output*> mOutputs;
+    bool mIsSetup;
 };
 
 #endif // OUTPUTMANAGER_H

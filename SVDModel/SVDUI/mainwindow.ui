@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>TFRunner</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="res/resource.qrc">
+    <normaloff>:/mainicon</normaloff>:/mainicon</iconset>
+  </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
@@ -332,6 +336,19 @@
           <string>Tensor test</string>
          </property>
         </widget>
+        <widget class="QPushButton" name="pbTestExpre">
+         <property name="geometry">
+          <rect>
+           <x>430</x>
+           <y>30</y>
+           <width>75</width>
+           <height>23</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Expression</string>
+         </property>
+        </widget>
        </widget>
        <widget class="QGroupBox" name="groupBox">
         <property name="geometry">
@@ -398,6 +415,19 @@
          </property>
         </widget>
        </widget>
+       <widget class="QPushButton" name="pbTestTF">
+        <property name="geometry">
+         <rect>
+          <x>160</x>
+          <y>330</y>
+          <width>75</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>test tf</string>
+        </property>
+       </widget>
       </widget>
      </widget>
     </item>
@@ -436,6 +466,8 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources/>
+ <resources>
+  <include location="res/resource.qrc"/>
+ </resources>
  <connections/>
 </ui>

@@ -56,6 +56,10 @@ private slots:
 
     void on_pbCancel_clicked();
 
+    void on_pbTestTF_clicked();
+
+    void on_pbTestExpre_clicked();
+
 private:
     Ui::MainWindow *ui;
     std::unique_ptr<ModelController> mMC;

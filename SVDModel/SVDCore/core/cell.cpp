@@ -54,11 +54,17 @@ void Cell::update()
 
 void Cell::setState(state_t new_state)
 {
+    if (new_state==0) {
+        spdlog::get("main")->error("Attempting to set state=0! Details:");
+        dumpDebugData();
+        return;
+    }
     mStateId = new_state;
     if (new_state<0)
         mState=nullptr;
-    else
+    else {
         mState = &Model::instance()->states()->stateById(new_state);
+    }
 }
 
 void Cell::setExternalState(state_t state)
@@ -83,7 +89,7 @@ std::vector<double> Cell::neighborSpecies() const
                 // note for external seeds:
                 // if the cell is in 'species-shares' mode, then state() is null
                 // if the cell is in 'state' mode, a (constant) state is assigned
-                auto shares = cell.state()? cell.state()->speciesShares() : Model::instance()->externalSeeds().speciesShares(cell.externalSeedType());
+                const auto &shares = cell.state()? cell.state()->speciesShares() : Model::instance()->externalSeeds().speciesShares(cell.externalSeedType());
                 for (int i=0; i<n_species;++i)
                     result[i*2] += shares[i];
                 ++n_local;
@@ -100,7 +106,7 @@ std::vector<double> Cell::neighborSpecies() const
         if (grid.isIndexValid(center + p)) {
             Cell &cell = grid.valueAtIndex(center + p);
             if (cell.state() || cell.externalSeedType()>=0) {
-                auto shares = cell.state()? cell.state()->speciesShares() : Model::instance()->externalSeeds().speciesShares(cell.externalSeedType());
+                const auto &shares = cell.state()? cell.state()->speciesShares() : Model::instance()->externalSeeds().speciesShares(cell.externalSeedType());
                 for (int i=0; i<n_species;++i)
                     result[i*2+1] += shares[i];
                 ++n_mid;
@@ -112,4 +118,15 @@ std::vector<double> Cell::neighborSpecies() const
             result[i*2+1] /= n_mid;
 
     return result;
+}
+
+void Cell::dumpDebugData()
+{
+    auto lg = spdlog::get("main");
+    PointF coord =  Model::instance()->landscape()->grid().cellCenterPoint( Model::instance()->landscape()->grid().indexOf(this) );
+    lg->info("Cell {} at {}/{}m:", (void*)this, coord.x(), coord.y());
+    lg->info("Current state ID: {}, {}, residence time: {}", mStateId, mState->asString(), mResidenceTime);
+    lg->info("external seed type: {}", mExternalSeedType);
+    lg->info("Next state-id: {},  update time: {}", mNextStateId, mNextUpdateTime);
+
 }

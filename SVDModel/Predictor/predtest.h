@@ -7,6 +7,7 @@ class PredTest
 public:
     PredTest();
     void testTensor();
+    void testDevicePlacement();
 
 };
 

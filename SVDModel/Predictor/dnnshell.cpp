@@ -57,38 +57,35 @@ void DNNShell::setup(QString fileName)
 
 }
 
-void DNNShell::doWork(Batch *batch, int packageId)
+void DNNShell::doWork(Batch *batch)
 {
 
-    batch->setPackageId(packageId);
     RunState::instance()->dnnState() = ModelRunState::Running;
 
     if (RunState::instance()->cancel()) {
         batch->setError(true);
         //RunState::instance()->dnnState()=ModelRunState::Stopping; // TODO: main
-        emit workDone(batch, packageId);
+        emit workDone(batch);
         return;
     }
 
-    // find a suitable watcher
-    //QFutureWatcher<Batch*> *watcher=getFutureWatcher(batch);
-    //QFuture<Batch*> dnn_result;
+
+    if (batch->state()!=Batch::Fill)
+        lg->error("Batch {} [{}] is in the wrong state {}, size: {}", batch->packageId(), (void*)batch, batch->state(), batch->usedSlots());
+
     batch->changeState(Batch::DNN);
     mProcessing++;
     lg->debug("DNNShell: received package {}. Starting DNN (batch: {}, state: {}, active threads now: {}, #processing: {}) ", batch->packageId(), (void*)batch, batch->state(), mThreads->activeThreadCount(), mProcessing);
-    QtConcurrent::run( mThreads, [this, batch]{  mDNN->run(batch);
 
-                                                if (!QMetaObject::invokeMethod(this, "dnnFinished", Qt::QueuedConnection,
-                                                                          Q_ARG(void*, static_cast<void*>(batch))) )
-                                                    batch->setError(true);
-                                                            });
-    //watcher->setFuture(dnn_result);
+    QtConcurrent::run( mThreads,
+                       [](DNNShell *shell, Batch *batch, DNN* dnn){
+                            dnn->run(batch);
 
-
-
-
-
-    //QCoreApplication::processEvents();
+                            if (!QMetaObject::invokeMethod(shell, "dnnFinished", Qt::QueuedConnection,
+                                                           Q_ARG(void*, static_cast<void*>(batch))) ) {
+                                batch->setError(true);
+                            }
+                        }, this, batch, mDNN.get());
 }
 
 void DNNShell::dnnFinished(void *vbatch)
@@ -106,7 +103,7 @@ void DNNShell::dnnFinished(void *vbatch)
 
     if (batch->hasError()) {
         RunState::instance()->setError("Error in DNN", RunState::instance()->dnnState());
-        emit workDone(batch, batch->packageId());
+        emit workDone(batch);
         QCoreApplication::processEvents();
         return;
     }
@@ -118,9 +115,9 @@ void DNNShell::dnnFinished(void *vbatch)
 
     batch->changeState(Batch::Finished);
 
-    lg->debug("finished data package {} (size={})", batch->packageId(), batch->usedSlots());
+    lg->debug("finished data package {} [{}] (size={})", batch->packageId(), (void*)batch, batch->usedSlots());
 
-    emit workDone(batch, batch->packageId());
+    emit workDone(batch);
     if (!isRunnig())
         RunState::instance()->dnnState() = ModelRunState::ReadyToRun;
 
