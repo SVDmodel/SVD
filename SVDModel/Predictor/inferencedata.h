@@ -10,6 +10,9 @@ class InferenceData
 {
 public:
     InferenceData(): mOldState(-1), mNextState(-1), mNextTime(-1), mBatch(nullptr), mSlot(-1) {}
+    /// check if for the given item all the data is avaialable during setup
+    static bool checkSetup(const InputTensorItem &def);
+
     /// fills an item by pulling all the required data from the model
     void fetchData(Cell *cell, Batch *batch, int slot);
 
@@ -37,6 +40,7 @@ private:
     void fetchResidenceTime(const InputTensorItem &def);
     void fetchNeighbors(const InputTensorItem &def);
     void fetchSite(const InputTensorItem &def);
+    void fetchDistanceOutside(const InputTensorItem &def);
     state_t mOldState;
     state_t mNextState;
     restime_t mNextTime;

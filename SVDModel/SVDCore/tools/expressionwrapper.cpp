@@ -42,7 +42,7 @@ void set_strings()
         return;
     // ********* base **********
     baseVarList.push_back("year");
-    baseVarListCount = baseVarList.size();
+    baseVarListCount = static_cast<int>(baseVarList.size());
 
     // ********* tree **********
 

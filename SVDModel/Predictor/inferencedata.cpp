@@ -3,6 +3,29 @@
 #include "batch.h"
 #include "tensorhelper.h"
 
+bool InferenceData::checkSetup(const InputTensorItem &def)
+{
+
+    switch (def.content) {
+    case InputTensorItem::Site:
+        // required columns: availableNitrogen, soilDepth
+        if (!contains(EnvironmentCell::variables(), "availableNitrogen") || !contains(EnvironmentCell::variables(), "soilDepth")) {
+            spdlog::get("dnn")->error("The required columns 'availableNitrogen' and 'soilDepth' are not available in the environment (item: '{}', available: '{}').", def.name, join(EnvironmentCell::variables()));
+            return false;
+        }
+        return true;
+    case InputTensorItem::DistanceOutside:
+            if (!contains(EnvironmentCell::variables(), "distanceOutside") ) {
+                spdlog::get("dnn")->error("The required columns 'distanceOutside' is not available in the environment (item: '{}', available: '{}').", def.name, join(EnvironmentCell::variables()));
+                return false;
+            }
+            return true;
+    default:
+        return true; // no specific tests for this item
+    }
+
+}
+
 void InferenceData::fetchData(Cell *cell, Batch *batch, int slot)
 {
     mOldState = cell->stateId();
@@ -91,6 +114,9 @@ void InferenceData::internalFetchData()
         case InputTensorItem::Scalar:
             // a scalar is already set to the correct value.
             break;
+        case InputTensorItem::DistanceOutside:
+            fetchDistanceOutside(def);
+            break;
 
         default:
             throw std::logic_error("InferenceData::fetchData: invalid content type.");
@@ -173,4 +199,16 @@ void InferenceData::fetchSite(const InputTensorItem &def)
     // TODO: transformation...
     *p++ = static_cast<float>( (ec.value(i_nitrogen) -58.500)/41.536 );
     *p++ = static_cast<float>( (ec.value(i_soildepth)-58.500)/41.536 );
+}
+
+void InferenceData::fetchDistanceOutside(const InputTensorItem &def)
+{
+    const int i_distance = 2;
+    TensorWrapper *t = mBatch->tensor(def.index);
+    TensorWrap2d<float> *tw = static_cast<TensorWrap2d<float>*>(t);
+    float *p = tw->example(mSlot);
+    auto &ec = Model::instance()->landscape()->environmentCell(mIndex);
+
+    *p = static_cast<float>( ec.value(i_distance) );
+
 }

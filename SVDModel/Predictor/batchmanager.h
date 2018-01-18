@@ -18,7 +18,8 @@ struct InputTensorItem {
         ResidenceTime = 3,
         Neighbors = 4,
         Site = 5,
-        Scalar = 6
+        Scalar = 6,
+        DistanceOutside = 7
     };
 
     /// supported data types (values copied from tensorflow types.pb.h)

@@ -19,7 +19,8 @@ std::map< std::string, InputTensorItem::DataContent> data_contents = {
     {"ResidenceTime", InputTensorItem::ResidenceTime},
     {"Neighbors",     InputTensorItem::Neighbors},
     {"Site",          InputTensorItem::Site},
-    {"Scalar",          InputTensorItem::Scalar}
+    {"Scalar",          InputTensorItem::Scalar},
+    {"DistanceOutside", InputTensorItem::DistanceOutside}
 };
 std::map< std::string, InputTensorItem::DataType> data_types = {
     {"Invalid", InputTensorItem::DT_INVALID},
@@ -86,6 +87,7 @@ void BatchManager::setup()
         {"state_input", "int16", 1, 1, 0, "State"},
         {"time_input", "float", 1, 1, 0, "ResidenceTime"},
         {"site_input", "float", 1, 2, 0, "Site"} ,
+        {"distance_input", "float", 1, 1, 0, "DistanceOutside"}, // distance to the forested area outside
         {"neighbor_input", "float", 1, 62, 0, "Neighbors"},
         {"keras_learning_phase", "bool", 0, 0, 0, "Scalar"}
     };
@@ -243,6 +245,14 @@ Batch *BatchManager::createBatch()
     for (auto &td : mTensorDef) {
         // create a tensor of the right size
         TensorWrapper *tw = buildTensor(mBatchSize, td);
+        if (mBatches.size()==0)
+            if (!InferenceData::checkSetup(td)) {
+                lg->error("create Batch: Error:");
+                lg->error("Name: '{}', dataype: '{}', dimensions: {}, size-x: {}, size-y: {}, content: '{}'",
+                          td.name, td.datatypeString(td.type), td.ndim, td.sizeX, td.sizeY, td.contentString(td.content));
+                throw std::logic_error("Could not create a tensor (check the logfile).");
+
+            }
 
         td.index = index++; // static_cast<int>(b->mTensors.size());
         b->mTensors.push_back(tw);
