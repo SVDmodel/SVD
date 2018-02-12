@@ -16,10 +16,9 @@ Internally, the following data types are used:
 
 | Setting | Type | Description |
 | -------- | -------- | -------- |
-| model.multithreading     | boolean     | Path to the log file (relative to the project root) |
-| logging.setup.level | String | Debug level during model setup. |
-| logging.model.level | String | Debug level for the main model (during execution). |
-| logging.dnn.level | String | Debug level for the DNN sub module (during execution). |
+| model.multithreading     | boolean     | Enabled/disable the use of mulitple threads for the main model in SVD (not related to DNN inference). |
+| model.threads | integer | Number of threads to use if `model.multithreading` is enabled. The 'ideal' thread count (number of CPU cores) is used if missing or if the value is `-1`. |
+
 
 
 ### Section 'logging'
@@ -42,14 +41,21 @@ A typical log entry includes a timestamp, the source (setup, dnn, main) and the 
 
 | Setting | Type | Description |
 | -------- | -------- | -------- |
-| logging.file     | String     | Path to the log file (relative to the project root) |
-| logging.setup.level | String | Debug level during model setup. |
-| logging.model.level | String | Debug level for the main model (during execution). |
-| logging.dnn.level | String | Debug level for the DNN sub module (during execution). |
+| logging.file     | string     | Path to the log file (relative to the project root) |
+| logging.setup.level | string | Debug level during model setup. |
+| logging.model.level | string | Debug level for the main model (during execution). |
+| logging.dnn.level | string | Debug level for the DNN sub module (during execution). |
 
 
 
 ### Section 'dnn'
+
+| Setting | Type | Description |
+| -------- | -------- | -------- |
+| dnn.file     | string     | Path to the stored DNN (relative to the project root) |
+| dnn.maxBatchQueue | integer | The maximum queue size for batches |
+| dnn.topKNClasses | integer | the number of classes used by the top K algorithm for selecting candidate states (default: 10)|
+| dnn.topKGPU | boolean | if `true` (the default), the selection of the top K classes after DNN inference is done on GPU (using TensorFlow ops), and on CPU otherwise (not using TensorFlow). |
 
 ### Section 'states'
 
