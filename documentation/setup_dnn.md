@@ -1,0 +1,3 @@
+# setup of the DNN
+
+Definition of input/output layers, data types, ....
