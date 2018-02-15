@@ -38,6 +38,8 @@ public:
     static Model *instance() {
         assert(mInstance!=nullptr);
         return mInstance; }
+    /// check if a Model object is available
+    static bool hasInstance() { return mInstance!=nullptr; }
 
     /// the current time step of the simulation
     /// year=0 after setup, and incremented whenever a new step starts, i.e. first sim. year=1, 2nd year=2, ...

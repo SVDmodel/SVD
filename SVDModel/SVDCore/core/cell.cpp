@@ -102,7 +102,7 @@ std::vector<double> Cell::neighborSpecies() const
 
     // mid-range neighbors
     double n_mid = 0.;
-    for (const auto &p : mLocalNeighbors) {
+    for (const auto &p : mMediumNeighbors) {
         if (grid.isIndexValid(center + p)) {
             Cell &cell = grid.valueAtIndex(center + p);
             if (cell.state() || cell.externalSeedType()>=0) {

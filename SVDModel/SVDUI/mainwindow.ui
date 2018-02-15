@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>TFRunner</string>
+   <string>SVD</string>
   </property>
   <property name="windowIcon">
    <iconset resource="res/resource.qrc">

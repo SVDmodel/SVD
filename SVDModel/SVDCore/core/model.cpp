@@ -36,7 +36,7 @@ Model::~Model()
 bool Model::setup()
 {
     // general setup
-    bool mt = settings().valueBool("model.multithreading",true);
+    bool mt = settings().valueBool("model.multithreading", "true");
     if (mt) {
         int n_threads = settings().valueInt("model.threads", -1);
         if (n_threads == -1)

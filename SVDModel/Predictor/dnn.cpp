@@ -89,7 +89,8 @@ DNN::DNN()
     session = nullptr;
     top_k_session = nullptr;
     mSCOut = nullptr;
-    mTopK_tf = true; // TODO: more dynamic
+    mTopK_tf = true;
+    mTopK_NClasses = 10;
 }
 
 DNN::~DNN()
@@ -112,9 +113,11 @@ bool DNN::setup()
     if (!lg)
         throw std::logic_error("DNN::setup: logging not available.");
     lg->info("Setup of DNN.");
-    settings.requiredKeys("dnn", {"file", "maxBatchQueue"});
+    settings.requiredKeys("dnn", {"file", "maxBatchQueue", "topKNClasses"});
 
     std::string file = Tools::path(settings.valueString("dnn.file"));
+    mTopK_tf = settings.valueBool("dnn.topKGPU", "true");
+    mTopK_NClasses = settings.valueInt("dnn.topKNClasses", 10);
     lg->info("DNN file: '{}'", file);
 
 
@@ -155,7 +158,6 @@ bool DNN::setup()
         //top_k_tensor = new tensorflow::Tensor(tensorflow::DT_FLOAT, tensorflow::PartialTensorShape({-1, ncls}));
         //new tensorflow::Tensor(dt, tensorflow::TensorShape({ static_cast<int>(mBatchSize), static_cast<int>(mRows), static_cast<int>(mCols)}));
 
-        const int n_top = 10; // TODO variable
 
         auto root = tensorflow::Scope::NewRootScope();
         string output_name = "top_k";
@@ -163,7 +165,7 @@ bool DNN::setup()
         //string topk_input_name = "topk_input";
 
         // tensorflow::Node* topk =
-        tensorflow::ops::TopK tk(root.WithOpName(output_name), top_k_tensor, n_top);
+        tensorflow::ops::TopK tk(root.WithOpName(output_name), top_k_tensor, mTopK_NClasses);
 
 
         lg->trace("top-k-tensor: {}", top_k_tensor.DebugString());
@@ -277,7 +279,6 @@ Batch * DNN::run(Batch *batch)
 #ifdef CUDA_PROFILING
     cudaProfilerStart();
 #endif
-    const int top_n=10;
     std::vector<Tensor> outputs;
     STimer timr(lg, "DNN::run:" + to_string(batch->packageId()));
     lg->debug("DNN: started execution for package {}.", batch->packageId());
@@ -342,11 +343,11 @@ Batch * DNN::run(Batch *batch)
     } else {
         // use CPU to extract top-k results
         // outputs[0] is the output tensor with the state probabilities
-        scores = new Tensor(tensorflow::DT_FLOAT, tensorflow::TensorShape({  batch->batchSize(), top_n}));
-        indices = new Tensor(tensorflow::DT_INT32, tensorflow::TensorShape({  batch->batchSize(), top_n}));
+        scores = new Tensor(tensorflow::DT_FLOAT, tensorflow::TensorShape({  batch->batchSize(), mTopK_NClasses}));
+        indices = new Tensor(tensorflow::DT_INT32, tensorflow::TensorShape({  batch->batchSize(), mTopK_NClasses}));
 
         // run the top-k on CPU
-        getTopClasses(outputs[0], batch->batchSize(), top_n, indices, scores);
+        getTopClasses(outputs[0], batch->batchSize(), mTopK_NClasses, indices, scores);
         timr.print("topk cpu");
 
 

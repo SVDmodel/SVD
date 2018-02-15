@@ -1,5 +1,8 @@
 #include "settings.h"
 #include "strtools.h"
+
+#include "spdlog/spdlog.h"
+
 #include <iostream>
 
 Settings::Settings()
@@ -73,6 +76,14 @@ double Settings::valueDouble(const std::string &key, double default_value) const
         throw std::logic_error("Error in Settings: The value of '" + key + "': '" + s + "' is not a valid (double) number.");
     }
     return result;
+}
+
+void Settings::checkLogDefault(const std::string &key, std::string default_value)
+{
+    auto lg = spdlog::get("setup");
+    if (lg->should_log(spdlog::level::trace)) {
+        lg->trace("Settings: query key '{}', used default: '{}'.", key, default_value);
+    }
 }
 
 

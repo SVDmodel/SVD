@@ -88,6 +88,9 @@ ModelShell::~ModelShell()
 
 void ModelShell::destroyModel()
 {
+    if (!mModel && Model::hasInstance())
+        mModel = Model::instance(); // hackish way to make sure the global model is deleted
+
     if (mModel) {
         lg.reset(); // delete link to the logging stream
         Model *m = mModel;
@@ -153,7 +156,7 @@ void ModelShell::createModel(QString fileName)
 {
     try {
         setState(ModelRunState::Creating);
-        if (model())
+        if (Model::hasInstance())
             destroyModel();
 
         mModel = new Model(fileName.toStdString());

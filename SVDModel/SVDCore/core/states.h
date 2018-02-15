@@ -6,8 +6,8 @@
 #include <unordered_map>
 
 /// state_t:
-typedef short int state_t;
-typedef short int restime_t;
+typedef short int state_t; // 16bit
+typedef short int restime_t; // 16bit
 
 class State {
 public:

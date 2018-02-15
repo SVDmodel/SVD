@@ -27,6 +27,10 @@ DNNShell::~DNNShell()
 
 void DNNShell::setup(QString fileName)
 {
+    mBatchesProcessed = 0;
+    mCellsProcessed = 0;
+    mProcessing = 0;
+
     // setup is called *after* the set up of the main model
     lg = spdlog::get("dnn");
     if (lg)
@@ -34,12 +38,25 @@ void DNNShell::setup(QString fileName)
 
     RunState::instance()->dnnState()=ModelRunState::Creating;
 
+    try {
     mBatchManager = std::unique_ptr<BatchManager>(new BatchManager());
     mBatchManager->setup();
-
-    mDNN = std::unique_ptr<DNN>(new DNN());
-    if (!mDNN->setup()) {
+    } catch (const std::exception &e) {
+        lg->error("An error occured during setup of the Batch-Manager (DNN): {}", e.what());
         RunState::instance()->dnnState()=ModelRunState::ErrorDuringSetup;
+        return;
+    }
+
+    try {
+        mDNN = std::unique_ptr<DNN>(new DNN());
+        if (!mDNN->setup()) {
+            RunState::instance()->dnnState()=ModelRunState::ErrorDuringSetup;
+            return;
+        }
+
+    } catch (const std::exception &e) {
+        RunState::instance()->dnnState()=ModelRunState::ErrorDuringSetup;
+        lg->error("An error occured during DNN setup: {}", e.what());
         return;
     }
     int n_threads = Model::instance()->settings().valueInt("dnn.threads", -1);
@@ -48,9 +65,6 @@ void DNNShell::setup(QString fileName)
         lg->debug("setting DNN threads to {}.", n_threads);
     }
     lg->debug("Thread pool for DNN: using {} threads.", mThreads->maxThreadCount());
-    mBatchesProcessed = 0;
-    mCellsProcessed = 0;
-    mProcessing = 0;
 
     RunState::instance()->dnnState()=ModelRunState::ReadyToRun;
 

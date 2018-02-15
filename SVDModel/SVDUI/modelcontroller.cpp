@@ -136,6 +136,9 @@ ModelController::~ModelController()
 std::unordered_map<std::string, std::string> ModelController::systemStatus()
 {
     std::unordered_map<std::string, std::string> result;
+    if (mModelShell->model() == nullptr)
+        return result;
+
     // add statistics
     result["dnnRunning"] = dnnShell()->isRunnig() ? "yes" : "no";
     result["dnnBatchesProcessed"] = to_string(dnnShell()->batchesProcessed());
@@ -170,9 +173,14 @@ void ModelController::setup(QString fileName)
     QMetaObject::invokeMethod(mModelShell, "createModel", Qt::BlockingQueuedConnection,
                               Q_ARG(QString, fileName)) ;
 
+    if (RunState::instance()->isError())
+        return;
 
 
     QMetaObject::invokeMethod(mModelShell, "setup", Qt::QueuedConnection) ;
+    if (RunState::instance()->isError())
+        return;
+
 
     QMetaObject::invokeMethod(mDNNShell, "setup", Qt::QueuedConnection,
                               Q_ARG(QString, fileName)) ;

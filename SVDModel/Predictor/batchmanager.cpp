@@ -60,8 +60,8 @@ BatchManager::~BatchManager()
     for (auto b : mBatches)
         delete b;
 
-    if (spdlog::get("dnn"))
-        spdlog::get("dnn")->debug("Batch manager destroyed: {x}", (void*)this);
+    if (auto lg = spdlog::get("dnn"))
+        lg->debug("Batch manager destroyed: {x}", (void*)this);
 
     mInstance = nullptr;
 }
