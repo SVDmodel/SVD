@@ -23,7 +23,7 @@ void StateChangeOut::setup()
       lg->error("Cannot create output file: '{}' (StateChangeOut): {}", mOutputFile, strerror(errno));
       throw std::logic_error("Error in setup of StateChange output.");
     }
-    mFile << "year,state,restime,nextState,nextTime,s1,p1,s2,p2,s3,p3,s4,p4,s5,p5,s6,p6,s7,p7,s8,p8,s9,p9,s10,p10,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10" << std::endl;
+    mFile << "year,cellId,state,restime,nextState,nextTime,s1,p1,s2,p2,s3,p3,s4,p4,s5,p5,s6,p6,s7,p7,s8,p8,s9,p9,s10,p10,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10" << std::endl;
 
 
 }
@@ -38,6 +38,7 @@ void StateChangeOut::execute()
 
 }
 
+std::mutex filter_mtx;
 bool StateChangeOut::shouldWriteOutput(const InferenceData &id)
 {
     int year =  Model::instance()->year();
@@ -48,6 +49,7 @@ bool StateChangeOut::shouldWriteOutput(const InferenceData &id)
     if (mFilter.isEmpty())
         return true;
 
+    std::lock_guard<std::mutex> guard(filter_mtx);
     CellWrapper wrap(&id);
     if (mFilter.calculate(wrap))
         return true;

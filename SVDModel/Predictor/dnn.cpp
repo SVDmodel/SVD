@@ -262,7 +262,8 @@ std::string stateChangeOutput(const TensorWrap2d<int32> &state_index, const Tens
     char sep=',';
     // selected state/residence time
     const auto &id = batch->inferenceData(index);
-    s << Model::instance()->year() << sep << id.state() << sep << id.cell().residenceTime() << sep << id.nextState() << sep << id.nextTime();
+
+    s << Model::instance()->year() << sep << id.environmentCell().id() << sep << id.state() << sep << id.cell().residenceTime() << sep << id.nextState() << sep << id.nextTime();
     // states / probs
     for (size_t i=0;i<state_index.n();++i)
         s <<  sep << Model::instance()->states()->stateByIndex(state_index.example(index)[i]).id()
