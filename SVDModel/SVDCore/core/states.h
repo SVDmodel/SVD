@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <cassert>
+#include "strtools.h"
 
 /// state_t:
 typedef short int state_t; // 16bit
@@ -18,12 +20,25 @@ public:
     int structure() const {return mStructure; }
     std::string asString() const;
     const std::vector<double> &speciesShares() const { return mSpeciesShare; }
+
+    // properties
+    static const std::vector<std::string> &valueNames() { return mValueNames; }
+    static int valueIndex(const std::string &name) { return indexOf(mValueNames, name); }
+    bool hasValue(const std::string &name) const { return indexOf(mValueNames, name)>=0; }
+    double value(const std::string &name) const { return value(valueIndex(name)); }
+    double value(const int index) const { assert(index>=0); return index<mValues.size() ? mValues[index] : 0.;}
+    void setValue(const std::string &name, double value);
+    void setValue(const int index, double value);
 private:
     state_t mId;
     std::string mComposition;
     int mStructure;
     int mFunction;
     std::vector<double> mSpeciesShare;
+
+    /// store for extra state specific values used by modules
+    std::vector<double> mValues;
+    static std::vector<std::string> mValueNames;
 };
 
 class States
@@ -31,6 +46,9 @@ class States
 public:
     States();
     void setup();
+
+    /// load properties from a text file (stateId is the key)
+    bool loadProperties(const std::string &filename);
 
     // members
     bool isValid(state_t state) const { return mStateSet.find(state) != mStateSet.end(); }

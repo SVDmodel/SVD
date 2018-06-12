@@ -10,7 +10,7 @@ public:
     Cell(state_t state, restime_t res_time=0): mStateId(state), mResidenceTime(res_time), mNextUpdateTime(0), mNextStateId(-1), mExternalSeedType(-1) { setState(state); }
 
     // access
-    /// isNull() returns true if the cell is an actively simulated cell
+    /// isNull() returns true if the cell is not an actively simulated cell
     bool isNull() const { return mStateId==-1; }
     /// the numeric ID of the state the cell is in
     state_t stateId() const { return mStateId; }

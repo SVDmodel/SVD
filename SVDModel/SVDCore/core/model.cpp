@@ -65,6 +65,12 @@ bool Model::setup()
 
     mExternalSeeds.setup();
 
+    // setup of modules
+    if (settings().valueBool("modules.fire.enabled", "false")) {
+        mFireModule = std::shared_ptr<FireModule>(new FireModule());
+        mFireModule->setup();
+    }
+
 
     mYear = 0; // model is set up, ready to run
     return true;

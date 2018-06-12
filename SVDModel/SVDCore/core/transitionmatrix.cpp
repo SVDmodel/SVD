@@ -41,6 +41,8 @@ bool TransitionMatrix::load(const std::string &filename)
 state_t TransitionMatrix::transition(state_t stateId, int key)
 {
     const auto &prob = mTM.at({stateId, key});
+    if (prob.size() == 1)
+        return prob.front().first;
     // choose a state probabilistically
     double p_sum = 0;
     for (const auto &item : prob) p_sum+=item.second;

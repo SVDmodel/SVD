@@ -138,8 +138,10 @@ void FileReader::readHeader()
     tokenize(std::string(mBuffer), mFields, mDelimiter );
 
     mColCount = mFields.size();
-    for (size_t i=0;i<mFields.size(); i++)
+    for (size_t i=0;i<mFields.size(); i++) {
        mValues.push_back(0.);
+       replace_string(mFields[i], "\"", ""); // drop quotes
+    }
 
     // Note: in gcc calling tellg() seems to invalidate the stream loading process (i.e. the next loaded line is truncated).
     // in bcb this works ok.

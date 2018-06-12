@@ -152,6 +152,8 @@ public:
     inline T& operator[](const int idx) const { return mData[idx]; }
     /// use the square bracket to access by PointF
     inline T& operator[] (const PointF &p) { return valueAt(p); }
+    /// access value at Point p
+    inline T& operator[](const Point &p)  { return valueAtIndex(p); }
 
     inline T& valueAtIndex(const Point& pos) {return valueAtIndex(pos.x(), pos.y());}  ///< value at position defined by a Point defining the two indices (x,y)
     T& valueAtIndex(const int ix, const int iy) { return mData[iy*mSizeX + ix];  } ///< const value at position defined by indices (x,y)

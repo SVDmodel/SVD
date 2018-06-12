@@ -6,6 +6,8 @@
 #include "filereader.h"
 #include "randomgen.h"
 
+std::vector<std::string> State::mValueNames;
+
 States::States()
 {
 
@@ -29,6 +31,31 @@ void States::setup()
 
     }
     spdlog::get("setup")->debug("Loaded {} states from file '{}'", mStates.size(), file_name);
+
+}
+
+bool States::loadProperties(const std::string &filename)
+{
+    FileReader rdr(filename);
+    rdr.requiredColumns({"stateId"});
+    int sidx = static_cast<int>(rdr.columnIndex("stateId"));
+    int lineno=0;
+    bool has_errors = false;
+    while (rdr.next()) {
+        ++lineno;
+        try {
+            const State &state = Model::instance()->states()->stateById(static_cast<int>(rdr.value(sidx)));
+            for (int i=0;i<rdr.columnCount();++i)
+                if (i != sidx)
+                    const_cast<State&>(state).setValue(rdr.columnName(i), rdr.value(i));
+
+        } catch (const std::logic_error &) {
+            spdlog::get("setup")->warn("loading of properties: state {} is not valid (line {})!", rdr.value(sidx), lineno);
+            has_errors = true;
+        }
+    }
+    spdlog::get("setup")->debug("Loaded {} values from file '{}'. States have now: {}", rdr.columnCount()-1, filename, join(State::valueNames()));
+    return !has_errors;
 
 }
 
@@ -135,4 +162,25 @@ std::string State::asString() const
     std::stringstream s;
     s << compositionString() << " S" << structure() << " F" << function();
     return s.str();
+}
+
+void State::setValue(const std::string &name, double value)
+{
+    int index = valueIndex(name);
+    if (index<0) {
+        // add property to the list of properties
+        mValueNames.push_back(name);
+        index = valueIndex(name);
+    }
+    setValue(index, value);
+
+}
+
+void State::setValue(const int index, double value)
+{
+    // check if array is large enough
+    if (mValues.size() != mValueNames.size()) {
+        mValues.resize(mValueNames.size());
+    }
+    mValues[index] = value;
 }

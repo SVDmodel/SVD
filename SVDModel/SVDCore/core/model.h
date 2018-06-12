@@ -13,7 +13,8 @@
 #include "landscape.h"
 #include "externalseeds.h"
 #include "outputs/outputmanager.h"
-
+// modules
+#include "modules/fire/firemodule.h"
 
 class Model
 {
@@ -90,6 +91,8 @@ private:
     std::shared_ptr<Landscape> mLandscape;
     ExternalSeeds mExternalSeeds;
     std::shared_ptr<OutputManager> mOutputManager;
+    // modules
+    std::shared_ptr<FireModule> mFireModule;
     // loggers
     std::shared_ptr<spdlog::logger> lg_main;
     std::shared_ptr<spdlog::logger> lg_setup;
