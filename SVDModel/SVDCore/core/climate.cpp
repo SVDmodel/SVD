@@ -35,12 +35,12 @@ void Climate::setup()
         auto &year_container = mData[year];
         auto &vec = year_container[id];
         vec.resize(rdr.columnCount()-2);
-        for (int i=2;i<rdr.columnCount();++i)
+        for (size_t i=2;i<rdr.columnCount();++i)
             vec[i-2] = static_cast<float>(rdr.value(i));
         // scaling, TODO!
         // monthly climate:
         for (int i=0;i<12;++i)
-            vec[i] = (vec[i]- 6.3) / 6.7; // temp
+            vec[i] =  (vec[i]- 6.3) / 6.7 ; // temp
         for (int i=12;i<24;++i)
             vec[i] = (vec[i]- 116) / 63; // precip
 
@@ -80,13 +80,13 @@ void Climate::setup()
     }
 }
 
-std::vector<const std::vector<float> *> Climate::series(int start_year, int series_length, int climateId) const
+std::vector<const std::vector<float> *> Climate::series(int start_year, size_t series_length, int climateId) const
 {
-    int istart = start_year - 1;
-    if (istart<0 || istart+series_length >= mSequence.size())
+    size_t istart = static_cast<size_t>(start_year - 1);
+    if (istart+series_length >= mSequence.size())
         throw std::logic_error("Climate-series: start year "+ to_string(start_year) +" is out of range (min: 1, max: "+ to_string(mSequence.size()-series_length)+")");
     std::vector<const std::vector<float> *> set(series_length);
-    for (int i=0;i<series_length;++i)  {
+    for (size_t i=0;i<series_length;++i)  {
         int year = mSequence[ istart + i ];
         set[i] = &singleSeries(year, climateId);
     }

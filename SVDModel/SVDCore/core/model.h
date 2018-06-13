@@ -28,6 +28,8 @@ public:
     void newYear();
     void finalizeYear();
 
+    void runModules();
+
     // callbacks
     void setProcessEventsCallback( std::function<void()> event) { mProcessEvents = event; }
     void processEvents() { if (mProcessEvents) mProcessEvents(); }

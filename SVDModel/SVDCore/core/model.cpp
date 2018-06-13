@@ -93,6 +93,16 @@ void Model::finalizeYear()
     stats.NPackagesTotalDNN += stats.NPackagesDNN;
 }
 
+void Model::runModules()
+{
+    auto lg = spdlog::get("main");
+    lg->debug("Run modules (year {})", year());
+    if (mFireModule) {
+        lg->debug("Run fire module");
+        mFireModule->run();
+    }
+}
+
 void Model::newYear()
 {
     if (mYear == 0) {

@@ -43,12 +43,17 @@ private:
     Grid<SFireCell> mGrid;
 
     void fireSpread(const SIgnition &ign);
+    bool burnCell(int ix, int iy, int &rHighSeverity);
 
 
     // store for transition probabilites for burned cells
     TransitionMatrix mFireMatrix;
 
     double mExtinguishProb;
+
+    // index of variables
+    int miBurnProbability;
+    int miHighSeverity;
 };
 
 #endif // FIREMODULE_H

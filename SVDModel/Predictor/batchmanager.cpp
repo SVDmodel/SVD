@@ -188,14 +188,14 @@ std::pair<Batch *, int> BatchManager::findValidSlot()
 
 }
 
-TensorWrapper *BatchManager::buildTensor(int batch_size, InputTensorItem &item)
+TensorWrapper *BatchManager::buildTensor(size_t batch_size, InputTensorItem &item)
 {
     TensorWrapper *tw = nullptr;
 
     // a scalar, i.e. one value for the whole *batch*
     if (item.ndim == 0) {
         switch (item.type) {
-        case InputTensorItem::DT_BOOL:
+        case InputTensorItem::DT_BOOL: {
             tw = new TensorWrap1d<bool>();
             // defaults to true, TODO
             TensorWrap1d<bool> *twb = static_cast< TensorWrap1d<bool>* >(tw);
@@ -203,6 +203,9 @@ TensorWrapper *BatchManager::buildTensor(int batch_size, InputTensorItem &item)
             lg->debug("created a scalar, value: '{}'", twb->value());
             break;
         }
+        default: break;
+        }
+
     }
 
     // a 1d vector per example (or a single value per example)
@@ -216,6 +219,8 @@ TensorWrapper *BatchManager::buildTensor(int batch_size, InputTensorItem &item)
             tw = new TensorWrap2d<short unsigned int>(batch_size, item.sizeX); break;
         case InputTensorItem::DT_INT64:
             tw = new TensorWrap2d<long long>(batch_size, item.sizeX); break;
+        default:
+            throw std::logic_error("Unhandled data type in tensorwrapper");
         }
     }
 

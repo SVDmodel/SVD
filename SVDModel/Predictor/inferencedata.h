@@ -47,7 +47,7 @@ private:
     restime_t mResidenceTime;
     int mIndex; ///< index of the cell in the landscape grid
     Batch *mBatch; ///< link to the batch (that contains the actual Tensors)
-    int mSlot; ///< slot within the batch for this cell
+    size_t mSlot; ///< slot within the batch for this cell
 };
 
 #endif // INFERENCEDATA_H

@@ -32,14 +32,14 @@ struct InputTensorItem {
         DT_UINT16 = 17,
         DT_BFLOAT16 = 14
     };
-    InputTensorItem(std::string aname, DataType atype, int andim, int asizex, int asizey, DataContent acontent):
+    InputTensorItem(std::string aname, DataType atype, size_t andim, size_t asizex, size_t asizey, DataContent acontent):
         name(aname), type(atype), ndim(andim), sizeX(asizex), sizeY(asizey), content(acontent){}
     InputTensorItem(std::string aname, std::string atype, int andim, int asizex, int asizey, std::string acontent);
     std::string name; ///< the name of the tensor within the DNN
     DataType type; ///< data type enum
-    int ndim; ///< the number of dimensions (the batch dimension is added automatically
-    int sizeX; ///< number of data elements in the first dimension
-    int sizeY; ///< number of elements in the second dimension (for 2-dimensional input data)
+    size_t ndim; ///< the number of dimensions (the batch dimension is added automatically
+    size_t sizeX; ///< number of data elements in the first dimension
+    size_t sizeY; ///< number of elements in the second dimension (for 2-dimensional input data)
     DataContent content; ///< the (semantic) type of data
     int index; ///< the index in the list of tensors
 
@@ -86,7 +86,7 @@ private:
     bool mSlotRequested;
     Batch *createBatch();
     std::pair<Batch *, int> findValidSlot();
-    TensorWrapper *buildTensor(int batch_size, InputTensorItem &item);
+    TensorWrapper *buildTensor(size_t batch_size, InputTensorItem &item);
     std::list<InputTensorItem> mTensorDef;
     std::list<Batch *> mBatches;
     static BatchManager *mInstance;

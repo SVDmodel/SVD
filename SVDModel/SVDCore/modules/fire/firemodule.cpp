@@ -3,6 +3,7 @@
 #include "tools.h"
 #include "model.h"
 #include "filereader.h"
+#include "randomgen.h"
 
 FireModule::FireModule()
 {
@@ -27,6 +28,8 @@ void FireModule::setup()
     for (auto a : {"pSeverity", "pBurn"})
         if (State::valueIndex(a) == -1)
             lg->error("The FireModule requires the state property '{}' which is not available.", a);
+    miBurnProbability = State::valueIndex("pBurn");
+    miHighSeverity = State::valueIndex("pSeverity");
 
     // set up ignitions
     filename = Tools::path(settings.valueString("modules.fire.ignitionFile"));
@@ -88,9 +91,82 @@ void FireModule::fireSpread(const FireModule::SIgnition &ign)
 
     mGrid[index].spread = 1;
     int max_ha = static_cast<int>(ign.max_size / 10000);
-    int n_ha = 1;
+    int n_ha = 0;
+    int n_highseverity_ha = 0;
 
+    int ixmin=index.x() - 1, ixmax = index.x() + 1, iymin = index.y() - 1, iymax = index.y() + 1;
+    int ixmin2=std::numeric_limits<int>::max(), ixmax2=std::numeric_limits<int>::min(), iymin2=std::numeric_limits<int>::max(), iymax2=std::numeric_limits<int>::min();
+    int n_round, n_rounds = 1;
     while (n_ha <= max_ha) {
-        // TODO:
-    }
+        n_round=0;
+        for (int iy=iymin; iy<=iymax; ++iy)
+            for (int ix=ixmin; ix<=ixmax; ++ix) {
+                if (mGrid(ix, iy).spread == 1) {
+
+                    if (burnCell(ix, iy, n_highseverity_ha)) {
+                        // the cell is burning and can spread
+                        if (mGrid.isIndexValid(ix-1, iy)) {
+                            mGrid[Point(ix-1, iy)].spread = 1;
+                            ixmin2 = std::min(ixmin, ix-1);
+                        }
+                        if (mGrid.isIndexValid(ix+1, iy)) {
+                            mGrid[Point(ix+1, iy)].spread = 1;
+                            ixmax2 = std::max(ixmax, ix+1);
+                        }
+                        if (mGrid.isIndexValid(ix, iy-1)) {
+                            mGrid[Point(ix, iy-1)].spread = 1;
+                            iymin2 = std::min(iymin, iy-1);
+                        }
+                        if (mGrid.isIndexValid(ix, iy+1)) {
+                            mGrid[Point(ix, iy+1)].spread = 1;
+                            iymax2 = std::max(iymax, iy+1);
+                        }
+                        n_ha++;
+                        n_round++;
+
+                    }
+                }
+            }
+        if (n_round == 0) {
+            lg->debug("Fire: stopped, no more burning pixels found.");
+            break;
+        }
+        n_rounds++;
+        ixmin = ixmin2; ixmax = ixmax2; iymin = iymin2; iymax = iymax2;
+        if (lg->should_log(spdlog::level::debug))
+              lg->debug("Round {}, burned: {} ha, total: {} ha, rectangle: {}/{}-{}/{}", n_rounds, n_ha, ixmin, iymin, ixmax, iymax);
+
+    } // end while
+    lg->info("FireEvent finished. total burned (ha): {}, high severity (ha): {}, max-fire-size (ha): {}", n_ha, n_highseverity_ha, max_ha);
 }
+
+
+// examine a single cell and eventually burn.
+bool FireModule::burnCell(int ix, int iy, int &rHighSeverity)
+{
+    auto grid = Model::instance()->landscape()->grid();
+    auto &c = mGrid[Point(ix, iy)];
+    auto &s = grid[Point(ix, iy)];
+    // burn probability
+    double pBurn = s.state()->value(miBurnProbability) * (1. - mExtinguishProb);
+    if (pBurn == 0. || pBurn > drandom()) {
+        c.spread = -1;
+        return false;
+    }
+
+    bool high_severity = drandom() < s.state()->value(miHighSeverity);
+    // effect of fire: a transition to another state
+    state_t new_state = mFireMatrix.transition(s.stateId(), high_severity ? 1 : 0);
+    s.setNextStateId(new_state);
+    s.setNextUpdateTime(Model::instance()->year());
+    c.last_burn = static_cast<short int>(Model::instance()->year());
+    c.n_fire++;
+    if (high_severity) {
+        c.n_high_severity++;
+        rHighSeverity++;
+    }
+    c.spread = 2;
+    return true;
+}
+
+
