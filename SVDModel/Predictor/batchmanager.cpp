@@ -10,9 +10,9 @@
 
 #include "strtools.h"
 
-BatchManager *BatchManager::mInstance = 0;
+BatchManager *BatchManager::mInstance = nullptr;
 
-std::map< std::string, InputTensorItem::DataContent> data_contents = {
+static std::map< std::string, InputTensorItem::DataContent> data_contents = {
     {"Invalid",       InputTensorItem::Invalid},
     {"Climate",       InputTensorItem::Climate},
     {"State",         InputTensorItem::State},
@@ -22,7 +22,7 @@ std::map< std::string, InputTensorItem::DataContent> data_contents = {
     {"Scalar",          InputTensorItem::Scalar},
     {"DistanceOutside", InputTensorItem::DistanceOutside}
 };
-std::map< std::string, InputTensorItem::DataType> data_types = {
+static std::map< std::string, InputTensorItem::DataType> data_types = {
     {"Invalid", InputTensorItem::DT_INVALID},
     {"float",   InputTensorItem::DT_FLOAT},
     {"int16",   InputTensorItem::DT_INT16},
@@ -50,7 +50,7 @@ BatchManager::BatchManager()
         throw std::logic_error("Creation of batch manager: instance ptr is not 0.");
     mInstance = this;
     if (spdlog::get("dnn"))
-        spdlog::get("dnn")->debug("Batch manager created: {}", (void*)this);
+        spdlog::get("dnn")->debug("Batch manager created: {}", static_cast<void*>(this));
 
 }
 
@@ -61,7 +61,7 @@ BatchManager::~BatchManager()
         delete b;
 
     if (auto lg = spdlog::get("dnn"))
-        lg->debug("Batch manager destroyed: {x}", (void*)this);
+        lg->debug("Batch manager destroyed: {x}", static_cast<void*>(this));
 
     mInstance = nullptr;
 }
@@ -74,8 +74,8 @@ void BatchManager::setup()
         throw std::logic_error("BatchManager::setup: logging not available.");
     lg->info("Setup of batch manager.");
     Model::instance()->settings().requiredKeys("dnn", {"batchSize", "maxBatchQueue"});
-    mBatchSize = Model::instance()->settings().valueInt("dnn.batchSize");
-    mMaxQueueLength = Model::instance()->settings().valueInt("dnn.maxBatchQueue");
+    mBatchSize = static_cast<size_t>(Model::instance()->settings().valueInt("dnn.batchSize"));
+    mMaxQueueLength = static_cast<size_t>(Model::instance()->settings().valueInt("dnn.maxBatchQueue"));
 
 //    mTensorDef =  {
 //        {"test", InputTensorItem::DT_FLOAT, 2, 24, 10, InputTensorItem::Climate},
@@ -110,8 +110,8 @@ void BatchManager::newYear()
     mSlotRequested = false;
 }
 
-std::mutex batch_mutex;
-std::pair<Batch *, int> BatchManager::validSlot()
+static std::mutex batch_mutex;
+std::pair<Batch *, size_t> BatchManager::validSlot()
 {
     // serialize this function...
     std::lock_guard<std::mutex> guard(batch_mutex);
@@ -177,11 +177,11 @@ std::pair<Batch *, int> BatchManager::findValidSlot()
 
 
     // get a new slot in the batch
-    std::pair<Batch *, int> result;
+    std::pair<Batch *, size_t> result;
     result.first = batch;
     result.second = batch->acquireSlot();
     if (result.second==0) {
-        lg->debug("Started to fill batch {} [{}] (first slot acquired)", batch->packageId(), (void*)batch);
+        lg->debug("Started to fill batch {} [{}] (first slot acquired)", batch->packageId(), static_cast<void*>(batch));
     }
     return result;
 
@@ -227,8 +227,9 @@ TensorWrapper *BatchManager::buildTensor(size_t batch_size, InputTensorItem &ite
     // a 2d vector by example
     if (item.ndim==2) {
         switch (item.type) {
-            case InputTensorItem::DT_FLOAT:
+        case InputTensorItem::DT_FLOAT:
             tw = new TensorWrap3d<float>(batch_size, item.sizeX, item.sizeY); break;
+        default: throw std::logic_error("datatype not handled in tensorwrapper");
         }
     }
     if (tw)
@@ -246,7 +247,7 @@ Batch *BatchManager::createBatch()
     Batch *b = new Batch(mBatchSize);
 
     // loop over tensor definition and create the required tensors....
-    int index=0;
+    size_t index=0;
     for (auto &td : mTensorDef) {
         // create a tensor of the right size
         TensorWrapper *tw = buildTensor(mBatchSize, td);
@@ -272,7 +273,7 @@ Batch *BatchManager::createBatch()
 
 
 
-InputTensorItem::InputTensorItem(std::string aname, std::string atype, int andim, int asizex, int asizey, std::string acontent)
+InputTensorItem::InputTensorItem(std::string aname, std::string atype, size_t andim, size_t asizex, size_t asizey, std::string acontent)
 {
     name=aname;
     type = datatypeFromString(atype);

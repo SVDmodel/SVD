@@ -5,7 +5,7 @@
 
 #include <QThreadPool>
 
-Model *Model::mInstance = 0;
+Model *Model::mInstance = nullptr;
 
 Model::Model(const std::string &fileName)
 {

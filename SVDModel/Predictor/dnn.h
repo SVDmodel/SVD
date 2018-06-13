@@ -36,12 +36,12 @@ private:
     // DNN specifics
     bool mDummyDNN; ///< if true, then the tensorflow components are not really used (for debug builds)
     bool mTopK_tf; ///< use tensorflow for the state top k calculation
-    int mTopK_NClasses; ///< number of classes used for the top k algorithm
+    size_t mTopK_NClasses; ///< number of classes used for the top k algorithm
     tensorflow::Status getTopClassesOldCode(const tensorflow::Tensor &classes, const int n_top, tensorflow::Tensor *indices, tensorflow::Tensor *scores);
 
     /// retrieve the top n classes in "classes" and store results in 'indices' and 'scores'.
     /// this function uses CPU (and not tensorflow)
-    void getTopClasses(tensorflow::Tensor &classes, const int batch_size, const int n_top, tensorflow::Tensor *indices, tensorflow::Tensor *scores);
+    void getTopClasses(tensorflow::Tensor &classes, const size_t batch_size, const size_t n_top, tensorflow::Tensor *indices, tensorflow::Tensor *scores);
     tensorflow::Session *session;
     tensorflow::Session *top_k_session;
 

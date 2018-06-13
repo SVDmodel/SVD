@@ -10,7 +10,7 @@ class BatchManager; // forward
 class Batch
 {
 public:
-    Batch(int batch_size);
+    Batch(size_t batch_size);
     ~Batch();
 
     /// the state of the batch
@@ -23,14 +23,14 @@ public:
 
     int packageId() const { return mPackageId; }
     void setPackageId(int id) { mPackageId = id; }
-    int batchSize() const { return mBatchSize; }
+    size_t batchSize() const { return mBatchSize; }
 
     /// get slot number in the batch (atomic access)
-    int acquireSlot();
+    size_t acquireSlot();
     /// number of slots that are free
-    int freeSlots();
+    size_t freeSlots();
     /// number of slots currently in use
-    int usedSlots() { return mCurrentSlot; }
+    size_t usedSlots() { return mCurrentSlot; }
 
     /// is called when a cell is finished (decrease the atomic counter)
     void finishedCellProcessing();
@@ -40,7 +40,7 @@ public:
 
     /// get a specific tensor from the batch
     /// the 'index' is stored in the tensor definition.
-    TensorWrapper *tensor(int index) {return mTensors[index]; }
+    TensorWrapper *tensor(size_t index) {return mTensors[index]; }
 
     /// access to the InferenceData
     InferenceData &inferenceData(size_t slot) { if (slot<mInferenceData.size()) return mInferenceData[slot];
@@ -52,9 +52,9 @@ private:
     std::vector<InferenceData> mInferenceData;
     /// the tensors associated with this batch of data
     std::vector<TensorWrapper*> mTensors;
-    std::atomic<int> mCurrentSlot; ///< atomic access; number of currently used slots (not the index!)
-    std::atomic<int> mCellsFinished; ///< number of cells which already finished during the "filling"
-    int mBatchSize;
+    std::atomic<size_t> mCurrentSlot; ///< atomic access; number of currently used slots (not the index!)
+    std::atomic<size_t> mCellsFinished; ///< number of cells which already finished during the "filling"
+    size_t mBatchSize;
     int mPackageId;
     friend class BatchManager;
 };

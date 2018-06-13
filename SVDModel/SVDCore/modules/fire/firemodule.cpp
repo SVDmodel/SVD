@@ -64,14 +64,14 @@ int FireModule::run()
     int n_ignited=0;
     for (auto i=range.first; i!=range.second; ++i) {
         SIgnition &ignition = i->second;
-        lg->info("FireModule: ignition at {}/{} with max-size {}.", ignition.x, ignition.y, ignition.max_size);
+        lg->debug("FireModule: ignition at {}/{} with max-size {}.", ignition.x, ignition.y, ignition.max_size);
         if (!grid.coordValid(ignition.x, ignition.y)) {
-            lg->info("Coordinates invalid. Skipping.");
+            lg->debug("Coordinates invalid. Skipping.");
             continue;
         }
         Cell &c = grid.valueAt(ignition.x, ignition.y);
         if (c.isNull()) {
-            lg->info("Ignition point not in project area. Skipping.");
+            lg->debug("Ignition point not in project area. Skipping.");
             continue;
         }
         ++n_ignited;
@@ -95,7 +95,7 @@ void FireModule::fireSpread(const FireModule::SIgnition &ign)
     int n_highseverity_ha = 0;
 
     int ixmin=index.x() - 1, ixmax = index.x() + 1, iymin = index.y() - 1, iymax = index.y() + 1;
-    int ixmin2=std::numeric_limits<int>::max(), ixmax2=std::numeric_limits<int>::min(), iymin2=std::numeric_limits<int>::max(), iymax2=std::numeric_limits<int>::min();
+    int ixmin2=ixmin, ixmax2=ixmax, iymin2=iymin, iymax2=iymax;
     int n_round, n_rounds = 1;
     while (n_ha <= max_ha) {
         n_round=0;
@@ -137,7 +137,7 @@ void FireModule::fireSpread(const FireModule::SIgnition &ign)
               lg->debug("Round {}, burned: {} ha, total: {} ha, rectangle: {}/{}-{}/{}", n_rounds, n_ha, ixmin, iymin, ixmax, iymax);
 
     } // end while
-    lg->info("FireEvent finished. total burned (ha): {}, high severity (ha): {}, max-fire-size (ha): {}", n_ha, n_highseverity_ha, max_ha);
+    lg->info("FireEvent. total burned (ha): {}, high severity (ha): {}, max-fire-size (ha): {}", n_ha, n_highseverity_ha, max_ha);
 }
 
 

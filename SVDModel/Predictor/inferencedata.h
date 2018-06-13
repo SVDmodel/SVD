@@ -14,7 +14,7 @@ public:
     static bool checkSetup(const InputTensorItem &def);
 
     /// fills an item by pulling all the required data from the model
-    void fetchData(Cell *cell, Batch *batch, int slot);
+    void fetchData(Cell *cell, Batch *batch, size_t slot);
 
     /// set the result of the DNN
     void setResult(state_t state, restime_t time);

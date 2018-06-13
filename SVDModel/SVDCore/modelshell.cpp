@@ -71,7 +71,7 @@ ModelShell::ModelShell(QObject *parent)
     Q_UNUSED(parent);
     mAbort = false;
 
-    mModel = 0;
+    mModel = nullptr;
     mPackagesBuilt = 0;
     mPackageId = 0;
 
@@ -253,7 +253,7 @@ void ModelShell::setState(ModelRunState::State new_state, QString msg)
 
 
 
-QMutex lock_processed_package;
+static QMutex lock_processed_package;
 void ModelShell::processedPackage(Batch *batch)
 {
     if (RunState::instance()->cancel() || batch->hasError()) {
@@ -267,17 +267,17 @@ void ModelShell::processedPackage(Batch *batch)
 
 
     // DNN delivered processed package....
-    lg->debug("Model: received package {} [{}](from DNN). Writing back data.", batch->packageId(), (void*)batch);
+    lg->debug("Model: received package {} [{}](from DNN). Writing back data.", batch->packageId(), static_cast<void*>(batch));
 
     // check data:
-    for (int i=0;i<batch->usedSlots();++i) {
+    for (size_t i=0;i<batch->usedSlots();++i) {
         if (batch->inferenceData(i).nextTime() == 0 || batch->inferenceData(i).nextState()==0) {
             lg->error("bad data in batch {} with {} used slots. item {}: update-time: {}, update-state: {}", batch->packageId(), batch->usedSlots(), i, batch->inferenceData(i).nextTime(), batch->inferenceData(i).nextState());
         }
     }
 
 
-    for (int i=0;i<batch->usedSlots();++i) {
+    for (size_t i=0;i<batch->usedSlots();++i) {
         batch->inferenceData(i).writeResult();
     }
     batch->changeState(Batch::Fill);

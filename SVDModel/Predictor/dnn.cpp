@@ -77,7 +77,7 @@ Status LoadGraph(string graph_file_name,
 }
 
 
-DNN *DNN::mInstance = 0;
+DNN *DNN::mInstance = nullptr;
 
 DNN::DNN()
 {
@@ -85,7 +85,7 @@ DNN::DNN()
         throw std::logic_error("Creation of DNN: instance ptr is not 0.");
     mInstance = this;
     if (spdlog::get("dnn"))
-        spdlog::get("dnn")->debug("DNN created: {}", (void*)this);
+        spdlog::get("dnn")->debug("DNN created: {}", static_cast<void*>(this));
     session = nullptr;
     top_k_session = nullptr;
     mSCOut = nullptr;
@@ -117,7 +117,7 @@ bool DNN::setup()
 
     std::string file = Tools::path(settings.valueString("dnn.file"));
     mTopK_tf = settings.valueBool("dnn.topKGPU", "true");
-    mTopK_NClasses = settings.valueInt("dnn.topKNClasses", 10);
+    mTopK_NClasses = static_cast<size_t>(settings.valueInt("dnn.topKNClasses", 10));
     lg->info("DNN file: '{}'", file);
 
 
@@ -266,7 +266,7 @@ std::string stateChangeOutput(const TensorWrap2d<int32> &state_index, const Tens
     s << Model::instance()->year() << sep << id.environmentCell().id() << sep << id.state() << sep << id.cell().residenceTime() << sep << id.nextState() << sep << id.nextTime();
     // states / probs
     for (size_t i=0;i<state_index.n();++i)
-        s <<  sep << Model::instance()->states()->stateByIndex(state_index.example(index)[i]).id()
+        s <<  sep << Model::instance()->states()->stateByIndex(static_cast<size_t>(state_index.example(index)[i])).id()
            << sep << scores.example(index)[i];
    for (size_t i=0;i<time.n();++i)
        s << sep << time.example(index)[i];
@@ -286,7 +286,7 @@ Batch * DNN::run(Batch *batch)
 
     std::vector<std::pair<string, Tensor> > inputs;
     const std::list<InputTensorItem> &tdef = BatchManager::instance()->tensorDefinition();
-    int tindex=0;
+    size_t tindex=0;
     for (const auto &def : tdef) {
         inputs.push_back( std::pair<string, Tensor>( def.name, batch->tensor(tindex)->tensor() ));
         tindex++;
@@ -298,11 +298,11 @@ Batch * DNN::run(Batch *batch)
         // wait a bit...
         //std::this_thread::sleep_for(std::chrono::milliseconds(10));
         // ... and produce a random result
-        for (int i=0;i<batch->usedSlots();++i) {
+        for (size_t i=0;i<batch->usedSlots();++i) {
             InferenceData &id=batch->inferenceData(i);
             // just random ....
             const State &s = Model::instance()->states()->randomState();
-            restime_t rt = Model::instance()->year()+irandom(1,12);
+            restime_t rt = static_cast<restime_t>(Model::instance()->year()+irandom(1,12));
             id.setResult(s.id(), rt);
 
         }
@@ -344,8 +344,8 @@ Batch * DNN::run(Batch *batch)
     } else {
         // use CPU to extract top-k results
         // outputs[0] is the output tensor with the state probabilities
-        scores = new Tensor(tensorflow::DT_FLOAT, tensorflow::TensorShape({  batch->batchSize(), mTopK_NClasses}));
-        indices = new Tensor(tensorflow::DT_INT32, tensorflow::TensorShape({  batch->batchSize(), mTopK_NClasses}));
+        scores = new Tensor(tensorflow::DT_FLOAT, tensorflow::TensorShape({  static_cast<long long>(batch->batchSize()), static_cast<long long>(mTopK_NClasses)}));
+        indices = new Tensor(tensorflow::DT_INT32, tensorflow::TensorShape({  static_cast<long long>(batch->batchSize()), static_cast<long long>(mTopK_NClasses)}));
 
         // run the top-k on CPU
         getTopClasses(outputs[0], batch->batchSize(), mTopK_NClasses, indices, scores);
@@ -373,11 +373,11 @@ Batch * DNN::run(Batch *batch)
 
     // Now select for each example the result of the prediction
     // choose randomly from the result
-    for (int i=0; i<batch->usedSlots(); ++i) {
+    for (size_t i=0; i<batch->usedSlots(); ++i) {
         InferenceData &id = batch->inferenceData(i);
         // residence time: at least one year
         restime_t rt = static_cast<restime_t>( chooseProbabilisticIndex(out_time.example(i), static_cast<int>(out_time.n())) ) + 1;
-        if (rt == out_time.n()) {
+        if (rt == static_cast<restime_t>(out_time.n())) {
             // the state will be the same for the next period (no change)
             id.setResult(id.state(), rt);
         } else {
@@ -385,14 +385,14 @@ Batch * DNN::run(Batch *batch)
             // the next state is not allowed to stay the same
             int self_index = -1;
             int this_state_index = id.state() - 1; // 0-based
-            for (int j=0;j<indices_flat.n();++j) {
+            for (size_t j=0;j<indices_flat.n();++j) {
                 if (indices_flat.example(i)[j] == this_state_index) {
-                    self_index = j;
+                    self_index = static_cast<int>(j);
                     break;
                 }
             }
-            int index = chooseProbabilisticIndex(scores_flat.example(i), static_cast<int>(scores_flat.n()), self_index ) ;
-            int state_index = indices_flat.example(i)[index];
+            size_t index = static_cast<size_t>(chooseProbabilisticIndex(scores_flat.example(i), static_cast<int>(scores_flat.n()), self_index ) );
+            size_t state_index = static_cast<size_t>(indices_flat.example(i)[index]);
             state_t stateId = Model::instance()->states()->stateByIndex( state_index ).id();
             if (stateId == 0) {
                 lg->warn("Warning: state 0 result in DNN - setting to state 1");
@@ -405,7 +405,7 @@ Batch * DNN::run(Batch *batch)
 
     // output
     if (mSCOut) {
-        for (int i=0;i<batch->usedSlots(); ++i) {
+        for (size_t i=0;i<batch->usedSlots(); ++i) {
             if (mSCOut->shouldWriteOutput(batch->inferenceData(i)))
                 mSCOut->writeLine(stateChangeOutput(indices_flat, scores_flat, out_time, batch, i));
         }
@@ -424,8 +424,8 @@ Batch * DNN::run(Batch *batch)
 
         s << "Next update in year: " << id.nextTime();
         s << "\nClassifcation Results\n";
-        for (int i=0;i <scores_flat.n(); ++i) {
-            s << indices_flat.example(0)[i] << ": " <<  scores_flat.example(0)[i]*100.
+        for (size_t i=0;i <scores_flat.n(); ++i) {
+            s << indices_flat.example(0)[i] << ": " <<  scores_flat.example(0)[i]*100.f
               << "% "<< Model::instance()->states()->stateByIndex(indices_flat.example(0)[i]).asString() << " id: "
               << Model::instance()->states()->stateByIndex(indices_flat.example(0)[i]).id() << "\n";
         }
@@ -484,7 +484,7 @@ public:
     }
 };
 
-void DNN::getTopClasses( tensorflow::Tensor &classes, const int batch_size, const int n_top, tensorflow::Tensor *indices, tensorflow::Tensor *scores)
+void DNN::getTopClasses( tensorflow::Tensor &classes, const size_t batch_size, const size_t n_top, tensorflow::Tensor *indices, tensorflow::Tensor *scores)
 {
     std::priority_queue< std::pair<float, int>, std::vector<std::pair<float, int> >, ComparisonClassTopK > queue;
 
@@ -493,14 +493,14 @@ void DNN::getTopClasses( tensorflow::Tensor &classes, const int batch_size, cons
     lg->debug("indicies: {}", indices->DebugString());
     lg->debug("scores  : {}", scores->DebugString());
 
-    int n_cls = static_cast<int>(classes.dim_size(1));
+    size_t n_cls = static_cast<size_t>(classes.dim_size(1));
     TensorWrap2d<float> cls_dat(classes);
     TensorWrap2d<int32> res_ind(*indices);
     TensorWrap2d<float> res_scores(*scores);
-    for (int i=0; i<batch_size; i++) {
+    for (size_t i=0; i<batch_size; i++) {
 
         float *p = cls_dat.example(i);
-        for (int j=0; j<n_cls; ++j, ++p) {
+        for (size_t j=0; j<n_cls; ++j, ++p) {
             if (queue.size()<n_top || *p > queue.top().first) {
                 if (queue.size() == n_top)
                     queue.pop();
@@ -521,12 +521,12 @@ void DNN::getTopClasses( tensorflow::Tensor &classes, const int batch_size, cons
         // output details for the first example.....
         lg->trace("Top-K-calculation (CPU):");
         std::stringstream s;
-        for (int i=0;i<n_cls;++i)
+        for (size_t i=0;i<n_cls;++i)
             s << cls_dat.example(0)[i] << ", ";
 
         lg->trace("{}", s.str());
-        for (int i=0;i<n_top;++i) {
-            lg->trace("Index: {}, Score: {} %", res_ind.example(0)[i], res_scores.example(0)[i]*100.);
+        for (size_t i=0;i<n_top;++i) {
+            lg->trace("Index: {}, Score: {} %", res_ind.example(0)[i], res_scores.example(0)[i]*100.f);
         }
     }
 
@@ -540,13 +540,13 @@ int DNN::chooseProbabilisticIndex(float *values, int n, int skip_index)
     // calculate the sum of probs
     double p_sum = 0.;
     for (int i=0;i<n;++i)
-        p_sum+= (i!=skip_index ? values[i] : 0. );
+        p_sum+= (i!=skip_index ? static_cast<double>(values[static_cast<size_t>(i)]) : 0. );
 
     double p = nrandom(0., p_sum);
 
     p_sum = 0.;
     for (int i=0;i<n;++i, ++values) {
-        p_sum += (i!=skip_index ? *values : 0. );
+        p_sum += (i!=skip_index ? static_cast<double>(*values) : 0. );
         if (p < p_sum)
             return i;
     }

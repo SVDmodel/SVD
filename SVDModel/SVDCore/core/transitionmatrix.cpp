@@ -25,7 +25,7 @@ bool TransitionMatrix::load(const std::string &filename)
         state_t id = state_t( rdr.value(is) );
         int key = int( rdr.value(ik) );
         state_t target = state_t( rdr.value(it) );
-        double p = state_t( rdr.value(ip) );
+        double p =  rdr.value(ip);
 
         auto &e = mTM[ {id, key} ];
         e.push_back({target, p});
