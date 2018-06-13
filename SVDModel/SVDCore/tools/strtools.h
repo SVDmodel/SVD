@@ -107,7 +107,7 @@ template <typename T> void delete_and_clear(std::vector<T*> &v)
  
 
 template <class Container>
-const bool contains(Container& container, const typename Container::value_type& element)
+bool contains(Container& container, const typename Container::value_type& element)
 {
     return std::find(container.begin(), container.end(), element) != container.end();
 }
@@ -115,7 +115,7 @@ const bool contains(Container& container, const typename Container::value_type& 
 /// returns the index of 'element' in the container 'container'. If 'element' is not in the container
 /// the function returns -1.
 template <class Container>
-const int indexOf(Container& container, const typename Container::value_type& element)
+int indexOf(Container& container, const typename Container::value_type& element)
 {
     auto it = std::find(container.begin(), container.end(), element);
     if (it == container.end())

@@ -85,7 +85,7 @@ private:
     size_t mMaxQueueLength;
     bool mSlotRequested;
     Batch *createBatch();
-    std::pair<Batch *, int> findValidSlot();
+    std::pair<Batch *, size_t> findValidSlot();
     TensorWrapper *buildTensor(size_t batch_size, InputTensorItem &item);
     std::list<InputTensorItem> mTensorDef;
     std::list<Batch *> mBatches;

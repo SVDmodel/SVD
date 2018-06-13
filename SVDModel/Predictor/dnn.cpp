@@ -245,7 +245,7 @@ bool DNN::setup()
 class STimer {
 public:
     STimer(std::shared_ptr<spdlog::logger> logger, std::string name) { start_time = std::chrono::system_clock::now(); _logger=logger; _name=name; }
-    size_t elapsed() { return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start_time).count(); }
+    size_t elapsed() { return static_cast<size_t>( std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start_time).count() ); }
     void print(std::string s) { _logger->debug("[{}] Timer {}: {}: {}us", std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now()).time_since_epoch().count(),  _name, s, elapsed()) ; }
     void now() { _logger->debug("Timepoint: {}us", std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() ));}
     ~STimer() { print("destroyed"); }
@@ -478,7 +478,7 @@ tensorflow::Status DNN::getTopClassesOldCode(const tensorflow::Tensor &classes, 
 
 class ComparisonClassTopK {
 public:
-    bool operator() (const std::pair<float, int> &p1, const std::pair<float, int> &p2) {
+    bool operator() (const std::pair<float, size_t> &p1, const std::pair<float, size_t> &p2) {
         //comparison code here: we want to keep track of the smallest element in the list
         return p1.first>p2.first;
     }
@@ -486,7 +486,7 @@ public:
 
 void DNN::getTopClasses( tensorflow::Tensor &classes, const size_t batch_size, const size_t n_top, tensorflow::Tensor *indices, tensorflow::Tensor *scores)
 {
-    std::priority_queue< std::pair<float, int>, std::vector<std::pair<float, int> >, ComparisonClassTopK > queue;
+    std::priority_queue< std::pair<float, size_t>, std::vector<std::pair<float, size_t> >, ComparisonClassTopK > queue;
 
     lg->debug("CPU-TopK: Classes: x={}, y={}, Indices: x={}, y={}", classes.dim_size(0), classes.dim_size(1), indices->dim_size(0), indices->dim_size(1));
     lg->debug("classes : {}", classes.DebugString());
@@ -504,13 +504,13 @@ void DNN::getTopClasses( tensorflow::Tensor &classes, const size_t batch_size, c
             if (queue.size()<n_top || *p > queue.top().first) {
                 if (queue.size() == n_top)
                     queue.pop();
-                queue.push( std::pair<float, int>(*p,j));
+                queue.push( std::pair<float, size_t>(*p,j));
             }
         }
         // write back results... and empty the queue
         int j=0;
         while( !queue.empty() ) {
-            res_ind.example(i)[j] = queue.top().second; // the index
+            res_ind.example(i)[j] = static_cast<tensorflow::int32>(queue.top().second); // the index
             res_scores.example(i)[j] = queue.top().first; // the score
             queue.pop();
             ++j;

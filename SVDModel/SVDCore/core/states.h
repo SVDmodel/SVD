@@ -26,7 +26,7 @@ public:
     static int valueIndex(const std::string &name) { return indexOf(mValueNames, name); }
     bool hasValue(const std::string &name) const { return indexOf(mValueNames, name)>=0; }
     double value(const std::string &name) const { return value(valueIndex(name)); }
-    double value(const int index) const { assert(index>=0); return index<mValues.size() ? mValues[index] : 0.;}
+    double value(const int index) const { assert(index>=0); size_t i=static_cast<size_t>(index); return i<mValues.size() ? mValues[i] : 0.;}
     void setValue(const std::string &name, double value);
     void setValue(const int index, double value);
 private:
@@ -55,7 +55,7 @@ public:
     const State &randomState() const;
     const std::vector<State> &states() { return mStates; }
     const State &stateByIndex(size_t index) const { return mStates[index]; }
-    const State &stateById(int id);
+    const State &stateById(state_t id);
 
 private:
     std::vector<State> mStates;

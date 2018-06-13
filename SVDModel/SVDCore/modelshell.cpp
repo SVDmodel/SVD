@@ -353,7 +353,7 @@ void ModelShell::buildInferenceData(Cell *cell)
             return;
 
         assert(BatchManager::instance()!=nullptr);
-        std::pair<Batch*, int> newslot = BatchManager::instance()->validSlot();
+        std::pair<Batch*, size_t> newslot = BatchManager::instance()->validSlot();
         Batch *batch = newslot.first;
         if (!batch) {
             if (newslot.second==0)

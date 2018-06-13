@@ -38,14 +38,14 @@ bool States::loadProperties(const std::string &filename)
 {
     FileReader rdr(filename);
     rdr.requiredColumns({"stateId"});
-    int sidx = static_cast<int>(rdr.columnIndex("stateId"));
+    size_t sidx = rdr.columnIndex("stateId");
     int lineno=0;
     bool has_errors = false;
     while (rdr.next()) {
         ++lineno;
         try {
-            const State &state = Model::instance()->states()->stateById(static_cast<int>(rdr.value(sidx)));
-            for (int i=0;i<rdr.columnCount();++i)
+            const State &state = Model::instance()->states()->stateById(static_cast<state_t>(rdr.value(sidx)));
+            for (size_t i=0;i<rdr.columnCount();++i)
                 if (i != sidx)
                     const_cast<State&>(state).setValue(rdr.columnName(i), rdr.value(i));
 
@@ -65,7 +65,7 @@ const State &States::randomState() const
     return mStates[i];
 }
 
-const State &States::stateById(int id)
+const State &States::stateById(state_t id)
 {
 
     auto s = mStateSet.find(id);
@@ -126,11 +126,11 @@ State::State(state_t id, std::string composition, int structure, int function)
 
     if (dominant_species_index>-1) {
         if (admixed_species_index[0]==-1) {
-            mSpeciesShare[dominant_species_index]=1.; // (a)
+            mSpeciesShare[static_cast<size_t>(dominant_species_index)]=1.; // (a)
         } else {
             // max 1 other species: >66% + >20% -> at least 86% -> no other species possible
-            mSpeciesShare[dominant_species_index]=0.67; // (b)
-            mSpeciesShare[admixed_species_index[0]]=0.33;
+            mSpeciesShare[static_cast<size_t>(dominant_species_index)]=0.67; // (b)
+            mSpeciesShare[static_cast<size_t>(admixed_species_index[0])]=0.33;
         }
     } else {
         // no dominant species
@@ -138,9 +138,9 @@ State::State(state_t id, std::string composition, int structure, int function)
         for (int i=0;i<5;++i)
             if (admixed_species_index[i]>-1) ++n_s;
 
-        double f;
+        double f=0.;
         switch (n_s) {
-        case 0: f=0.; // (f)
+        case 0: f=0.; break;
         case 1: f=0.5; break;
         case 2: f=0.5; break;
         case 3: f=0.33;  break;
@@ -150,7 +150,7 @@ State::State(state_t id, std::string composition, int structure, int function)
 
         // apply cases
         for (int i=0;i<n_s;++i)
-            mSpeciesShare[admixed_species_index[i]]=f;
+            mSpeciesShare[static_cast<size_t>(admixed_species_index[i])]=f;
 
     }
 
@@ -182,5 +182,8 @@ void State::setValue(const int index, double value)
     if (mValues.size() != mValueNames.size()) {
         mValues.resize(mValueNames.size());
     }
-    mValues[index] = value;
+    if (index<0 || static_cast<size_t>(index)>=mValueNames.size()) {
+        throw std::logic_error("State:setValue: invalid variable index!");
+    }
+    mValues[static_cast<size_t>(index)] = value;
 }

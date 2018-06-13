@@ -38,7 +38,7 @@ void StateChangeOut::execute()
 
 }
 
-std::mutex filter_mtx;
+static std::mutex filter_mtx;
 bool StateChangeOut::shouldWriteOutput(const InferenceData &id)
 {
     int year =  Model::instance()->year();
@@ -56,7 +56,7 @@ bool StateChangeOut::shouldWriteOutput(const InferenceData &id)
     return false;
 }
 
-std::mutex output_mutex;
+static std::mutex output_mutex;
 void StateChangeOut::writeLine(std::string content)
 {
     std::lock_guard<std::mutex> guard(output_mutex);

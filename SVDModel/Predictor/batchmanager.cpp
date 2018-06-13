@@ -146,7 +146,7 @@ std::pair<Batch *, size_t> BatchManager::validSlot()
 
 }
 
-std::pair<Batch *, int> BatchManager::findValidSlot()
+std::pair<Batch *, size_t> BatchManager::findValidSlot()
 {
     // this function is serialized (access via validSlot() ).
 
@@ -161,7 +161,7 @@ std::pair<Batch *, int> BatchManager::findValidSlot()
     if (!batch || batch->freeSlots()<=0) {
         if (mBatches.size() >= mMaxQueueLength) {
             // currently we don't find a proper place for the data.
-            return std::pair<Batch*, int>(nullptr, 0);
+            return std::pair<Batch*, size_t>(nullptr, 0);
         }
         batch = createBatch();
         mBatches.push_back( batch );

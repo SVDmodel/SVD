@@ -90,14 +90,14 @@ std::vector<double> Cell::neighborSpecies() const
                 // if the cell is in 'species-shares' mode, then state() is null
                 // if the cell is in 'state' mode, a (constant) state is assigned
                 const auto &shares = cell.state()? cell.state()->speciesShares() : Model::instance()->externalSeeds().speciesShares(cell.externalSeedType());
-                for (int i=0; i<n_species;++i)
+                for (size_t i=0; i<n_species;++i)
                     result[i*2] += shares[i];
                 ++n_local;
             }
         }
     }
     if (n_local>0.)
-        for (int i=0; i<n_species;++i)
+        for (size_t i=0; i<n_species;++i)
             result[i*2] /= n_local;
 
     // mid-range neighbors
@@ -107,14 +107,14 @@ std::vector<double> Cell::neighborSpecies() const
             Cell &cell = grid.valueAtIndex(center + p);
             if (cell.state() || cell.externalSeedType()>=0) {
                 const auto &shares = cell.state()? cell.state()->speciesShares() : Model::instance()->externalSeeds().speciesShares(cell.externalSeedType());
-                for (int i=0; i<n_species;++i)
+                for (size_t i=0; i<n_species;++i)
                     result[i*2+1] += shares[i];
                 ++n_mid;
             }
         }
     }
     if (n_mid>0.)
-        for (int i=0; i<n_species;++i)
+        for (size_t i=0; i<n_species;++i)
             result[i*2+1] /= n_mid;
 
     return result;
@@ -124,7 +124,7 @@ void Cell::dumpDebugData()
 {
     auto lg = spdlog::get("main");
     PointF coord =  Model::instance()->landscape()->grid().cellCenterPoint( Model::instance()->landscape()->grid().indexOf(this) );
-    lg->info("Cell {} at {}/{}m:", (void*)this, coord.x(), coord.y());
+    lg->info("Cell {} at {}/{}m:", static_cast<void*>(this), coord.x(), coord.y());
     lg->info("Current state ID: {}, {}, residence time: {}", mStateId, mState->asString(), mResidenceTime);
     lg->info("external seed type: {}", mExternalSeedType);
     lg->info("Next state-id: {},  update time: {}", mNextStateId, mNextUpdateTime);
