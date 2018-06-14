@@ -165,7 +165,7 @@ bool DNN::setup()
         //string topk_input_name = "topk_input";
 
         // tensorflow::Node* topk =
-        tensorflow::ops::TopK tk(root.WithOpName(output_name), top_k_tensor, mTopK_NClasses);
+        tensorflow::ops::TopK tk(root.WithOpName(output_name), top_k_tensor, static_cast<int>(mTopK_NClasses));
 
 
         lg->trace("top-k-tensor: {}", top_k_tensor.DebugString());

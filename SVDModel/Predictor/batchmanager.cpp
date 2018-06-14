@@ -116,7 +116,7 @@ std::pair<Batch *, size_t> BatchManager::validSlot()
     // serialize this function...
     std::lock_guard<std::mutex> guard(batch_mutex);
     mSlotRequested = true;
-    std::pair<Batch *, int> result;
+    std::pair<Batch *, size_t> result;
     int sleeps = 0;
     do {
         result = findValidSlot();

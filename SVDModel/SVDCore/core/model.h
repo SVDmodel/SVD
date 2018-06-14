@@ -48,12 +48,14 @@ public:
     /// year=0 after setup, and incremented whenever a new step starts, i.e. first sim. year=1, 2nd year=2, ...
     int year() const { return mYear; }
 
-    /// return the available states
+    /// return the model components
     std::shared_ptr<States> states() const { return mStates; }
     const std::vector<std::string> &species() { return mSpeciesList; }
     std::shared_ptr<Landscape> &landscape() { return mLandscape; }
     std::shared_ptr<Climate> &climate() { return mClimate; }
     const ExternalSeeds &externalSeeds() {return mExternalSeeds; }
+
+    const std::shared_ptr<FireModule> &fireModule() { return mFireModule; }
 
 
     /// access to the output machinery

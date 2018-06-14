@@ -7,6 +7,9 @@
 #include "grid.h"
 #include "outputs/outputmanager.h"
 
+// needed only for visualization (to be removed again)
+#include "modules/fire/firemodule.h"
+
 #include <QThread>
 #include <QCoreApplication>
 #include <QtConcurrent>
@@ -144,6 +147,28 @@ std::string ModelShell::run_test_op(std::string what)
         std::string result = gridToESRIRaster<Cell>(grid, [](const Cell &c)
         {
                 return std::to_string(c.externalSeedType()); }
+        );
+        return result;
+    }
+
+    if (what=="fire_n") {
+        if (!Model::instance()->fireModule()) return "fire module not active";
+        const auto &grid = Model::instance()->fireModule()->fireGrid();
+
+        std::string result = gridToESRIRaster<SFireCell>(grid, [](const SFireCell &c)
+        {
+                return std::to_string(c.n_fire); }
+        );
+        return result;
+    }
+
+    if (what=="fire_year") {
+        if (!Model::instance()->fireModule()) return "fire module not active";
+        const auto &grid = Model::instance()->fireModule()->fireGrid();
+
+        std::string result = gridToESRIRaster<SFireCell>(grid, [](const SFireCell &c)
+        {
+                return std::to_string(c.last_burn); }
         );
         return result;
     }

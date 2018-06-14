@@ -158,6 +158,16 @@
              <string>ext_seed</string>
             </property>
            </item>
+           <item>
+            <property name="text">
+             <string>fire_n</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>fire_year</string>
+            </property>
+           </item>
           </widget>
           <widget class="QLineEdit" name="lParam">
            <property name="geometry">

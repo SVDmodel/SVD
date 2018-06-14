@@ -83,7 +83,7 @@ int FireModule::run()
 
 void FireModule::fireSpread(const FireModule::SIgnition &ign)
 {
-    auto grid = Model::instance()->landscape()->grid();
+    auto &grid = Model::instance()->landscape()->grid();
     Point index = grid.indexAt(PointF(ign.x, ign.y));
 
     // clear the spread flag for all cells
@@ -103,23 +103,35 @@ void FireModule::fireSpread(const FireModule::SIgnition &ign)
             for (int ix=ixmin; ix<=ixmax; ++ix) {
                 if (mGrid(ix, iy).spread == 1) {
 
-                    if (burnCell(ix, iy, n_highseverity_ha)) {
+                    if (burnCell(ix, iy, n_highseverity_ha, n_rounds)) {
                         // the cell is burning and can spread
                         if (mGrid.isIndexValid(ix-1, iy)) {
-                            mGrid[Point(ix-1, iy)].spread = 1;
-                            ixmin2 = std::min(ixmin, ix-1);
+                            auto &px = mGrid[Point(ix-1, iy)];
+                            if (px.spread == 0) {
+                                px.spread = 1;
+                                ixmin2 = std::min(ixmin, ix-1);
+                            }
                         }
                         if (mGrid.isIndexValid(ix+1, iy)) {
-                            mGrid[Point(ix+1, iy)].spread = 1;
-                            ixmax2 = std::max(ixmax, ix+1);
+                            auto &px = mGrid[Point(ix+1, iy)];
+                            if (px.spread == 0) {
+                                px.spread = 1;
+                                ixmax2 = std::max(ixmax, ix+1);
+                            }
                         }
                         if (mGrid.isIndexValid(ix, iy-1)) {
-                            mGrid[Point(ix, iy-1)].spread = 1;
-                            iymin2 = std::min(iymin, iy-1);
+                            auto &px = mGrid[Point(ix, iy-1)];
+                            if (px.spread == 0) {
+                                px.spread = 1;
+                                iymin2 = std::min(iymin, iy-1);
+                            }
                         }
                         if (mGrid.isIndexValid(ix, iy+1)) {
-                            mGrid[Point(ix, iy+1)].spread = 1;
-                            iymax2 = std::max(iymax, iy+1);
+                            auto &px = mGrid[Point(ix, iy+1)];
+                            if (px.spread == 0) {
+                                px.spread = 1;
+                                iymax2 = std::max(iymax, iy+1);
+                            }
                         }
                         n_ha++;
                         n_round++;
@@ -134,7 +146,7 @@ void FireModule::fireSpread(const FireModule::SIgnition &ign)
         n_rounds++;
         ixmin = ixmin2; ixmax = ixmax2; iymin = iymin2; iymax = iymax2;
         if (lg->should_log(spdlog::level::debug))
-              lg->debug("Round {}, burned: {} ha, total: {} ha, rectangle: {}/{}-{}/{}", n_rounds, n_ha, ixmin, iymin, ixmax, iymax);
+              lg->debug("Round {}, burned: {} ha, max-size: {} ha, rectangle: {}/{}-{}/{}", n_rounds, n_ha, max_ha, ixmin, iymin, ixmax, iymax);
 
     } // end while
     lg->info("FireEvent. total burned (ha): {}, high severity (ha): {}, max-fire-size (ha): {}", n_ha, n_highseverity_ha, max_ha);
@@ -142,14 +154,20 @@ void FireModule::fireSpread(const FireModule::SIgnition &ign)
 
 
 // examine a single cell and eventually burn.
-bool FireModule::burnCell(int ix, int iy, int &rHighSeverity)
+bool FireModule::burnCell(int ix, int iy, int &rHighSeverity, int round)
 {
-    auto grid = Model::instance()->landscape()->grid();
+    auto &grid = Model::instance()->landscape()->grid();
     auto &c = mGrid[Point(ix, iy)];
     auto &s = grid[Point(ix, iy)];
+    if (s.isNull()) {
+        c.spread = -1;
+        return false;
+    }
     // burn probability
-    double pBurn = s.state()->value(miBurnProbability) * (1. - mExtinguishProb);
-    if (pBurn == 0. || pBurn > drandom()) {
+    double pBurn = s.state()->value(miBurnProbability);
+    if (round>3)
+        pBurn *= (1. - mExtinguishProb);
+    if (pBurn == 0. || pBurn < drandom()) {
         c.spread = -1;
         return false;
     }
@@ -157,8 +175,7 @@ bool FireModule::burnCell(int ix, int iy, int &rHighSeverity)
     bool high_severity = drandom() < s.state()->value(miHighSeverity);
     // effect of fire: a transition to another state
     state_t new_state = mFireMatrix.transition(s.stateId(), high_severity ? 1 : 0);
-    s.setNextStateId(new_state);
-    s.setNextUpdateTime(Model::instance()->year());
+    s.setNewState(new_state);
     c.last_burn = static_cast<short int>(Model::instance()->year());
     c.n_fire++;
     if (high_severity) {

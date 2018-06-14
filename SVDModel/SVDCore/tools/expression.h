@@ -11,6 +11,7 @@ class Expression
 public:
         ~Expression();
         Expression();
+        enum BoolValue { False=0, True=1 };
         Expression(const std::string &aExpression) { setExpression(aExpression); }
         Expression(const std::string &expression, ExpressionWrapper *wrapper) { setExpression(expression); mModelObject = wrapper;  }
         // intialization
@@ -18,7 +19,7 @@ public:
         void setAndParse(const std::string &expr); ///< set expression and parse instantly
         void setModelObject(ExpressionWrapper *wrapper) { mModelObject = wrapper; }
         const std::string &expression() const { return m_expression; }
-        void  parse(ExpressionWrapper *wrapper=0); ///< force a parsing of the expression
+        void  parse(ExpressionWrapper *wrapper=nullptr); ///< force a parsing of the expression
         void linearize(const double low_value, const double high_value, const int steps=1000);
         void linearize2d(const double low_x, const double high_x, const double low_y, const double high_y, const int stepsx=50, const int stepsy=50);
         static void setLinearizationEnabled(const bool enable) {mLinearizationAllowed = enable; }
@@ -36,7 +37,10 @@ public:
         /// calculate formula with object
         ///
         double calculate(ExpressionWrapper &object, const double variable_value1=0., const double variable_value2=0.) const;
-
+        bool calculateBool(ExpressionWrapper &object, const double variable_value1=0., const double variable_value2=0.) const {
+            double res = calculate(object, variable_value1, variable_value2);
+            return !(res==0.);
+        }
         //variables
         /// set the value of the variable named "Var". Note: using addVar to obtain a pointer may be more efficient for multiple executions.
         void  setVar(const std::string& Var, double Value);

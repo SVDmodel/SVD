@@ -213,8 +213,8 @@ public:
     /// get the metric cell center point of the cell given by index 'index'
     PointF cellCenterPoint(const int &index) const { Point pos=indexOf(index); return PointF( (pos.x()+0.5)*mCellsize+mRect.left(), (pos.y()+0.5)*mCellsize + mRect.top());}
     /// get the metric rectangle of the cell with index @p pos
-    RectF cellRect(const Point &pos) const { RectF r( PointF(mRect.left() + mCellsize*pos.x(), mRect.top() + pos.y()*mCellsize),
-                                                      QSizeF(mCellsize, mCellsize)); return r; } ///< return coordinates of rect given by @param pos.
+    RectF cellRect(const Point &pos) const { RectF r( mRect.left() + mCellsize*pos.x(), mRect.top() + pos.y()*mCellsize,
+                                                      mRect.left() + mCellsize*(pos.x()+1), mRect.top() + pos.y()*(mCellsize+1)); return r; } ///< return coordinates of rect given by @param pos.
 
     /// nullValue is the value for empty/null/NA
     static T nullValue() { return std::numeric_limits<T>::min(); }

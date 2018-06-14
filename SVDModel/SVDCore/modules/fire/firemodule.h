@@ -8,6 +8,14 @@
 #include "grid.h"
 #include "spdlog/spdlog.h"
 
+struct SFireCell {
+    SFireCell() : spread(0), n_fire(0), n_high_severity(0), last_burn(0) {}
+    short int spread; ///< spread flag during current fire event
+    short int n_fire; ///< counter how often cell burned
+    short int n_high_severity; ///< high severity counter
+    short int last_burn; ///< year when the cell burned the last time
+};
+
 class FireModule
 {
 public:
@@ -15,6 +23,9 @@ public:
     void setup();
 
     int run();
+
+    // getters
+    const Grid<SFireCell> &fireGrid() { return mGrid; }
 
 private:
 
@@ -32,18 +43,12 @@ private:
     std::multimap< int, SIgnition > mIgnitions;
 
 
-    struct SFireCell {
-        SFireCell() : spread(0), n_fire(0), n_high_severity(0), last_burn(0) {}
-        short int spread; ///< spread flag during current fire event
-        short int n_fire; ///< counter how often cell burned
-        short int n_high_severity; ///< high severity counter
-        short int last_burn; ///< year when the cell burned the last time
-    };
+
 
     Grid<SFireCell> mGrid;
 
     void fireSpread(const SIgnition &ign);
-    bool burnCell(int ix, int iy, int &rHighSeverity);
+    bool burnCell(int ix, int iy, int &rHighSeverity, int round);
 
 
     // store for transition probabilites for burned cells

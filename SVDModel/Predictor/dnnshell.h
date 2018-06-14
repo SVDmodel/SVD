@@ -21,8 +21,8 @@ public:
     ~DNNShell();
 
     bool isRunnig();
-    int batchesProcessed() const { return mBatchesProcessed; }
-    int cellsProcessed() const { return mCellsProcessed; }
+    size_t batchesProcessed() const { return mBatchesProcessed; }
+    size_t cellsProcessed() const { return mCellsProcessed; }
 
 private:
 public slots:
@@ -46,8 +46,8 @@ private:
 
     // store a watcher and a flag if the watcher is used (=true) or free (false)
     //std::vector<std::pair<QFutureWatcher<Batch*>*, Batch*> > mWatchers;
-    int mBatchesProcessed;
-    int mCellsProcessed;
+    size_t mBatchesProcessed;
+    size_t mCellsProcessed;
 
 };
 

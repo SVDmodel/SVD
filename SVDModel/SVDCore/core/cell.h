@@ -6,8 +6,8 @@
 class Cell
 {
 public:
-    Cell() : mStateId(-1), mResidenceTime(-1), mNextUpdateTime(-1), mState(nullptr), mNextStateId(-1), mExternalSeedType(-1) {}
-    Cell(state_t state, restime_t res_time=0): mStateId(state), mResidenceTime(res_time), mNextUpdateTime(0), mNextStateId(-1), mExternalSeedType(-1) { setState(state); }
+    Cell() : mStateId(-1), mResidenceTime(-1), mNextUpdateTime(-1), mNextStateId(-1),  mExternalSeedType(-1), mIsUpdated(false), mState(nullptr) {}
+    Cell(state_t state, restime_t res_time=0): mStateId(state), mResidenceTime(res_time), mNextUpdateTime(0), mNextStateId(-1), mExternalSeedType(-1), mIsUpdated(false) { setState(state); }
 
     // access
     /// isNull() returns true if the cell is not an actively simulated cell
@@ -30,9 +30,12 @@ public:
     /// after update(), the cell is in the final state of the current year (31st of december)
     void update();
     void setState(state_t new_state);
-    void setNextStateId(state_t new_state) { mNextStateId = new_state; }
     void setResidenceTime(restime_t res_time) { mResidenceTime = res_time; }
-    void setNextUpdateTime(int next_year) { mNextUpdateTime = next_year; }
+
+    void setNextStateId(state_t new_state) { if(!mIsUpdated) mNextStateId = new_state; }
+    void setNextUpdateTime(int next_year) { if(!mIsUpdated) mNextUpdateTime = next_year; }
+    /// sets a new state immediately (later updates from DNN are blocked)
+    void setNewState(state_t new_state);
     void setInvalid() { mStateId=0; mResidenceTime=0; mState=nullptr; }
 
     bool hasExternalSeed() const { return mExternalSeedType>0 || (state()!=nullptr && !isNull()); }
@@ -51,6 +54,7 @@ private:
     int mNextUpdateTime; ///< the year (see Model::year()) when the next update of this cell is scheduled
     state_t mNextStateId; ///< the new state scheduled at mNextUpdateTime
     int mExternalSeedType; ///< if the cell is outside of the project area, this type refers to the forest type
+    bool mIsUpdated; ///< flag indicating that the state is already updated (e.g. by management)
 
     const State *mState; ///< ptr to the State the cell currently is in
 

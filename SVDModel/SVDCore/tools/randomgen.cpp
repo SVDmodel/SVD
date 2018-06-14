@@ -11,7 +11,7 @@ std::mt19937_64 RandomGenerator::generator;
 
 void RandomGenerator::setRandomSeed()
 {
-    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    size_t seed = static_cast<size_t>(std::chrono::system_clock::now().time_since_epoch().count());
     generator.seed(seed);
 
 }

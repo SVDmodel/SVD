@@ -49,6 +49,7 @@ void Cell::update()
         // no update. The residence time changes.
         mResidenceTime++;
     }
+    mIsUpdated = false; // reset flag at the end of the year
 
 }
 
@@ -65,6 +66,13 @@ void Cell::setState(state_t new_state)
     else {
         mState = &Model::instance()->states()->stateById(new_state);
     }
+}
+
+void Cell::setNewState(state_t new_state)
+{
+    setNextUpdateTime(Model::instance()->year());
+    setNextStateId(new_state);
+    mIsUpdated = true;
 }
 
 void Cell::setExternalState(state_t state)
