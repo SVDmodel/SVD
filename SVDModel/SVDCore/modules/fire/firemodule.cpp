@@ -59,7 +59,7 @@ void FireModule::setup()
 int FireModule::run()
 {
     // check if we have ignitions
-    auto grid = Model::instance()->landscape()->grid();
+    auto &grid = Model::instance()->landscape()->grid();
     auto range = mIgnitions.equal_range(Model::instance()->year());
     int n_ignited=0;
     for (auto i=range.first; i!=range.second; ++i) {
