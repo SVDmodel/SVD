@@ -4,7 +4,7 @@
 #include "output.h"
 #include "../../Predictor/inferencedata.h"
 #include "expression.h"
-#include <fstream>
+
 class StateChangeOut : public Output
 {
 public:
@@ -19,7 +19,6 @@ private:
     int mInterval;
     int mCellId;
     Expression mFilter;
-    std::string mOutputFile;
 };
 
 #endif // STATECHANGEOUT_H

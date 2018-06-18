@@ -78,6 +78,10 @@ int FireModule::run()
         fireSpread(ignition);
     }
     lg->info("FireModule: end of year. #ignitions: {}.", n_ignited);
+
+    // fire output
+    Model::instance()->outputManager()->run("Fire");
+
     return n_ignited;
 }
 
@@ -150,6 +154,14 @@ void FireModule::fireSpread(const FireModule::SIgnition &ign)
 
     } // end while
     lg->info("FireEvent. total burned (ha): {}, high severity (ha): {}, max-fire-size (ha): {}", n_ha, n_highseverity_ha, max_ha);
+    SFireStat stat;
+    stat.year = Model::instance()->year();
+    stat.x = ign.x;
+    stat.y = ign.y;
+    stat.max_size = max_ha;
+    stat.ha_burned = n_ha;
+    stat.ha_high_severity = n_highseverity_ha;
+    mStats.push_back(stat);
 }
 
 

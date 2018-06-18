@@ -8,12 +8,23 @@
 #include "grid.h"
 #include "spdlog/spdlog.h"
 
+class FireOut; // forward
+
 struct SFireCell {
     SFireCell() : spread(0), n_fire(0), n_high_severity(0), last_burn(0) {}
     short int spread; ///< spread flag during current fire event
     short int n_fire; ///< counter how often cell burned
     short int n_high_severity; ///< high severity counter
     short int last_burn; ///< year when the cell burned the last time
+};
+
+struct SFireStat {
+    int year; ///< year of the fire
+    double x, y; ///<  ignition point (metric coords)
+    int max_size; ///< maximum fire size (ha)
+    int ha_burned; ///< # of ha. burned
+    int ha_high_severity; ///< # of ha burned with high severity
+
 };
 
 class FireModule
@@ -42,9 +53,6 @@ private:
     };
     std::multimap< int, SIgnition > mIgnitions;
 
-
-
-
     Grid<SFireCell> mGrid;
 
     void fireSpread(const SIgnition &ign);
@@ -59,6 +67,11 @@ private:
     // index of variables
     int miBurnProbability;
     int miHighSeverity;
+
+    // fire statistics
+    std::vector< SFireStat > mStats;
+
+    friend class FireOut;
 };
 
 #endif // FIREMODULE_H

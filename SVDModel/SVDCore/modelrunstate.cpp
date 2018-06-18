@@ -77,7 +77,7 @@ void RunState::set(ModelRunState state)
     //
 }
 
-std::mutex runstate_mutex;
+static std::mutex runstate_mutex;
 void RunState::update(ModelRunState *source)
 {
     if (mInUpdate)

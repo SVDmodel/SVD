@@ -16,14 +16,10 @@ void StateChangeOut::setup()
     auto lg = spdlog::get("setup");
     mInterval = Model::instance()->settings().valueInt(key("interval"));
     mFilter.setExpression(Model::instance()->settings().valueString(key("filter")));
-    mOutputFile = Tools::path(Model::instance()->settings().valueString(key("file")));
-    lg->debug("Setup of ResTimeGrid output, set interval to {}, filter to: '{}', path to: {}.", mInterval, mFilter.expression(), mOutputFile);
-    mFile.open(mOutputFile, std::fstream::out);
-    if (mFile.fail()) {
-      lg->error("Cannot create output file: '{}' (StateChangeOut): {}", mOutputFile, strerror(errno));
-      throw std::logic_error("Error in setup of StateChange output.");
-    }
-    mFile << "year,cellId,state,restime,nextState,nextTime,s1,p1,s2,p2,s3,p3,s4,p4,s5,p5,s6,p6,s7,p7,s8,p8,s9,p9,s10,p10,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10" << std::endl;
+
+    openOutputFile("file", false); // false: do not write header
+
+    file() << "year,cellId,state,restime,nextState,nextTime,s1,p1,s2,p2,s3,p3,s4,p4,s5,p5,s6,p6,s7,p7,s8,p8,s9,p9,s10,p10,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10" << std::endl;
 
 
 }
@@ -60,5 +56,6 @@ static std::mutex output_mutex;
 void StateChangeOut::writeLine(std::string content)
 {
     std::lock_guard<std::mutex> guard(output_mutex);
-    mFile << content << std::endl;
+    out() << content;
+    out().write();
 }

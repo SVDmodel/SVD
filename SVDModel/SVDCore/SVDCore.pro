@@ -49,7 +49,8 @@ SOURCES += \
     tools/expression.cpp \
     tools/expressionwrapper.cpp \
     core/transitionmatrix.cpp \
-    modules/fire/firemodule.cpp
+    modules/fire/firemodule.cpp \
+    modules/fire/fireout.cpp
 
 HEADERS += \
     modelshell.h \
@@ -76,7 +77,8 @@ HEADERS += \
     tools/expression.h \
     tools/expressionwrapper.h \
     core/transitionmatrix.h \
-    modules/fire/firemodule.h
+    modules/fire/firemodule.h \
+    modules/fire/fireout.h
 unix {
     target.path = /usr/lib
     INSTALLS += target
