@@ -396,7 +396,7 @@ void ModelShell::buildInferenceData(Cell *cell)
 
         // check if batch is finished and send if this is the case
         if (checkBatch(batch))
-            lg->debug("sent package [{}] when processing slot {} (used slots: {})", (void*)batch, newslot.second, batch->usedSlots());
+            lg->debug("sent package [{}] when processing slot {} (used slots: {})", static_cast<void*>(batch), newslot.second, batch->usedSlots());
 
 
     } catch (const std::exception &e) {
@@ -406,7 +406,7 @@ void ModelShell::buildInferenceData(Cell *cell)
 }
 
 
-QMutex _check_batch;
+static QMutex _check_batch;
 /// sends a package to the Inference process when all slots are filled.
 bool ModelShell::checkBatch(Batch *batch)
 {
@@ -419,13 +419,13 @@ bool ModelShell::checkBatch(Batch *batch)
     batch->finishedCellProcessing();
     if (batch->allCellsProcessed()) {
         if (batch->state()!=Batch::Fill) {
-            lg->warn("Package [{}] already sent!", (void*)batch);
+            lg->warn("Package [{}] already sent!", static_cast<void*>(batch));
             return false;
         }
         batch->setPackageId(++mPackageId);
         mModel->stats.NPackagesSent ++;
         ++mPackagesBuilt;
-        lg->debug("sending package {} [{}] to Inference (built total: {})", mPackageId, (void*)batch, mPackagesBuilt);
+        lg->debug("sending package {} [{}] to Inference (built total: {})", mPackageId, static_cast<void*>(batch), mPackagesBuilt);
         emit newPackage(batch);
         return true;
 
@@ -447,7 +447,7 @@ void ModelShell::sendPendingBatches()
             e->setPackageId(++mPackageId);
             mModel->stats.NPackagesSent ++;
             ++mPackagesBuilt;
-            lg->debug("sending pending package {} [{}] to Inference. (total. {}, size queue: {})", mPackageId, (void*)e, mPackagesBuilt, BatchManager::instance()->batches().size());
+            lg->debug("sending pending package {} [{}] to Inference. (total. {}, size queue: {})", mPackageId, static_cast<void*>(e), mPackagesBuilt, BatchManager::instance()->batches().size());
             emit newPackage(e);
         }
     }

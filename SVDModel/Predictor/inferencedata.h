@@ -9,7 +9,7 @@ class Batch; // forward
 class InferenceData
 {
 public:
-    InferenceData(): mOldState(-1), mNextState(-1), mNextTime(-1), mBatch(nullptr), mSlot(-1) {}
+    InferenceData(): mOldState(-1), mNextState(-1), mNextTime(-1), mBatch(nullptr), mSlot(std::numeric_limits<size_t>::max()) {}
     /// check if for the given item all the data is avaialable during setup
     static bool checkSetup(const InputTensorItem &def);
 

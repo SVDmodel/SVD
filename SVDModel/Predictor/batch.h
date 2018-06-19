@@ -49,8 +49,9 @@ public:
 private:
     bool mError;
     BatchState mState;
+    /// the data for the individual cells
     std::vector<InferenceData> mInferenceData;
-    /// the tensors associated with this batch of data
+    /// a vector of tensors associated with this batch of data
     std::vector<TensorWrapper*> mTensors;
     std::atomic<size_t> mCurrentSlot; ///< atomic access; number of currently used slots (not the index!)
     std::atomic<size_t> mCellsFinished; ///< number of cells which already finished during the "filling"
