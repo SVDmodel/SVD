@@ -1,5 +1,5 @@
 #include "batchmanager.h"
-#include "batch.h"
+#include "batchdnn.h"
 #include "tensorhelper.h"
 
 #include "model.h"
@@ -111,7 +111,7 @@ void BatchManager::newYear()
 }
 
 static std::mutex batch_mutex;
-std::pair<Batch *, size_t> BatchManager::validSlot()
+std::pair<Batch *, size_t> BatchManager::validSlot(Batch::BatchType type)
 {
     // serialize this function...
     std::lock_guard<std::mutex> guard(batch_mutex);
@@ -119,7 +119,7 @@ std::pair<Batch *, size_t> BatchManager::validSlot()
     std::pair<Batch *, size_t> result;
     int sleeps = 0;
     do {
-        result = findValidSlot();
+        result = findValidSlot(type);
         if (!result.first) {
             // wait
 
@@ -146,14 +146,39 @@ std::pair<Batch *, size_t> BatchManager::validSlot()
 
 }
 
-std::pair<Batch *, size_t> BatchManager::findValidSlot()
+BatchDNN *BatchManager::createDNNBatch()
+{
+    BatchDNN *b = new BatchDNN(mBatchSize);
+
+    // loop over tensor definition and create the required tensors....
+    size_t index=0;
+    for (auto &td : mTensorDef) {
+        // create a tensor of the right size
+        TensorWrapper *tw = buildTensor(mBatchSize, td);
+        if (mBatches.size()==0)
+            if (!InferenceData::checkSetup(td)) {
+                lg->error("create Batch: Error:");
+                lg->error("Name: '{}', dataype: '{}', dimensions: {}, size-x: {}, size-y: {}, content: '{}'",
+                          td.name, td.datatypeString(td.type), td.ndim, td.sizeX, td.sizeY, td.contentString(td.content));
+                throw std::logic_error("Could not create a tensor (check the logfile).");
+
+            }
+
+        td.index = index++; // static_cast<int>(b->mTensors.size());
+        b->mTensors.push_back(tw);
+    }
+    return b;
+
+}
+
+std::pair<Batch *, size_t> BatchManager::findValidSlot(Batch::BatchType type)
 {
     // this function is serialized (access via validSlot() ).
 
     // look for a batch which is currently not in the DNN processing chain
     Batch *batch = nullptr;
     for (const auto &b : mBatches) {
-        if (b->state()==Batch::Fill && b->freeSlots()>0) {
+        if (b->type()==type && b->state()==Batch::Fill && b->freeSlots()>0) {
             batch=b;
             break;
         }
@@ -163,7 +188,7 @@ std::pair<Batch *, size_t> BatchManager::findValidSlot()
             // currently we don't find a proper place for the data.
             return std::pair<Batch*, size_t>(nullptr, 0);
         }
-        batch = createBatch();
+        batch = createBatch(type);
         mBatches.push_back( batch );
         lg->trace("created a new batch. Now the list contains {} batch(es).", mBatches.size());
         /*if ( lg->should_log(spdlog::level::trace) ) {
@@ -241,31 +266,18 @@ TensorWrapper *BatchManager::buildTensor(size_t batch_size, InputTensorItem &ite
 
 }
 
-Batch *BatchManager::createBatch()
+Batch *BatchManager::createBatch(Batch::BatchType type)
 {
-
-    Batch *b = new Batch(mBatchSize);
-
-    // loop over tensor definition and create the required tensors....
-    size_t index=0;
-    for (auto &td : mTensorDef) {
-        // create a tensor of the right size
-        TensorWrapper *tw = buildTensor(mBatchSize, td);
-        if (mBatches.size()==0)
-            if (!InferenceData::checkSetup(td)) {
-                lg->error("create Batch: Error:");
-                lg->error("Name: '{}', dataype: '{}', dimensions: {}, size-x: {}, size-y: {}, content: '{}'",
-                          td.name, td.datatypeString(td.type), td.ndim, td.sizeX, td.sizeY, td.contentString(td.content));
-                throw std::logic_error("Could not create a tensor (check the logfile).");
-
-            }
-
-        td.index = index++; // static_cast<int>(b->mTensors.size());
-        b->mTensors.push_back(tw);
+    Batch *b = nullptr;
+    switch (type) {
+    case Batch::DNN:
+        b = createDNNBatch();
+        break;
+    case Batch::Special:
+        b = new Batch(mBatchSize);
+        break;
+    default: throw std::logic_error("BatchManager:createBatch: invalid batch type!");
     }
-
-    // test
-
 
     return b;
 }

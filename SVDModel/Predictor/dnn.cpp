@@ -5,6 +5,7 @@
 #include "tools.h"
 #include "tensorhelper.h"
 #include "batch.h"
+#include "batchdnn.h"
 #include "batchmanager.h"
 #include "randomgen.h"
 #include "outputs/statechangeout.h"
@@ -256,7 +257,7 @@ private:
 };
 
 /// create an output line for the item 'n'
-std::string stateChangeOutput(const TensorWrap2d<int32> &state_index, const TensorWrap2d<float> &scores, const TensorWrap2d<float> &time, Batch *batch, size_t index)
+std::string stateChangeOutput(const TensorWrap2d<int32> &state_index, const TensorWrap2d<float> &scores, const TensorWrap2d<float> &time, BatchDNN *batch, size_t index)
 {
     std::stringstream s;
     char sep=',';
@@ -275,8 +276,11 @@ std::string stateChangeOutput(const TensorWrap2d<int32> &state_index, const Tens
 
 }
 
-Batch * DNN::run(Batch *batch)
+Batch * DNN::run(Batch *abatch)
 {
+    BatchDNN *batch = dynamic_cast<BatchDNN*>(abatch);
+    if (!batch)
+        throw std::logic_error("DNN:run: invalid Batch!");
 #ifdef CUDA_PROFILING
     cudaProfilerStart();
 #endif
@@ -370,6 +374,24 @@ Batch * DNN::run(Batch *batch)
     TensorWrap2d<float> scores_flat(*scores);
     TensorWrap2d<int32> indices_flat(*indices);
 
+    // Copy the results of the TopK (states, probabilities, residence times) to the batch
+    for (size_t i=0; i<batch->usedSlots(); ++i) {
+        float *otime = out_time.example(i);
+        float *ttime = batch->timeProbResult(i);
+        float *ostate = scores_flat.example(i);
+        float *tstate = batch->stateProbResult(i);
+        int *oidx = indices_flat.example(i);
+        state_t *tidx = batch->stateResult(i);
+        for (size_t r=0;r<mTopK_NClasses;++r) {
+            *ttime++ = *otime++;
+            *tstate++ = *ostate++;
+            // the result of TopK is the *index* within the input of the operation
+            // the StateId starts with 1, i.e. to convert from the index (0-based) to
+            // the state id we need to add 1.
+            // *tidx++ = static_cast<state_t>(*oidx++ + 1);
+            *tidx++ = Model::instance()->states()->stateByIndex(static_cast<size_t>(*oidx++)).id();
+        }
+    }
 
     // Now select for each example the result of the prediction
     // choose randomly from the result

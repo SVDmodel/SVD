@@ -3,7 +3,6 @@
 
 #include "spdlog/spdlog.h"
 
-#include "tensorhelper.h"
 
 Batch::Batch(size_t batch_size)
 {
@@ -11,19 +10,13 @@ Batch::Batch(size_t batch_size)
     mCurrentSlot = 0;
     mCellsFinished = 0;
     mBatchSize = batch_size;
-    mInferenceData.resize(mBatchSize);
     mState=Fill;
     mError=false;
+    mType = Invalid;
 }
 
 Batch::~Batch()
 {
-    // free the memory of the tensors...
-    if (spdlog::get("dnn"))
-        spdlog::get("dnn")->trace("Destructor of batch, free tensors");
-    for (auto p : mTensors) {
-        delete p;
-    }
 }
 
 Batch::BatchState Batch::changeState(Batch::BatchState newState)
@@ -65,4 +58,9 @@ bool Batch::allCellsProcessed()
         return true;
 
     return false;
+}
+
+void Batch::processResults()
+{
+    spdlog::get("main")->debug("Batch::processResults: base class called (something is missing in derived class?)");
 }

@@ -4,6 +4,7 @@
 #include "states.h"
 #include "batchmanager.h"
 #include "environmentcell.h"
+class BatchDNN; // forward
 class Batch; // forward
 
 class InferenceData
@@ -14,7 +15,7 @@ public:
     static bool checkSetup(const InputTensorItem &def);
 
     /// fills an item by pulling all the required data from the model
-    void fetchData(Cell *cell, Batch *batch, size_t slot);
+    void fetchData(Cell *cell, BatchDNN *batch, size_t slot);
 
     /// set the result of the DNN
     void setResult(state_t state, restime_t time);
@@ -46,7 +47,7 @@ private:
     restime_t mNextTime;
     restime_t mResidenceTime;
     int mIndex; ///< index of the cell in the landscape grid
-    Batch *mBatch; ///< link to the batch (that contains the actual Tensors)
+    BatchDNN *mBatch; ///< link to the batch (that contains the actual Tensors)
     size_t mSlot; ///< slot within the batch for this cell
 };
 

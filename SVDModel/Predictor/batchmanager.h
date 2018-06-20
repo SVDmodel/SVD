@@ -7,7 +7,9 @@
 #include <memory>
 #include "spdlog/spdlog.h"
 
-class Batch;  // forward
+#include "batch.h"
+
+class BatchDNN;  // forward
 class TensorWrapper;
 
 struct InputTensorItem {
@@ -72,7 +74,7 @@ public:
 
     /// returns a pointer to a batch (first) and a (valid)
     /// slot (=index within the batch): second
-    std::pair<Batch *, size_t> validSlot();
+    std::pair<Batch *, size_t> validSlot(Batch::BatchType type);
 
     const std::list<Batch *> batches() const { return mBatches; }
 
@@ -84,8 +86,9 @@ private:
     size_t mBatchSize;
     size_t mMaxQueueLength;
     bool mSlotRequested;
-    Batch *createBatch();
-    std::pair<Batch *, size_t> findValidSlot();
+    BatchDNN *createDNNBatch();
+    Batch *createBatch(Batch::BatchType type);
+    std::pair<Batch *, size_t> findValidSlot(Batch::BatchType type);
     TensorWrapper *buildTensor(size_t batch_size, InputTensorItem &item);
     std::list<InputTensorItem> mTensorDef;
     std::list<Batch *> mBatches;

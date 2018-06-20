@@ -151,7 +151,7 @@ std::unordered_map<std::string, std::string> ModelController::systemStatus()
         switch (e->state()) {
         case Batch::Fill: ++n_fill; n_open_slots += e->freeSlots();  break;
         case Batch::Finished: ++n_finished; break;
-        case Batch::DNN: ++n_dnn; break;
+        case Batch::DNNInference: ++n_dnn; break;
         default: break;
         }
     }

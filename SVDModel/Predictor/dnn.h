@@ -26,7 +26,7 @@ public:
 
     /// DNN main function: execute the DNN inference for the
     /// examples provided in 'batch'.
-    Batch *run(Batch *batch);
+    Batch *run(Batch *abatch);
 
 private:
     static DNN *mInstance;

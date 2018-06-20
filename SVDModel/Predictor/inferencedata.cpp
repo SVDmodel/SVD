@@ -1,6 +1,6 @@
 #include "inferencedata.h"
 #include "model.h"
-#include "batch.h"
+#include "batchdnn.h"
 #include "tensorhelper.h"
 
 bool InferenceData::checkSetup(const InputTensorItem &def)
@@ -26,7 +26,7 @@ bool InferenceData::checkSetup(const InputTensorItem &def)
 
 }
 
-void InferenceData::fetchData(Cell *cell, Batch *batch, size_t slot)
+void InferenceData::fetchData(Cell *cell, BatchDNN *batch, size_t slot)
 {
     mOldState = cell->stateId();
     mResidenceTime = cell->residenceTime();

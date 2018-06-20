@@ -3,7 +3,7 @@
 #include "model.h"
 
 #include "../Predictor/inferencedata.h"
-#include "../Predictor/batch.h"
+#include "../Predictor/batchdnn.h"
 #include "grid.h"
 #include "outputs/outputmanager.h"
 
@@ -290,21 +290,10 @@ void ModelShell::processedPackage(Batch *batch)
         return;
     }
 
-
-    // DNN delivered processed package....
-    lg->debug("Model: received package {} [{}](from DNN). Writing back data.", batch->packageId(), static_cast<void*>(batch));
-
-    // check data:
-    for (size_t i=0;i<batch->usedSlots();++i) {
-        if (batch->inferenceData(i).nextTime() == 0 || batch->inferenceData(i).nextState()==0) {
-            lg->error("bad data in batch {} with {} used slots. item {}: update-time: {}, update-state: {}", batch->packageId(), batch->usedSlots(), i, batch->inferenceData(i).nextTime(), batch->inferenceData(i).nextState());
-        }
-    }
+    batch->processResults();
 
 
-    for (size_t i=0;i<batch->usedSlots();++i) {
-        batch->inferenceData(i).writeResult();
-    }
+
     batch->changeState(Batch::Fill);
 
 
@@ -378,8 +367,8 @@ void ModelShell::buildInferenceData(Cell *cell)
             return;
 
         assert(BatchManager::instance()!=nullptr);
-        std::pair<Batch*, size_t> newslot = BatchManager::instance()->validSlot();
-        Batch *batch = newslot.first;
+        std::pair<Batch*, size_t> newslot = BatchManager::instance()->validSlot(Batch::DNN);
+        BatchDNN *batch = dynamic_cast<BatchDNN*>(newslot.first);
         if (!batch) {
             if (newslot.second==0)
                 return; // cancel operation

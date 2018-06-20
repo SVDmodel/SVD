@@ -87,7 +87,7 @@ void DNNShell::doWork(Batch *batch)
     if (batch->state()!=Batch::Fill)
         lg->error("Batch {} [{}] is in the wrong state {}, size: {}", batch->packageId(), static_cast<void*>(batch), batch->state(), batch->usedSlots());
 
-    batch->changeState(Batch::DNN);
+    batch->changeState(Batch::DNNInference);
     mProcessing++;
     lg->debug("DNNShell: received package {}. Starting DNN (batch: {}, state: {}, active threads now: {}, #processing: {}) ", batch->packageId(), static_cast<void*>(batch), batch->state(), mThreads->activeThreadCount(), mProcessing);
 
