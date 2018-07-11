@@ -6,6 +6,8 @@
 #include "filereader.h"
 #include "randomgen.h"
 
+#include "modules/module.h"
+
 std::vector<std::string> State::mValueNames;
 
 States::States()
@@ -17,15 +19,16 @@ void States::setup()
 {
     std::string file_name = Tools::path(Model::instance()->settings().valueString("states.file"));
     FileReader rdr(file_name);
-    rdr.requiredColumns({"stateId", "composition", "structure", "fct"});
+    rdr.requiredColumns({"stateId", "composition", "structure", "fct", "type"});
 
     while (rdr.next()) {
         // read line
         state_t id = state_t( rdr.value("stateId") );
         mStates.push_back( State(id,
-                rdr.valueString("composition"),
-                int(rdr.value("structure")),
-                int(state_t(rdr.value("fct"))))
+                                 rdr.valueString("composition"),
+                                 int(rdr.value("structure")),
+                                 int(rdr.value("fct")),
+                                 State::StateType(static_cast<size_t>(rdr.value("type"))))
                            );
         mStateSet.insert({id, mStates.size()-1}); // save id and index
 
@@ -75,12 +78,41 @@ const State &States::stateById(state_t id)
 
 }
 
-State::State(state_t id, std::string composition, int structure, int function)
+bool States::registerHandler(Module *module, State::StateType state_type)
+{
+    if (mHandlers.find(state_type) != mHandlers.end()) {
+        spdlog::get("setup")->error("Cannit register the module '{}' for type '{}': already registered module ('{}')", module->name(), state_type, mHandlers.find(state_type)->second->name());
+        return false;
+    }
+    mHandlers[state_type] = module;
+    spdlog::get("setup")->info("Registered module '{}' for type {}.", module->name(), state_type);
+    return true;
+}
+
+void States::updateStateHandlers()
+{
+    for (auto &s : mStates) {
+        // set for each state the stored handler (nullptr can be set too!)
+        Module *m = mHandlers[s.type()];
+        s.setModule(m);
+    }
+}
+
+State::State(state_t id, std::string composition, int structure, int function, StateType type)
 {
     mId = id;
-    mComposition = trimmed(composition);
+    mComposition = trimmed(composition); // remove trailing spaces if available
     mStructure = structure;
     mFunction = function;
+    mType = type;
+    mModule = nullptr;
+
+    if (mType != State::Forest) {
+        // no detailed setup necessary
+        return;
+    }
+
+
     auto species = Model::instance()->species();
     mSpeciesShare = std::vector<double>(species.size(), 0.);
 

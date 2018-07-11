@@ -4,6 +4,7 @@
 
 #include "model.h"
 #include "settings.h"
+#include "modules/module.h"
 
 #include <mutex>
 
@@ -111,7 +112,7 @@ void BatchManager::newYear()
 }
 
 static std::mutex batch_mutex;
-std::pair<Batch *, size_t> BatchManager::validSlot(Batch::BatchType type)
+std::pair<Batch *, size_t> BatchManager::validSlot(Module *module)
 {
     // serialize this function...
     std::lock_guard<std::mutex> guard(batch_mutex);
@@ -119,7 +120,7 @@ std::pair<Batch *, size_t> BatchManager::validSlot(Batch::BatchType type)
     std::pair<Batch *, size_t> result;
     int sleeps = 0;
     do {
-        result = findValidSlot(type);
+        result = findValidSlot(module);
         if (!result.first) {
             // wait
 
@@ -157,7 +158,7 @@ BatchDNN *BatchManager::createDNNBatch()
         TensorWrapper *tw = buildTensor(mBatchSize, td);
         if (mBatches.size()==0)
             if (!InferenceData::checkSetup(td)) {
-                lg->error("create Batch: Error:");
+                lg->error("create Batch for DNN: Error:");
                 lg->error("Name: '{}', dataype: '{}', dimensions: {}, size-x: {}, size-y: {}, content: '{}'",
                           td.name, td.datatypeString(td.type), td.ndim, td.sizeX, td.sizeY, td.contentString(td.content));
                 throw std::logic_error("Could not create a tensor (check the logfile).");
@@ -171,14 +172,14 @@ BatchDNN *BatchManager::createDNNBatch()
 
 }
 
-std::pair<Batch *, size_t> BatchManager::findValidSlot(Batch::BatchType type)
+std::pair<Batch *, size_t> BatchManager::findValidSlot(Module *module)
 {
     // this function is serialized (access via validSlot() ).
 
     // look for a batch which is currently not in the DNN processing chain
     Batch *batch = nullptr;
     for (const auto &b : mBatches) {
-        if (b->type()==type && b->state()==Batch::Fill && b->freeSlots()>0) {
+        if (b->module()==module && b->state()==Batch::Fill && b->freeSlots()>0) {
             batch=b;
             break;
         }
@@ -188,7 +189,9 @@ std::pair<Batch *, size_t> BatchManager::findValidSlot(Batch::BatchType type)
             // currently we don't find a proper place for the data.
             return std::pair<Batch*, size_t>(nullptr, 0);
         }
-        batch = createBatch(type);
+        // create a new batch; the default (forest) is a batch for DNN
+        batch = createBatch(module ? module->batchType() : Batch::DNN);
+        batch->setModule(module);
         mBatches.push_back( batch );
         lg->trace("created a new batch. Now the list contains {} batch(es).", mBatches.size());
         /*if ( lg->should_log(spdlog::level::trace) ) {
@@ -273,7 +276,7 @@ Batch *BatchManager::createBatch(Batch::BatchType type)
     case Batch::DNN:
         b = createDNNBatch();
         break;
-    case Batch::Special:
+    case Batch::Simple:
         b = new Batch(mBatchSize);
         break;
     default: throw std::logic_error("BatchManager:createBatch: invalid batch type!");

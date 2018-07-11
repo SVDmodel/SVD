@@ -38,6 +38,7 @@ class Model; // forward
 class Cell; // forward
 class InferenceData; // forward
 class Batch; // forward
+class Module; // forward
 
 
 class ModelShell: public QObject
@@ -78,8 +79,11 @@ public slots:
 
 private:
     void internalRun();
-    void buildInferenceData(Cell *cell);
+    void evaluateCell(Cell *cell);
+    void buildInferenceDataDNN(Cell *cell);
+    std::pair<Batch *, size_t> getSlot(Cell *cell, Module *module);
     bool checkBatch(Batch *batch);
+    void sendBatch(Batch *batch);
     void sendPendingBatches();
     void finalizeCycle();
     void cancel();

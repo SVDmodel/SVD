@@ -5,8 +5,9 @@
 #include "filereader.h"
 #include "randomgen.h"
 
-FireModule::FireModule()
+FireModule::FireModule(): Module("fire", State::None)
 {
+
 }
 
 void FireModule::setup()
@@ -56,7 +57,7 @@ void FireModule::setup()
 
 }
 
-int FireModule::run()
+void FireModule::run()
 {
     // check if we have ignitions
     auto &grid = Model::instance()->landscape()->grid();
@@ -82,7 +83,6 @@ int FireModule::run()
     // fire output
     Model::instance()->outputManager()->run("Fire");
 
-    return n_ignited;
 }
 
 void FireModule::fireSpread(const FireModule::SIgnition &ign)
@@ -188,6 +188,11 @@ bool FireModule::burnCell(int ix, int iy, int &rHighSeverity, int round)
     // effect of fire: a transition to another state
     state_t new_state = mFireMatrix.transition(s.stateId(), high_severity ? 1 : 0);
     s.setNewState(new_state);
+
+    // test for landcover change
+    if ( s.state()->type() != Model::instance()->states()->stateById(new_state).type() )
+        lg->debug("Landcover type change: from state '{}' to '{}'", s.stateId(), new_state);
+
     c.last_burn = static_cast<short int>(Model::instance()->year());
     c.n_fire++;
     if (high_severity) {

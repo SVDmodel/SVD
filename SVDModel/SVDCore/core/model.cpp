@@ -2,6 +2,7 @@
 #include "tools.h"
 #include "strtools.h"
 #include "../Predictor/batchmanager.h"
+#include "modules/module.h"
 
 #include <QThreadPool>
 
@@ -65,12 +66,7 @@ bool Model::setup()
 
     mExternalSeeds.setup();
 
-    // setup of modules
-    if (settings().valueBool("modules.fire.enabled", "false")) {
-        mFireModule = std::shared_ptr<FireModule>(new FireModule());
-        mFireModule->setup();
-    }
-
+    setupModules();
 
     mYear = 0; // model is set up, ready to run
     return true;
@@ -97,10 +93,18 @@ void Model::runModules()
 {
     auto lg = spdlog::get("main");
     lg->debug("Run modules (year {})", year());
-    if (mFireModule) {
-        lg->debug("Run fire module");
-        mFireModule->run();
+    for (auto &module : mModules) {
+        lg->debug("Run module '{}'", module->name());
+        module->run();
     }
+}
+
+Module *Model::module(const std::string &name)
+{
+    for (const auto &m : mModules)
+        if (m->name() == name)
+            return m.get();
+    return nullptr;
 }
 
 void Model::newYear()
@@ -198,5 +202,25 @@ void Model::setupSpecies()
         lg_setup->trace("Species: {}", join(mSpeciesList));
         lg_setup->trace("************");
     }
+
+}
+
+void Model::setupModules()
+{
+
+    for (const auto &s : Module::allModuleNames() ) {
+        if (settings().valueBool("modules." + s + ".enabled", "false")) {
+            lg_setup->info("Attempting to create enabled module '{}':", s);
+            std::shared_ptr<Module> module = Module::moduleFactory(s);
+            mModules.push_back(module);
+            module->setup();
+
+        }
+    }
+
+    // update the states to incorporate new modules
+    Model::instance()->states()->updateStateHandlers();
+
+    lg_setup->info("Setup of modules completed");
 
 }

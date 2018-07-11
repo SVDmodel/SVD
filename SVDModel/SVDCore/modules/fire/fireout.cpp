@@ -25,7 +25,7 @@ void FireOut::setup()
 
 void FireOut::execute()
 {
-    FireModule *fire = Model::instance()->fireModule().get();
+    FireModule *fire = dynamic_cast<FireModule*>(Model::instance()->module("fire"));
     if (!fire)
         return;
     for (auto &s : fire->mStats) {

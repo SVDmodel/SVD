@@ -13,8 +13,6 @@
 #include "landscape.h"
 #include "externalseeds.h"
 #include "outputs/outputmanager.h"
-// modules
-#include "modules/fire/firemodule.h"
 
 class Model
 {
@@ -55,8 +53,8 @@ public:
     std::shared_ptr<Climate> &climate() { return mClimate; }
     const ExternalSeeds &externalSeeds() {return mExternalSeeds; }
 
-    const std::shared_ptr<FireModule> &fireModule() { return mFireModule; }
-
+    /// return ptr to a module with the given name, or nullptr if not available
+    Module *module(const std::string &name);
 
     /// access to the output machinery
     std::shared_ptr<OutputManager> &outputManager() { return mOutputManager; }
@@ -65,7 +63,7 @@ public:
     /// access to the model configuration
     const Settings &settings() const { return mSettings; }
     struct SystemStats {
-        SystemStats(): NPackagesDNN(0), NPackagesSent(0), NPackagesTotalDNN(0), NPackagesTotalSent(0) {}
+        SystemStats(): NPackagesSent(0),  NPackagesDNN(0), NPackagesTotalSent(0), NPackagesTotalDNN(0)  {}
         size_t NPackagesSent;
         size_t NPackagesDNN;
         size_t NPackagesTotalSent;
@@ -78,6 +76,7 @@ private:
 
     // setup functions
     void setupSpecies();
+    void setupModules();
 
     // helpers
     Settings mSettings;
@@ -96,7 +95,7 @@ private:
     ExternalSeeds mExternalSeeds;
     std::shared_ptr<OutputManager> mOutputManager;
     // modules
-    std::shared_ptr<FireModule> mFireModule;
+    std::vector< std::shared_ptr<Module> > mModules;
     // loggers
     std::shared_ptr<spdlog::logger> lg_main;
     std::shared_ptr<spdlog::logger> lg_setup;

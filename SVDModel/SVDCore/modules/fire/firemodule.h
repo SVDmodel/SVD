@@ -3,6 +3,8 @@
 
 #include <map>
 
+#include "modules/module.h"
+
 #include "transitionmatrix.h"
 #include "states.h"
 #include "grid.h"
@@ -27,13 +29,13 @@ struct SFireStat {
 
 };
 
-class FireModule
+class FireModule : public Module
 {
 public:
     FireModule();
     void setup();
 
-    int run();
+    void run();
 
     // getters
     const Grid<SFireCell> &fireGrid() { return mGrid; }

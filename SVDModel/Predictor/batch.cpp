@@ -13,6 +13,8 @@ Batch::Batch(size_t batch_size)
     mState=Fill;
     mError=false;
     mType = Invalid;
+    mModule = nullptr;
+    mCells.resize(mBatchSize);
 }
 
 Batch::~Batch()

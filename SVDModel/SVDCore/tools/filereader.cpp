@@ -182,7 +182,7 @@ bool FileReader::requiredColumns(const std::vector<std::string> &cols)
             msg += s + ", ";
     if (msg.size()==0)
         return true;
-    throw std::logic_error("Required column(s) not in File '" + mFileName + "': " + msg);
+    throw std::logic_error("Required column(s) not in File '" + mFileName + "': " + msg + " (required are: " +  join(cols) + ")");
 }
 
 /// the same as indexOf but does not throw an error

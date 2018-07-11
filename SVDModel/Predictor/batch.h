@@ -3,10 +3,13 @@
 
 #include <list>
 #include <atomic>
+#include <vector>
 
 //#include "inferencedata.h"
 
 class BatchManager; // forward
+class Cell; // forward
+class Module; // forward
 
 class Batch
 {
@@ -16,7 +19,7 @@ public:
 
     /// the state of the batch
     enum BatchState { Fill=0, DNNInference=1, Finished=2, FinishedDNN=3};
-    enum BatchType { Invalid=0, DNN=1, Special=2 };
+    enum BatchType { Invalid=0, DNN=1, Simple=2 };
     BatchType type() const { return mType; }
     BatchState state() const { return mState; }
     BatchState changeState(BatchState newState);
@@ -26,6 +29,8 @@ public:
 
     int packageId() const { return mPackageId; }
     void setPackageId(int id) { mPackageId = id; }
+    void setModule(Module *module) { mModule = module; }
+    Module *module() const { return mModule; }
     size_t batchSize() const { return mBatchSize; }
 
     /// get slot number in the batch (atomic access)
@@ -34,6 +39,9 @@ public:
     size_t freeSlots();
     /// number of slots currently in use
     size_t usedSlots() { return mCurrentSlot; }
+
+    void setCell(Cell* cell, size_t slot) { mCells[slot] = cell; }
+    const std::vector<Cell*> &cells() const { return mCells; }
 
     /// is called when a cell is finished (decrease the atomic counter)
     void finishedCellProcessing();
@@ -52,6 +60,10 @@ protected:
     std::atomic<size_t> mCellsFinished; ///< number of cells which already finished during the "filling"
     size_t mBatchSize;
     int mPackageId;
+    /// minimal storage: the cells
+    std::vector< Cell* > mCells;
+    /// the handling module if present
+    Module *mModule;
     friend class BatchManager;
 };
 

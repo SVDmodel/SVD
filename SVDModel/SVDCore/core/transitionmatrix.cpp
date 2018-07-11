@@ -40,14 +40,20 @@ bool TransitionMatrix::load(const std::string &filename)
 
 state_t TransitionMatrix::transition(state_t stateId, int key)
 {
-    const auto &prob = mTM.at({stateId, key});
+    auto it = mTM.find({stateId, key});
+    if (it == mTM.end()) {
+        spdlog::get("main")->error("TransitionMatrix: no valid transitions found for state {}, key {}", stateId, key);
+        throw std::logic_error("Error in TransitionMatrix");
+    }
+
+    const auto &prob = it->second;
     if (prob.size() == 1)
         return prob.front().first;
     // choose a state probabilistically
     double p_sum = 0;
     for (const auto &item : prob) p_sum+=item.second;
 
-    double p = nrandom(0, p);
+    double p = nrandom(0, p_sum);
     p_sum = 0.;
 
     for (const auto &item : prob) {
@@ -56,5 +62,5 @@ state_t TransitionMatrix::transition(state_t stateId, int key)
             return item.first;
     }
     spdlog::get("main")->error("TransitionMatrix: no valid target found for state {}, key {}", stateId, key);
-    return stateId;
+    throw std::logic_error("Error in TransitionMatrix");
 }

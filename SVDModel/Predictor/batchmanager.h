@@ -10,7 +10,8 @@
 #include "batch.h"
 
 class BatchDNN;  // forward
-class TensorWrapper;
+class TensorWrapper; // forward
+class Module; // forward
 
 struct InputTensorItem {
     enum DataContent {
@@ -74,7 +75,7 @@ public:
 
     /// returns a pointer to a batch (first) and a (valid)
     /// slot (=index within the batch): second
-    std::pair<Batch *, size_t> validSlot(Batch::BatchType type);
+    std::pair<Batch *, size_t> validSlot(Module *module);
 
     const std::list<Batch *> batches() const { return mBatches; }
 
@@ -88,7 +89,7 @@ private:
     bool mSlotRequested;
     BatchDNN *createDNNBatch();
     Batch *createBatch(Batch::BatchType type);
-    std::pair<Batch *, size_t> findValidSlot(Batch::BatchType type);
+    std::pair<Batch *, size_t> findValidSlot(Module *module);
     TensorWrapper *buildTensor(size_t batch_size, InputTensorItem &item);
     std::list<InputTensorItem> mTensorDef;
     std::list<Batch *> mBatches;

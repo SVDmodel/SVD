@@ -15,7 +15,7 @@ public:
     /// the numeric ID of the state the cell is in
     state_t stateId() const { return mStateId; }
     /// get the State object the cell is in;
-    /// do not use to check if the cell is simulated! (use isNull() instead)
+    /// do not use to check if the cell is part of the simulated landscape! (use isNull() instead)
     const State *state() const { return mState; }
     /// the time (number of years) the cell is already in the current state
     restime_t residenceTime() const { return mResidenceTime; }
@@ -26,8 +26,8 @@ public:
     bool needsUpdate() const;
 
     // actions
-    /// check if update is scheduled (i.e. a state change should happen) and in case apply
-    /// after update(), the cell is in the final state of the current year (31st of december)
+    /// check if update is scheduled (i.e. a state change should happen) and in case apply the update;
+    /// after update(), the cell is in the final state of the current year ("31st of december")
     void update();
     void setState(state_t new_state);
     void setResidenceTime(restime_t res_time) { mResidenceTime = res_time; }
