@@ -92,6 +92,7 @@ DNN::DNN()
     mSCOut = nullptr;
     mTopK_tf = true;
     mTopK_NClasses = 10;
+    mNResTimeCls = 0; mNStateCls = 0;
 }
 
 DNN::~DNN()
@@ -114,12 +115,26 @@ bool DNN::setup()
     if (!lg)
         throw std::logic_error("DNN::setup: logging not available.");
     lg->info("Setup of DNN.");
-    settings.requiredKeys("dnn", {"file", "maxBatchQueue", "topKNClasses"});
+    settings.requiredKeys("dnn", {"file", "maxBatchQueue", "topKNClasses", "state.name", "state.N", "restime.name", "restime.N"});
 
     std::string file = Tools::path(settings.valueString("dnn.file"));
     mTopK_tf = settings.valueBool("dnn.topKGPU", "true");
-    mTopK_NClasses = static_cast<size_t>(settings.valueInt("dnn.topKNClasses", 10));
+    mTopK_NClasses = settings.valueUInt("dnn.topKNClasses", 10);
+    mOutputTensorNames = { settings.valueString("dnn.state.name"), settings.valueString("dnn.restime.name")};
+    mNStateCls = settings.valueUInt("dnn.state.N");
+    if (mNStateCls==0)
+         mNStateCls = Model::instance()->states()->states().size(); // default: number of states
+
+    mNResTimeCls = settings.valueUInt("dnn.restime.N");
+
+
     lg->info("DNN file: '{}'", file);
+
+    if (lg->should_log(spdlog::level::debug)) {
+        lg->debug("Definition of DNN-Output layers: State-Layer: '{}', '{}' classes.", mOutputTensorNames[0], mNStateCls);
+        lg->debug("Definition of DNN-Output layers: Residence-Time-Layer: '{}', '{}' classes.", mOutputTensorNames[1], mNResTimeCls);
+        lg->debug("Use of Top-K: running on GPU: '{}',  with '{}' classes.", mTopK_tf, mTopK_NClasses);
+    }
 
 
     // set-up of the DNN
@@ -146,15 +161,15 @@ bool DNN::setup()
         lg->error("Error loading the graph: {}", load_graph_status.error_message().data());
         return false;
     }
-    lg->trace("ok!");
+    lg->trace("Successfully loaded graph!");
 
     if (mTopK_tf) {
         lg->trace("build the top-k graph...");
         // output_classes = new tensorflow::Tensor(dt, tensorflow::TensorShape({ static_cast<int>(mBatchSize), static_cast<int>(1418)}));
         //output_classes = new tensorflow::Input();
-        int bs = BatchManager::instance()->batchSize();
+        int bs = static_cast<int>( BatchManager::instance()->batchSize() );
         // number of classes:
-        int ncls = static_cast<int>(Model::instance()->states()->states().size());
+        int ncls = static_cast<int>( mNStateCls );
         Tensor top_k_tensor(tensorflow::DT_FLOAT, tensorflow::TensorShape({bs, ncls}));
         //top_k_tensor = new tensorflow::Tensor(tensorflow::DT_FLOAT, tensorflow::PartialTensorShape({-1, ncls}));
         //new tensorflow::Tensor(dt, tensorflow::TensorShape({ static_cast<int>(mBatchSize), static_cast<int>(mRows), static_cast<int>(mCols)}));
@@ -318,7 +333,7 @@ Batch * DNN::run(Batch *abatch)
     timr.print("before main dnn");
     //timr.now();
 
-    Status run_status = session->Run(inputs, {"out/Softmax", "time_out/Softmax"}, {}, &outputs);
+    Status run_status = session->Run(inputs, mOutputTensorNames, {}, &outputs);
     if (!run_status.ok()) {
         lg->trace("{}", batch->inferenceData(0).dumpTensorData());
         lg->error("Tensorflow error (run main network): {}", run_status.error_message());
@@ -327,6 +342,15 @@ Batch * DNN::run(Batch *abatch)
     }
     timr.print("main dnn");
     //timr.now();
+
+    // test dimensions of the network
+    if (outputs.size() != 2 || static_cast<size_t>(outputs[0].dim_size(1)) != mNStateCls || static_cast<size_t>(outputs[1].dim_size(1)) != mNResTimeCls ) {
+        lg->error("Wrong number of dimensions of DNN outputs. Number of output tensors: '{}' (expected: 2), Classes state: '{}' (expected: {}); classes residence time: '{}' (expected: {}).",
+                  outputs.size(), outputs.size()>0 ? outputs[0].dim_size(1) : 0, mNStateCls,
+                  outputs.size()>1 ? outputs[1].dim_size(1) : 0 , mNResTimeCls);
+        batch->setError(true);
+        return batch;
+    }
 
     tensorflow::Tensor *scores= nullptr;
     tensorflow::Tensor *indices = nullptr;

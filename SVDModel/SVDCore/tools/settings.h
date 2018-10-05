@@ -23,15 +23,17 @@ public:
 
     std::string valueString(const std::string &key, std::string default_value="") const {
         auto it = mValues.find(key);
-        if (it==mValues.end())
+        if (it==mValues.end()) {
             if (default_value.size()>0) {
                 return default_value;
             } else {
                 throw std::logic_error( "Error in Settings: Key: '" + key + "' not found." );
             }
+        }
         return it->second;
     }
     int valueInt(const std::string &key, int default_value=-999999) const;
+    size_t valueUInt(const std::string &key, int default_value=0) const {return static_cast<size_t>(valueInt(key, default_value)); }
     double valueDouble(const std::string &key, double default_value=-99999999.) const;
     bool valueBool(const std::string &key, const std::string default_value="") const { std::string v = valueString(key, default_value);
                                                                                if (v=="true" || v=="True") return true;

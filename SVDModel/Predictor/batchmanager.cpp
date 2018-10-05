@@ -5,6 +5,8 @@
 #include "model.h"
 #include "settings.h"
 #include "modules/module.h"
+#include "filereader.h"
+#include "tools.h"
 
 #include <mutex>
 
@@ -74,24 +76,46 @@ void BatchManager::setup()
     if (!lg)
         throw std::logic_error("BatchManager::setup: logging not available.");
     lg->info("Setup of batch manager.");
-    Model::instance()->settings().requiredKeys("dnn", {"batchSize", "maxBatchQueue"});
-    mBatchSize = static_cast<size_t>(Model::instance()->settings().valueInt("dnn.batchSize"));
-    mMaxQueueLength = static_cast<size_t>(Model::instance()->settings().valueInt("dnn.maxBatchQueue"));
+    Model::instance()->settings().requiredKeys("dnn", {"batchSize", "maxBatchQueue", "metadata"});
+    mBatchSize = Model::instance()->settings().valueUInt("dnn.batchSize");
+    mMaxQueueLength = Model::instance()->settings().valueUInt("dnn.maxBatchQueue");
 
 //    mTensorDef =  {
 //        {"test", InputTensorItem::DT_FLOAT, 2, 24, 10, InputTensorItem::Climate},
 //        {"test2", InputTensorItem::DT_INT16, 1, 1, 0, InputTensorItem::State}
 //    };
-    mTensorDef =  {
-        // {"clim_input", "float", 2, 10, 40, "Climate"}, // GPP Climate
-        {"clim_input", "float", 2, 10, 24, "Climate"}, // monthly climate
-        {"state_input", "int16", 1, 1, 0, "State"},
-        {"time_input", "float", 1, 1, 0, "ResidenceTime"},
-        {"site_input", "float", 1, 2, 0, "Site"} ,
-        {"distance_input", "float", 1, 1, 0, "DistanceOutside"}, // distance to the forested area outside
-        {"neighbor_input", "float", 1, 62, 0, "Neighbors"},
-        {"keras_learning_phase", "bool", 0, 0, 0, "Scalar"}
-    };
+    // load tensor definitions from file
+    std::string metafilename = Tools::path(Model::instance()->settings().valueString("dnn.metadata"));
+    if (!Tools::fileExists(metafilename))
+        throw std::logic_error("The metadata file for the DNN (" + metafilename + ") does not exist (specified as 'dnn.metadata')!");
+
+    FileReader rdr(metafilename);
+    rdr.requiredColumns({"name", "datatype", "dim", "sizeX", "sizeY", "type"});
+
+    mTensorDef.clear();
+    while (rdr.next()) {
+        InputTensorItem item(trimmed(rdr.valueString("name")),
+                             trimmed(rdr.valueString("datatype")),
+                             static_cast<size_t>(rdr.value("dim")),
+                             static_cast<size_t>(rdr.value("sizeX")),
+                             static_cast<size_t>(rdr.value("sizeY")),
+                             trimmed(rdr.valueString("type")));
+        mTensorDef.push_back(item);
+
+    }
+
+
+
+//    mTensorDef =  {
+//        // {"clim_input", "float", 2, 10, 40, "Climate"}, // GPP Climate
+//        {"clim_input", "float", 2, 10, 24, "Climate"}, // monthly climate
+//        {"state_input", "int16", 1, 1, 0, "State"},
+//        {"time_input", "float", 1, 1, 0, "ResidenceTime"},
+//        {"site_input", "float", 1, 2, 0, "Site"} ,
+//        {"distance_input", "float", 1, 1, 0, "DistanceOutside"}, // distance to the forested area outside
+//        {"neighbor_input", "float", 1, 62, 0, "Neighbors"},
+//        {"keras_learning_phase", "bool", 0, 0, 0, "Scalar"}
+//    };
 
 
     if (lg->should_log(spdlog::level::debug)) {

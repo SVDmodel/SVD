@@ -37,6 +37,9 @@ private:
     bool mDummyDNN; ///< if true, then the tensorflow components are not really used (for debug builds)
     bool mTopK_tf; ///< use tensorflow for the state top k calculation
     size_t mTopK_NClasses; ///< number of classes used for the top k algorithm
+    std::vector<std::string> mOutputTensorNames; ///< names of the output tensors (e.g. output/Softmax)
+    size_t mNStateCls; ///< number of output classes for state
+    size_t mNResTimeCls; ///< number of classes for residence time
     tensorflow::Status getTopClassesOldCode(const tensorflow::Tensor &classes, const int n_top, tensorflow::Tensor *indices, tensorflow::Tensor *scores);
 
     /// retrieve the top n classes in "classes" and store results in 'indices' and 'scores'.

@@ -13,7 +13,7 @@ BatchDNN::BatchDNN(size_t batch_size) : Batch(batch_size)
     mInferenceData.resize(mBatchSize);
     // reserve memory for the topK classes for target states and residence time
 
-    mNTopK = static_cast<size_t>(Model::instance()->settings().valueInt("dnn.topKNClasses", 10));
+    mNTopK = Model::instance()->settings().valueUInt("dnn.topKNClasses", 10);
     mStates.resize(mBatchSize * mNTopK);
     mStateProb.resize(mBatchSize * mNTopK);
     mTimeProb.resize(mBatchSize * mNTopK);
