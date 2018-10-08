@@ -7,11 +7,11 @@
 #include "spdlog/spdlog.h"
 
 #include "modelrunstate.h"
-#include "batchmanager.h"
-#include "dnn.h"
 
 class InferenceData; // forward
 class Batch; // forward
+class DNN; // forward
+class BatchManager; // forward
 
 class DNNShell: public QObject
 {

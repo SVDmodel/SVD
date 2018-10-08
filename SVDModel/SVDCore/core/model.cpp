@@ -3,6 +3,7 @@
 #include "strtools.h"
 #include "../Predictor/batchmanager.h"
 #include "modules/module.h"
+#include "expressionwrapper.h"
 
 #include <QThreadPool>
 
@@ -67,6 +68,8 @@ bool Model::setup()
     mExternalSeeds.setup();
 
     setupModules();
+
+    setupExpressionWrapper();
 
     mYear = 0; // model is set up, ready to run
     return true;
@@ -223,4 +226,13 @@ void Model::setupModules()
 
     lg_setup->info("Setup of modules completed");
 
+}
+
+void Model::setupExpressionWrapper()
+{
+    EnvironmentCell &ec = mLandscape->environmentCell(0);
+    const State &s = mStates->stateByIndex(0);
+    CellWrapper::setupVariables(&ec, &s);
+    CellWrapper cw(nullptr);
+    lg_setup->debug("Setup of variables for expressions completed. List of variables: {}", join(cw.getVariablesList()) );
 }

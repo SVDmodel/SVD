@@ -2,6 +2,7 @@
 #include "model.h"
 #include "batchdnn.h"
 #include "tensorhelper.h"
+#include "dnn.h"
 
 bool InferenceData::checkSetup(const InputTensorItem &def)
 {
@@ -74,7 +75,7 @@ const Cell &InferenceData::cell() const
 std::string InferenceData::dumpTensorData()
 {
     std::stringstream ss;
-    const std::list<InputTensorItem> &tdef = BatchManager::instance()->tensorDefinition();
+    const std::list<InputTensorItem> &tdef = DNN::instance()->tensorDefinition();
     ss << " **** Dump for example " << mSlot << " **** " << std::endl;
     for (const auto &def : tdef) {
         ss << "*****************************************" << std::endl;
@@ -93,7 +94,7 @@ std::string InferenceData::dumpTensorData()
 
 void InferenceData::internalFetchData()
 {
-    const std::list<InputTensorItem> &tdef = BatchManager::instance()->tensorDefinition();
+    const std::list<InputTensorItem> &tdef = DNN::instance()->tensorDefinition();
     for (const auto &def : tdef) {
         switch (def.content) {
         case InputTensorItem::Climate:

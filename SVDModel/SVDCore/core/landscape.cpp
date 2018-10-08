@@ -47,7 +47,7 @@ void Landscape::setup()
     // update the names of the environment:
     std::vector<std::string> &vars = EnvironmentCell::variables();
     vars.clear();
-    for (int i=0;i<rdr.columnCount();++i) {
+    for (size_t i=0;i<rdr.columnCount();++i) {
         if (rdr.columnName(i) != "climateId" && rdr.columnName(i)!="id")
             vars.push_back(rdr.columnName(i));
     }
@@ -99,6 +99,8 @@ void Landscape::setup()
         if (*ec) {
             // set to invalid state (different from NULL which is outside of the project area)
             a->setInvalid();
+            // establish link to the environment
+            a->setEnvironmentCell(*ec);
         }
 
 
@@ -126,7 +128,7 @@ void Landscape::setupInitialState()
         for (Cell *c = grid().begin(); c!=grid().end(); ++c)
             if (!c->isNull()) {
                 c->setState( Model::instance()->states()->randomState().id() );
-                c->setResidenceTime(irandom(0,10));
+                c->setResidenceTime(static_cast<restime_t>(irandom(0,10)));
                 ++n_affected;
             }
         lg->debug("Landscape states initialized randomly ({} affected cells).", n_affected);
@@ -146,7 +148,7 @@ void Landscape::setupInitialState()
         for (EnvironmentCell **ec=mEnvironmentGrid.begin(); ec!=mEnvironmentGrid.end(); ++ec, ++cell)
             if (*ec) {
                 state_t t= state_t( (*ec)->value("stateId") );
-                short int res_time = short int ( (*ec)->value("residenceTime") );
+                short int res_time = static_cast<short int> ( (*ec)->value("residenceTime") );
                 if (!Model::instance()->states()->isValid(t)) {
                     if (!error) lg->error("Initalize states from landscape file '{}': Errors detected:", settings.valueString("landscape.file"));
                     error = true;

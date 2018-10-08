@@ -20,11 +20,16 @@ public:
     InferenceData &inferenceData(size_t slot) { if (slot<mInferenceData.size()) return mInferenceData[slot];
         throw std::logic_error("Batch: invalid slot!");}
 
+    /// extract data from the model and populate the examples for DNN inference
+    bool fetchPredictors(Cell *cell, size_t slot);
+
     // access to the results for the examples (used to write classes from DNN to the batch)
     float *timeProbResult(size_t index) { return &mTimeProb[index * mNTopK]; }
     float *stateProbResult(size_t index) { return &mStateProb[index * mNTopK]; }
     state_t *stateResult(size_t index) { return &mStates[index * mNTopK]; }
 private:
+    void setupTensors();
+
     /// select from the topK classes (DNN result) the next state & time
     void selectClasses();
     size_t chooseProbabilisticIndex(float *values, size_t n);

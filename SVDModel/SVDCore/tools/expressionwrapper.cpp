@@ -14,7 +14,7 @@
 #include "model.h"
 
 #define VARCOUNT 52
-const char *VarList[VARCOUNT]={"bhd", "alter", "hoehe", "art", "id", "vorrat",
+static const char *VarList[VARCOUNT]={"bhd", "alter", "hoehe", "art", "id", "vorrat",
                                "npp", "gpp", "leafarea", "leafweight", "mstem",
                                "mfoliage", "mtwigs", "x","y","patchindex",
                                "highlight", "ali","kronenansatz",
@@ -30,10 +30,10 @@ const char *VarList[VARCOUNT]={"bhd", "alter", "hoehe", "art", "id", "vorrat",
                                "crownradius"};
 
 
-std::vector<std::string> baseVarList;
-int baseVarListCount=0;
+static std::vector<std::string> baseVarList;
+static size_t baseVarListCount=0;
 
-std::vector<std::string> treeVarList;
+static std::vector<std::string> treeVarList;
 
 
 void set_strings()
@@ -42,12 +42,12 @@ void set_strings()
         return;
     // ********* base **********
     baseVarList.push_back("year");
-    baseVarListCount = static_cast<int>(baseVarList.size());
+    baseVarListCount = baseVarList.size();
 
     // ********* tree **********
 
     // also add base vars to varlist
-    for (int i=0;i<baseVarListCount;i++)
+    for (size_t i=0;i<baseVarListCount;i++)
         treeVarList.push_back(baseVarList[i]);
 
     for (int i=0;i<VARCOUNT;i++)
@@ -59,6 +59,8 @@ ExpressionWrapper::ExpressionWrapper()
 {
     set_strings();
 }
+
+
 // must be overloaded!
 
 
@@ -67,11 +69,11 @@ const std::vector<std::string> &ExpressionWrapper::getVariablesList()
     throw std::logic_error("expression wrapper reached base getVariableList");
 }
 // must be overloaded!
-double ExpressionWrapper::value(const int variableIndex)
+double ExpressionWrapper::value(const size_t variableIndex)
 {
     switch (variableIndex) {
     case 0: // year
-        return (double) 0;
+        return  0.;
     }
     throw std::logic_error("expression wrapper reached base with invalid index index " + to_string(variableIndex));
 }
@@ -83,7 +85,7 @@ int ExpressionWrapper::variableIndex(const std::string &variableName)
 
 double ExpressionWrapper::valueByName(const std::string &variableName)
 {
-    int idx = variableIndex(variableName);
+    size_t idx = static_cast<size_t>(variableIndex(variableName));
     return value(idx);
 }
 
@@ -108,7 +110,7 @@ double TreeWrapper::value(const int variableIndex)
     return ExpressionWrapper::value(variableIndex);
 }
 */
-std::vector<std::string> CellWrapper::mVariableList = {"state",
+std::vector<std::string> InferenceDataWrapper::mVariableList = {"state",
                                                        "restime",
                                                        "id",
                                                        "x",
@@ -118,7 +120,7 @@ std::vector<std::string> CellWrapper::mVariableList = {"state",
 
 
 
-double CellWrapper::value(const int variableIndex)
+double InferenceDataWrapper::value(const size_t variableIndex)
 {
     const Cell &cell=mData->cell();
     switch (variableIndex) {
@@ -136,6 +138,65 @@ double CellWrapper::value(const int variableIndex)
     }
     case 4: return static_cast<double>(Model::instance()->year());
     default: throw std::logic_error("invalid variable in CellWrapper: " + to_string(variableIndex));
-        return 0.;
     }
+
+}
+
+
+/* ***********************************
+ * Wrapper for cells
+*/
+
+std::vector<std::string> CellWrapper::mVariableList = { "id", "climateId" };
+size_t CellWrapper::mMaxStateVar = 0;
+
+void CellWrapper::setupVariables(EnvironmentCell *ecell, const State *astate)
+{
+    mVariableList = { "id", "climateId" }; // reset
+
+    // add variables from states
+    for (auto &v : astate->valueNames()) {
+        if (indexOf(mVariableList, v)>=0) {
+            spdlog::get("main")->error("Setup of variable names for CellWrapper: state variable '{}' already exists! (list of variables so far: {})", v, join(mVariableList));
+            throw std::logic_error("Error in setting up variable names (check log).");
+        }
+        mVariableList.push_back(v);
+    }
+    mMaxStateVar = mVariableList.size();
+
+    // add environment variables
+    for (auto &v : ecell->variables()) {
+        if (indexOf(mVariableList, v)>=0) {
+            spdlog::get("main")->error("Setup of variable names for CellWrapper: environment variable '{}' already exists! (list of variables so far: {})", v, join(mVariableList));
+            throw std::logic_error("Error in setting up variable names (check log).");
+        }
+
+        mVariableList.push_back(v);
+    }
+
+
+}
+
+
+
+double CellWrapper::value(const size_t variableIndex)
+{
+
+    if (variableIndex < 2) {
+        // fixed variables: id, climateId
+
+        if (variableIndex==0)
+            return static_cast<double>(mData->environment()->id());
+        else
+           return static_cast<double>(mData->environment()->climateId());
+
+    } else if (variableIndex < mMaxStateVar) {
+        // state variable
+        const State *s = mData->state();
+        return s->value(variableIndex - 2);
+    } else {
+        const EnvironmentCell *ec = mData->environment();
+        ec->value(variableIndex - mMaxStateVar);
+    }
+    return 0.;
 }

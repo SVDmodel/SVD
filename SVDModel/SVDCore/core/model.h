@@ -78,6 +78,8 @@ private:
     void setupSpecies();
     void setupModules();
 
+    void setupExpressionWrapper();
+
     // helpers
     Settings mSettings;
 

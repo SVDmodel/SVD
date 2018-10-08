@@ -68,7 +68,8 @@ SOURCES += \
     predtest.cpp \
     dnn.cpp \
     dnnshell.cpp \
-    batchdnn.cpp
+    batchdnn.cpp \
+    inputtensoritem.cpp
 
 HEADERS += \
     predictortest.h \
@@ -79,7 +80,8 @@ HEADERS += \
     predtest.h \
     dnn.h \
     dnnshell.h \
-    batchdnn.h
+    batchdnn.h \
+    inputtensoritem.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

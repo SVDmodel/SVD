@@ -6,6 +6,8 @@
 
 #include "randomgen.h"
 
+#include "dnn.h"
+
 BatchDNN::BatchDNN(size_t batch_size) : Batch(batch_size)
 {
     mType = DNN;
@@ -17,6 +19,8 @@ BatchDNN::BatchDNN(size_t batch_size) : Batch(batch_size)
     mStates.resize(mBatchSize * mNTopK);
     mStateProb.resize(mBatchSize * mNTopK);
     mTimeProb.resize(mBatchSize * mNTopK);
+
+    setupTensors();
 
 }
 
@@ -45,6 +49,17 @@ void BatchDNN::processResults()
         inferenceData(i).writeResult();
     }
 
+}
+
+bool BatchDNN::fetchPredictors(Cell *cell, size_t slot)
+{
+    inferenceData(slot).fetchData(cell, this, slot);
+    return true;
+}
+
+void BatchDNN::setupTensors()
+{
+    DNN::instance()->setupBatch(this, mTensors);
 }
 
 // choose randomly a value in *values (length=n), return the index.

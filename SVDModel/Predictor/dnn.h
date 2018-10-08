@@ -11,6 +11,9 @@ class Input;
 class Batch; // forward
 class StateChangeOut; // forward
 
+#include "inputtensoritem.h"
+#include "tensorhelper.h"
+
 class DNN
 {
 public:
@@ -23,13 +26,27 @@ public:
         return mInstance; }
 
     bool setup();
+    void setupBatch(Batch *abatch, std::vector<TensorWrapper*> &tensors);
 
     /// DNN main function: execute the DNN inference for the
     /// examples provided in 'batch'.
     Batch *run(Batch *abatch);
 
+    // getters
+    /// the definition of the tensors to fill
+    const std::list<InputTensorItem> &tensorDefinition() const {return mTensorDef; }
+
+
 private:
     static DNN *mInstance;
+    /// set up the actual DNN (TensorFlow)
+    bool setupDNN();
+
+    /// set up the links to the main model
+    void setupInput();
+
+
+    TensorWrapper *buildTensor(size_t batch_size, InputTensorItem &item);
     // logging
     std::shared_ptr<spdlog::logger> lg;
 
@@ -54,6 +71,9 @@ private:
 
     /// link to detailed output
     StateChangeOut *mSCOut;
+
+    /// definition of input tensors
+    std::list<InputTensorItem> mTensorDef;
 
 
 };

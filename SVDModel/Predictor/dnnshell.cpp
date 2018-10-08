@@ -10,6 +10,8 @@
 #include "randomgen.h"
 #include "model.h"
 #include "batch.h"
+#include "batchmanager.h"
+#include "dnn.h"
 
 
 

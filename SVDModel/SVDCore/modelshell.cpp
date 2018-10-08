@@ -413,10 +413,14 @@ void ModelShell::buildInferenceDataDNN(Cell *cell)
                 return;
             }
         }
-        InferenceData &id = batch->inferenceData(newslot.second);
 
-        // populate the InferenceData with the required data
-        id.fetchData(cell, batch, newslot.second);
+        // populate the batch with data for this particular cell
+        batch->fetchPredictors(cell, newslot.second);
+
+//        InferenceData &id = batch->inferenceData(newslot.second);
+
+//        // populate the InferenceData with the required data
+//        id.fetchData(cell, batch, newslot.second);
 
         // check if batch is finished and send if this is the case
         if (checkBatch(batch))

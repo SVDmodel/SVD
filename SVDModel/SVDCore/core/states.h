@@ -35,8 +35,8 @@ public:
     static const std::vector<std::string> &valueNames() { return mValueNames; }
     static int valueIndex(const std::string &name) { return indexOf(mValueNames, name); }
     bool hasValue(const std::string &name) const { return indexOf(mValueNames, name)>=0; }
-    double value(const std::string &name) const { return value(valueIndex(name)); }
-    double value(const int index) const { assert(index>=0); size_t i=static_cast<size_t>(index); return i<mValues.size() ? mValues[i] : 0.;}
+    double value(const std::string &name) const { return value(static_cast<size_t>(valueIndex(name))); }
+    double value(const size_t index) const { assert(index>=0); size_t i=static_cast<size_t>(index); return i<mValues.size() ? mValues[i] : 0.;}
     void setValue(const std::string &name, double value);
     void setValue(const int index, double value);
 private:

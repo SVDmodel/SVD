@@ -9,6 +9,7 @@
 #include "batchmanager.h"
 #include "randomgen.h"
 #include "outputs/statechangeout.h"
+#include "filereader.h"
 
 // Tensorflow includes
 //  from inception demo
@@ -104,7 +105,7 @@ DNN::~DNN()
     mInstance=nullptr;
 }
 
-bool DNN::setup()
+bool DNN::setupDNN()
 {
 #ifdef CUDA_PROFILING
     cudaProfilerStop();
@@ -304,7 +305,7 @@ Batch * DNN::run(Batch *abatch)
     lg->debug("DNN: started execution for package {}.", batch->packageId());
 
     std::vector<std::pair<string, Tensor> > inputs;
-    const std::list<InputTensorItem> &tdef = BatchManager::instance()->tensorDefinition();
+    const std::list<InputTensorItem> &tdef = tensorDefinition();
     size_t tindex=0;
     for (const auto &def : tdef) {
         inputs.push_back( std::pair<string, Tensor>( def.name, batch->tensor(tindex)->tensor() ));
@@ -491,6 +492,151 @@ Batch * DNN::run(Batch *abatch)
     lg->debug("DNN::run finished; package {}", batch->packageId());
     batch->changeState(Batch::FinishedDNN);
     return batch;
+}
+
+void DNN::setupInput()
+{
+    //    mTensorDef =  {
+    //        {"test", InputTensorItem::DT_FLOAT, 2, 24, 10, InputTensorItem::Climate},
+    //        {"test2", InputTensorItem::DT_INT16, 1, 1, 0, InputTensorItem::State}
+    //    };
+        // load tensor definitions from file
+        std::string metafilename = Tools::path(Model::instance()->settings().valueString("dnn.metadata"));
+        if (!Tools::fileExists(metafilename))
+            throw std::logic_error("The metadata file for the DNN (" + metafilename + ") does not exist (specified as 'dnn.metadata')!");
+
+        FileReader rdr(metafilename);
+        rdr.requiredColumns({"name", "datatype", "dim", "sizeX", "sizeY", "type"});
+
+        mTensorDef.clear();
+        while (rdr.next()) {
+            InputTensorItem item(trimmed(rdr.valueString("name")),
+                                 trimmed(rdr.valueString("datatype")),
+                                 static_cast<size_t>(rdr.value("dim")),
+                                 static_cast<size_t>(rdr.value("sizeX")),
+                                 static_cast<size_t>(rdr.value("sizeY")),
+                                 trimmed(rdr.valueString("type")));
+            mTensorDef.push_back(item);
+
+        }
+
+
+
+    //    mTensorDef =  {
+    //        // {"clim_input", "float", 2, 10, 40, "Climate"}, // GPP Climate
+    //        {"clim_input", "float", 2, 10, 24, "Climate"}, // monthly climate
+    //        {"state_input", "int16", 1, 1, 0, "State"},
+    //        {"time_input", "float", 1, 1, 0, "ResidenceTime"},
+    //        {"site_input", "float", 1, 2, 0, "Site"} ,
+    //        {"distance_input", "float", 1, 1, 0, "DistanceOutside"}, // distance to the forested area outside
+    //        {"neighbor_input", "float", 1, 62, 0, "Neighbors"},
+    //        {"keras_learning_phase", "bool", 0, 0, 0, "Scalar"}
+    //    };
+
+
+        if (lg->should_log(spdlog::level::debug)) {
+            lg->debug("Available data types: {}", InputTensorItem::allDataTypeStrings());
+            lg->debug("Available content types: {}", InputTensorItem::allContentStrings());
+            // print tensor-items
+            lg->debug("InputTensorItems:");
+            for (auto &i : mTensorDef)
+                lg->debug("Name: '{}', dataype: '{}', dimensions: {}, size-x: {}, size-y: {}, content: '{}'",
+                          i.name, i.datatypeString(i.type), i.ndim, i.sizeX, i.sizeY, i.contentString(i.content));
+        }
+
+}
+
+TensorWrapper *DNN::buildTensor(size_t batch_size, InputTensorItem &item)
+{
+    TensorWrapper *tw = nullptr;
+
+    // a scalar, i.e. one value for the whole *batch*
+    if (item.ndim == 0) {
+        switch (item.type) {
+        case InputTensorItem::DT_BOOL: {
+            tw = new TensorWrap1d<bool>();
+            // defaults to true, TODO
+            TensorWrap1d<bool> *twb = static_cast< TensorWrap1d<bool>* >(tw);
+            twb->setValue(false);
+            lg->debug("created a scalar, value: '{}'", twb->value());
+            break;
+        }
+        default: break;
+        }
+
+    }
+
+    // a 1d vector per example (or a single value per example)
+    if (item.ndim == 1) {
+        switch (item.type) {
+        case InputTensorItem::DT_FLOAT:
+            tw = new TensorWrap2d<float>(batch_size, item.sizeX); break;
+        case InputTensorItem::DT_INT16:
+            tw = new TensorWrap2d<short int>(batch_size, item.sizeX); break;
+        case InputTensorItem::DT_UINT16:
+            tw = new TensorWrap2d<short unsigned int>(batch_size, item.sizeX); break;
+        case InputTensorItem::DT_INT64:
+            tw = new TensorWrap2d<long long>(batch_size, item.sizeX); break;
+        default:
+            throw std::logic_error("Unhandled data type in tensorwrapper");
+        }
+    }
+
+    // a 2d vector by example
+    if (item.ndim==2) {
+        switch (item.type) {
+        case InputTensorItem::DT_FLOAT:
+            tw = new TensorWrap3d<float>(batch_size, item.sizeX, item.sizeY); break;
+        default: throw std::logic_error("datatype not handled in tensorwrapper");
+        }
+    }
+
+    if (tw)
+        return tw;
+
+    lg->error("build Tensor: not able to create the tensor from the definition:");
+    lg->error("Name: '{}', dataype: '{}', dimensions: {}, size-x: {}, size-y: {}, content: '{}'",
+              item.name, item.datatypeString(item.type), item.ndim, item.sizeX, item.sizeY, item.contentString(item.content));
+    throw std::logic_error("Could not create a tensor.");
+
+}
+
+bool DNN::setup()
+{
+    // (1) load the stored DNN and set up the TensorFlow model
+    if (!setupDNN())
+        return false;
+
+    // (2) load the tensor-input-definition and set up the links to the main model
+    setupInput();
+    return true;
+}
+
+void DNN::setupBatch(Batch *abatch, std::vector<TensorWrapper *> &tensors)
+{
+    BatchDNN *batch = dynamic_cast<BatchDNN*>(abatch);
+    if (!batch)
+        throw std::logic_error("DNN:run: invalid Batch!");
+
+    // loop over tensor definition and create the required tensors....
+    size_t index=0;
+    for (auto &td : mTensorDef) {
+        // create a tensor of the right size
+
+        TensorWrapper *tw = buildTensor(batch->batchSize(), td);
+        if (!InferenceData::checkSetup(td)) {
+            lg->error("create Batch for DNN: Error:");
+            lg->error("Name: '{}', dataype: '{}', dimensions: {}, size-x: {}, size-y: {}, content: '{}'",
+                      td.name, td.datatypeString(td.type), td.ndim, td.sizeX, td.sizeY, td.contentString(td.content));
+            throw std::logic_error("Could not create a tensor (check the logfile).");
+
+        }
+
+        td.index = index++; // static_cast<int>(b->mTensors.size());
+        tensors.push_back(tw);
+    }
+
+
 }
 
 tensorflow::Status DNN::getTopClassesOldCode(const tensorflow::Tensor &classes, const int n_top, tensorflow::Tensor *indices, tensorflow::Tensor *scores)

@@ -651,7 +651,7 @@ int  Expression::getVarIndex(const std::string& variableName)
     }
 
     // external variables
-    if (!m_externVarNames.size()==0)
+    if (!(m_externVarNames.size()==0))
     {
         idx=index_of(m_externVarNames, variableName);
         if (idx>-1)

@@ -46,7 +46,7 @@ bool StateChangeOut::shouldWriteOutput(const InferenceData &id)
         return true;
 
     std::lock_guard<std::mutex> guard(filter_mtx);
-    CellWrapper wrap(&id);
+    InferenceDataWrapper wrap(&id);
     if (mFilter.calculateBool(wrap))
         return true;
     return false;
