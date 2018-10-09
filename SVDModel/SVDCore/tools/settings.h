@@ -19,7 +19,7 @@ public:
     bool requiredKeys(std::string praefix, const std::vector<std::string> &keys) const;
 
     /// get a list of all keys that start with a certain string
-    std::vector<std::string> findKeys(std::string start_with) const;
+    std::vector<std::string> findKeys(std::string start_with, bool one_level=false) const;
 
     std::string valueString(const std::string &key, std::string default_value="") const {
         auto it = mValues.find(key);

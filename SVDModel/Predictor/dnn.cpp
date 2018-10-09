@@ -9,7 +9,8 @@
 #include "batchmanager.h"
 #include "randomgen.h"
 #include "outputs/statechangeout.h"
-#include "filereader.h"
+#include "settings.h"
+#include "fetchdata.h"
 
 // Tensorflow includes
 //  from inception demo
@@ -505,21 +506,42 @@ void DNN::setupInput()
         if (!Tools::fileExists(metafilename))
             throw std::logic_error("The metadata file for the DNN (" + metafilename + ") does not exist (specified as 'dnn.metadata')!");
 
-        FileReader rdr(metafilename);
-        rdr.requiredColumns({"name", "datatype", "dim", "sizeX", "sizeY", "type"});
+        Settings mg;
+        mg.loadFromFile(metafilename);
 
-        mTensorDef.clear();
-        while (rdr.next()) {
-            InputTensorItem item(trimmed(rdr.valueString("name")),
-                                 trimmed(rdr.valueString("datatype")),
-                                 static_cast<size_t>(rdr.value("dim")),
-                                 static_cast<size_t>(rdr.value("sizeX")),
-                                 static_cast<size_t>(rdr.value("sizeY")),
-                                 trimmed(rdr.valueString("type")));
-            mTensorDef.push_back(item);
-
+        auto sections = mg.findKeys("input.", true);
+        lg->debug("Found sections: {}", join(sections));
+        for (auto &s : sections) {
+            auto keys = mg.findKeys("input." + s);
+            lg->debug("Section: {}", s);
+            for (auto &k : keys)
+                lg->debug("'{}' = '{}'", k, mg.valueString(k));
         }
 
+        for (auto &s : sections) {
+            mg.requiredKeys("input."+s, {"enabled", "dim", "sizeX", "sizeY", "dtype", "type"});
+            if (!mg.valueBool("input." + s + ".enabled"))
+                continue;
+
+            InputTensorItem item(s,
+                                 mg.valueString("input."+ s +".dtype"),
+                                 mg.valueUInt("input." + s + ".dim"),
+                                 mg.valueUInt("input." + s + ".sizeX"),
+                                 mg.valueUInt("input." + s + ".sizeY"),
+                                 mg.valueString("input."+ s +".type"));
+
+            mTensorDef.push_back(item);
+            // setup the data extractor
+            InputTensorItem *ti =& mTensorDef.back();
+            ti->mFetch = FetchData::createFetchObject(ti);
+            if (!ti->mFetch) {
+                lg->error("create Batch for DNN: Error:");
+                lg->error("Name: '{}', dataype: '{}', dimensions: {}, size-x: {}, size-y: {}, content: '{}'",
+                          item.name, item.datatypeString(item.type), item.ndim, item.sizeX, item.sizeY, item.contentString(item.content));
+                throw std::logic_error("Could not create a tensor (check the logfile).");
+            }
+            ti->mFetch->setup(&mg, "input." + s, item);
+        }
 
 
     //    mTensorDef =  {
@@ -624,13 +646,6 @@ void DNN::setupBatch(Batch *abatch, std::vector<TensorWrapper *> &tensors)
         // create a tensor of the right size
 
         TensorWrapper *tw = buildTensor(batch->batchSize(), td);
-        if (!InferenceData::checkSetup(td)) {
-            lg->error("create Batch for DNN: Error:");
-            lg->error("Name: '{}', dataype: '{}', dimensions: {}, size-x: {}, size-y: {}, content: '{}'",
-                      td.name, td.datatypeString(td.type), td.ndim, td.sizeX, td.sizeY, td.contentString(td.content));
-            throw std::logic_error("Could not create a tensor (check the logfile).");
-
-        }
 
         td.index = index++; // static_cast<int>(b->mTensors.size());
         tensors.push_back(tw);

@@ -4,17 +4,20 @@
 #include <string>
 #include <map>
 
-
+// #include "fetchdata.h"
+class FetchData; // forward
 struct InputTensorItem {
+    ~InputTensorItem();
     enum DataContent {
         Invalid = 0,
         Climate = 1,
         State = 2,
         ResidenceTime = 3,
         Neighbors = 4,
-        Site = 5,
+        Variable = 5,
         Scalar = 6,
-        DistanceOutside = 7
+        DistanceOutside = 7,
+        SiteNPKA = 8 // old static NPKA site
     };
 
     /// supported data types (values copied from tensorflow types.pb.h)
@@ -28,15 +31,18 @@ struct InputTensorItem {
         DT_BFLOAT16 = 14
     };
     InputTensorItem(std::string aname, DataType atype, size_t andim, size_t asizex, size_t asizey, DataContent acontent):
-        name(aname), type(atype), ndim(andim), sizeX(asizex), sizeY(asizey), content(acontent){}
+        name(aname), type(atype), ndim(andim), sizeX(asizex), sizeY(asizey), content(acontent), mFetch(nullptr){}
     InputTensorItem(std::string aname, std::string atype, size_t andim, size_t asizex, size_t asizey, std::string acontent);
     std::string name; ///< the name of the tensor within the DNN
     DataType type; ///< data type enum
-    size_t ndim; ///< the number of dimensions (the batch dimension is added automatically
+    size_t ndim; ///< the number of dimensions (the batch dimension is added automatically)
     size_t sizeX; ///< number of data elements in the first dimension
     size_t sizeY; ///< number of elements in the second dimension (for 2-dimensional input data)
     DataContent content; ///< the (semantic) type of data
     size_t index; ///< the index in the list of tensors
+
+    // data fetch machina
+    FetchData *mFetch;
 
     // helpers
     static DataContent contentFromString(std::string name);

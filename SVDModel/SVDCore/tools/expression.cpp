@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <mutex>
 #include "randomgen.h"
 #include "strtools.h"
 
@@ -203,10 +204,10 @@ void Expression::setExpression(const std::string& aExpression)
 }
 
 
-
+static std::mutex parse_mutex;
 void  Expression::parse(ExpressionWrapper *wrapper)
 {
-
+    std::lock_guard<std::mutex> guard(parse_mutex);
     if (m_parsed)
         return;
     try {

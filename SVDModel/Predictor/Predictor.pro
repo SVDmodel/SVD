@@ -69,7 +69,8 @@ SOURCES += \
     dnn.cpp \
     dnnshell.cpp \
     batchdnn.cpp \
-    inputtensoritem.cpp
+    inputtensoritem.cpp \
+    fetchdata.cpp
 
 HEADERS += \
     predictortest.h \
@@ -81,7 +82,8 @@ HEADERS += \
     dnn.h \
     dnnshell.h \
     batchdnn.h \
-    inputtensoritem.h
+    inputtensoritem.h \
+    fetchdata.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

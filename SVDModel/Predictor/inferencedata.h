@@ -33,15 +33,6 @@ public:
     /// get a human readable string from the data in the tensors for the example in 'slot'
     std::string dumpTensorData();
 private:
-    /// pull the data from the model and stores in the Tensor
-    void internalFetchData();
-    // functions for individual content types
-    void fetchClimate(const InputTensorItem &def);
-    void fetchState(const InputTensorItem &def);
-    void fetchResidenceTime(const InputTensorItem &def);
-    void fetchNeighbors(const InputTensorItem &def);
-    void fetchSite(const InputTensorItem &def);
-    void fetchDistanceOutside(const InputTensorItem &def);
     state_t mOldState;
     state_t mNextState;
     restime_t mNextTime;

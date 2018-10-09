@@ -7,6 +7,7 @@
 #include "randomgen.h"
 
 #include "dnn.h"
+#include "fetchdata.h"
 
 BatchDNN::BatchDNN(size_t batch_size) : Batch(batch_size)
 {
@@ -53,7 +54,11 @@ void BatchDNN::processResults()
 
 bool BatchDNN::fetchPredictors(Cell *cell, size_t slot)
 {
-    inferenceData(slot).fetchData(cell, this, slot);
+    inferenceData(slot).fetchData(cell, this, slot); // the old way
+    for (auto &t : DNN::instance()->tensorDefinition()) {
+        t.mFetch->fetch(cell, this, slot);
+    }
+
     return true;
 }
 

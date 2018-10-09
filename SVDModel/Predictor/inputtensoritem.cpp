@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <vector>
 
+#include "fetchdata.h"
 
 static std::map< std::string, InputTensorItem::DataContent> data_contents = {
     {"Invalid",       InputTensorItem::Invalid},
@@ -12,9 +13,10 @@ static std::map< std::string, InputTensorItem::DataContent> data_contents = {
     {"State",         InputTensorItem::State},
     {"ResidenceTime", InputTensorItem::ResidenceTime},
     {"Neighbors",     InputTensorItem::Neighbors},
-    {"Site",          InputTensorItem::Site},
+    {"Var",          InputTensorItem::Variable},
     {"Scalar",          InputTensorItem::Scalar},
-    {"DistanceOutside", InputTensorItem::DistanceOutside}
+    {"DistanceOutside", InputTensorItem::DistanceOutside},
+    {"SiteNPKA",         InputTensorItem::SiteNPKA}
 };
 static std::map< std::string, InputTensorItem::DataType> data_types = {
     {"Invalid", InputTensorItem::DT_INVALID},
@@ -36,6 +38,11 @@ std::string keys_to_string(const std::map<std::string, T> &mp) {
 
 
 
+InputTensorItem::~InputTensorItem()
+{
+    if (mFetch) delete mFetch;
+}
+
 InputTensorItem::InputTensorItem(std::string aname, std::string atype, size_t andim, size_t asizex, size_t asizey, std::string acontent)
 {
     name=aname;
@@ -44,6 +51,7 @@ InputTensorItem::InputTensorItem(std::string aname, std::string atype, size_t an
     sizeX = asizex;
     sizeY = asizey;
     content = contentFromString(acontent);
+    mFetch = nullptr;
 }
 
 InputTensorItem::DataContent InputTensorItem::contentFromString(std::string name)
