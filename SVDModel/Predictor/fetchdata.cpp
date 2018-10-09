@@ -40,8 +40,30 @@ FetchData *FetchData::createFetchObject(InputTensorItem *def)
     return f;
 }
 
-void FetchDataStandard::setup(const Settings * /*settings*/, const std::string & /*key*/, const InputTensorItem & /*item*/)
+void FetchDataStandard::setup(const Settings * /*settings*/, const std::string & /*key*/, const InputTensorItem & item)
 {
+    if (item.content==InputTensorItem::Climate) {
+        // check dimensions
+    }
+    switch (item.content) {
+    case InputTensorItem::SiteNPKA:
+        // required columns: availableNitrogen, soilDepth
+        i_nitrogen = indexOf(EnvironmentCell::variables(), "availableNitrogen");
+        i_soildepth = indexOf(EnvironmentCell::variables(), "soilDepth");
+        if (i_nitrogen==-1 || i_soildepth==-1) {
+            spdlog::get("dnn")->error("The required columns 'availableNitrogen' and 'soilDepth' are not available in the environment (item: '{}', available: '{}').", item.name, join(EnvironmentCell::variables()));
+            throw std::logic_error("Error in setup of SiteNPKA");
+        }
+        return;
+    case InputTensorItem::DistanceOutside:
+            i_distance = indexOf(EnvironmentCell::variables(), "distanceOutside");
+            if (i_distance==-1 ) {
+                spdlog::get("dnn")->error("The required columns 'distanceOutside' is not available in the environment (item: '{}', available: '{}').", item.name, join(EnvironmentCell::variables()));
+                throw std::logic_error("Error in setup of DistanceOutside");
+            }
+            return;
+    default: return;
+    }
 
 }
 
@@ -143,26 +165,24 @@ void FetchDataStandard::fetchNeighbors(Cell *cell, BatchDNN* batch, size_t slot)
 
 void FetchDataStandard::fetchSite(Cell *cell, BatchDNN* batch, size_t slot)
 {
-    const int i_nitrogen=0, i_soildepth=1;
     TensorWrapper *t = batch->tensor(mItem->index);
     TensorWrap2d<float> *tw = static_cast<TensorWrap2d<float>*>(t);
     float *p = tw->example(slot);
     // site: nitrogen/soil-depth
     const auto &ec = cell->environment();
     // TODO: transformation...
-    *p++ = static_cast<float>( (ec->value(i_nitrogen) -58.500)/41.536 );
-    *p++ = static_cast<float>( (ec->value(i_soildepth)-58.500)/41.536 );
+    *p++ = static_cast<float>( (ec->value(static_cast<size_t>(i_nitrogen)) -58.500)/41.536 );
+    *p++ = static_cast<float>( (ec->value(static_cast<size_t>(i_soildepth))-58.500)/41.536 );
 }
 
 void FetchDataStandard::fetchDistanceOutside(Cell *cell, BatchDNN* batch, size_t slot)
 {
-    const int i_distance = 2;
     TensorWrapper *t = batch->tensor(mItem->index);
     TensorWrap2d<float> *tw = static_cast<TensorWrap2d<float>*>(t);
     float *p = tw->example(slot);
     const auto &ec = cell->environment();
 
-    *p = static_cast<float>( ec->value(i_distance) );
+    *p = static_cast<float>( ec->value(static_cast<size_t>(i_distance)) );
 
 }
 

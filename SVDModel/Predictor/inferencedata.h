@@ -11,8 +11,6 @@ class InferenceData
 {
 public:
     InferenceData(): mOldState(-1), mNextState(-1), mNextTime(-1), mBatch(nullptr), mSlot(std::numeric_limits<size_t>::max()) {}
-    /// check if for the given item all the data is avaialable during setup
-    static bool checkSetup(const InputTensorItem &def);
 
     /// fills an item by pulling all the required data from the model
     void fetchData(Cell *cell, BatchDNN *batch, size_t slot);

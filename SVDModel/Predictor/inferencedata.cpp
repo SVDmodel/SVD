@@ -4,28 +4,6 @@
 #include "tensorhelper.h"
 #include "dnn.h"
 
-bool InferenceData::checkSetup(const InputTensorItem &def)
-{
-
-    switch (def.content) {
-    case InputTensorItem::SiteNPKA:
-        // required columns: availableNitrogen, soilDepth
-        if (!contains(EnvironmentCell::variables(), "availableNitrogen") || !contains(EnvironmentCell::variables(), "soilDepth")) {
-            spdlog::get("dnn")->error("The required columns 'availableNitrogen' and 'soilDepth' are not available in the environment (item: '{}', available: '{}').", def.name, join(EnvironmentCell::variables()));
-            return false;
-        }
-        return true;
-    case InputTensorItem::DistanceOutside:
-            if (!contains(EnvironmentCell::variables(), "distanceOutside") ) {
-                spdlog::get("dnn")->error("The required columns 'distanceOutside' is not available in the environment (item: '{}', available: '{}').", def.name, join(EnvironmentCell::variables()));
-                return false;
-            }
-            return true;
-    default:
-        return true; // no specific tests for this item
-    }
-
-}
 
 void InferenceData::fetchData(Cell *cell, BatchDNN *batch, size_t slot)
 {

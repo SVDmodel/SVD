@@ -59,11 +59,11 @@ bool Model::setup()
     mStates = std::shared_ptr<States>(new States());
     mStates->setup();
 
-    mClimate = std::shared_ptr<Climate>(new Climate());
-    mClimate->setup();
-
     mLandscape = std::shared_ptr<Landscape>(new Landscape());
     mLandscape->setup();
+
+    mClimate = std::shared_ptr<Climate>(new Climate());
+    mClimate->setup();
 
     mExternalSeeds.setup();
 

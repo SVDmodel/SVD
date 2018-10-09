@@ -511,11 +511,13 @@ void DNN::setupInput()
 
         auto sections = mg.findKeys("input.", true);
         lg->debug("Found sections: {}", join(sections));
-        for (auto &s : sections) {
-            auto keys = mg.findKeys("input." + s);
-            lg->debug("Section: {}", s);
-            for (auto &k : keys)
-                lg->debug("'{}' = '{}'", k, mg.valueString(k));
+        if (lg->should_log(spdlog::level::trace)) {
+            for (auto &s : sections) {
+                auto keys = mg.findKeys("input." + s);
+                lg->trace("Section: {}", s);
+                for (auto &k : keys)
+                    lg->trace("'{}' = '{}'", k, mg.valueString(k));
+            }
         }
 
         for (auto &s : sections) {

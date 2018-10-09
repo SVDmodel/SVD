@@ -81,7 +81,7 @@ const State &States::stateById(state_t id)
 bool States::registerHandler(Module *module, State::StateType state_type)
 {
     if (mHandlers.find(state_type) != mHandlers.end()) {
-        spdlog::get("setup")->error("Cannit register the module '{}' for type '{}': already registered module ('{}')", module->name(), state_type, mHandlers.find(state_type)->second->name());
+        spdlog::get("setup")->error("Cannot register the module '{}' for type '{}': already registered module ('{}')", module->name(), state_type, mHandlers.find(state_type)->second->name());
         return false;
     }
     mHandlers[state_type] = module;

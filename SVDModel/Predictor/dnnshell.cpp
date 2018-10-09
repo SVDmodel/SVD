@@ -44,7 +44,7 @@ void DNNShell::setup(QString fileName)
     mBatchManager = std::unique_ptr<BatchManager>(new BatchManager());
     mBatchManager->setup();
     } catch (const std::exception &e) {
-        lg->error("An error occured during setup of the Batch-Manager (DNN): {}", e.what());
+        lg->error("An error occurred during setup of the Batch-Manager (DNN): {}", e.what());
         RunState::instance()->dnnState()=ModelRunState::ErrorDuringSetup;
         return;
     }
@@ -58,7 +58,7 @@ void DNNShell::setup(QString fileName)
 
     } catch (const std::exception &e) {
         RunState::instance()->dnnState()=ModelRunState::ErrorDuringSetup;
-        lg->error("An error occured during DNN setup: {}", e.what());
+        lg->error("An error occurred during DNN setup: {}", e.what());
         return;
     }
     int n_threads = Model::instance()->settings().valueInt("dnn.threads", -1);

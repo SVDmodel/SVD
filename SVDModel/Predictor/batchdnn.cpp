@@ -56,7 +56,11 @@ bool BatchDNN::fetchPredictors(Cell *cell, size_t slot)
 {
     inferenceData(slot).fetchData(cell, this, slot); // the old way
     for (auto &t : DNN::instance()->tensorDefinition()) {
+        try {
         t.mFetch->fetch(cell, this, slot);
+        } catch (const std::logic_error &e) {
+            throw std::logic_error("Error fetching data for tensor: " + t.name + ": " + e.what());
+        }
     }
 
     return true;

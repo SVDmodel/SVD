@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <unordered_map>
-#include <unordered_set>
+#include <set>
 
 
 class Climate
@@ -25,8 +25,8 @@ private:
     /// the main container for climate data
     /// the structure is: "year" -> "climateId" + data
     std::unordered_map< int, std::unordered_map<int, std::vector<float> > > mData;
-    std::unordered_set<int> mAllYears;
-    std::unordered_set<int> mAllIds;
+    std::set<int> mAllYears;
+    std::set<int> mAllIds;
     /// indices of years to use
     std::vector<int> mSequence;
 };

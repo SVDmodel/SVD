@@ -196,7 +196,7 @@ void ModelShell::createModel(QString fileName)
 
     } catch (const std::exception &e) {
         if (spdlog::get("main"))
-            spdlog::get("main")->error("An error occured: {}", e.what());
+            spdlog::get("main")->error("An error occurred: {}", e.what());
         setState( ModelRunState::ErrorDuringSetup, QString(e.what()));
     }
 }
@@ -223,7 +223,7 @@ void ModelShell::setup()
 
     } catch (const std::exception &e) {
         if (spdlog::get("main"))
-            spdlog::get("main")->error("An error occured: {}", e.what());
+            spdlog::get("main")->error("An error occurred: {}", e.what());
         setState( ModelRunState::ErrorDuringSetup, QString(e.what()));
     }
 }
@@ -241,7 +241,7 @@ void ModelShell::runOneStep(int current_step)
 
 
     } catch (const std::exception &e) {
-        spdlog::get("main")->error("An error occured: {}", e.what());
+        spdlog::get("main")->error("An error occurred: {}", e.what());
         setState( ModelRunState::Error, QString(e.what()));
     }
 }
@@ -532,7 +532,7 @@ void ModelShell::finalizeCycle()
 
 void ModelShell::cancel()
 {
-    lg->error("An error occured - stopping.");
+    lg->error("An error occurred - stopping.");
     setState(ModelRunState::Stopping);
 }
 
