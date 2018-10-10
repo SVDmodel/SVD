@@ -184,7 +184,7 @@ void Landscape::setupInitialState()
 
         Grid<int> restime_grid;
         restime_grid.loadGridFromFile(restime_grid_file);
-        lg->debug("Loaded initial *state* grid '{}'. Dimensions: {} x {}, with cell size: {}m. ", restime_grid_file, restime_grid.sizeX(), restime_grid.sizeY(), restime_grid.cellsize());
+        lg->debug("Loaded initial *residenceTime* grid '{}'. Dimensions: {} x {}, with cell size: {}m. ", restime_grid_file, restime_grid.sizeX(), restime_grid.sizeY(), restime_grid.cellsize());
         lg->debug("Metric rectangle with {}x{}m. Left-Right: {}m - {}m, Top-Bottom: {}m - {}m.  ", restime_grid.metricRect().width(), restime_grid.metricRect().height(), restime_grid.metricRect().left(), restime_grid.metricRect().right(), restime_grid.metricRect().top(), restime_grid.metricRect().bottom());
 
         int n_affected=0;

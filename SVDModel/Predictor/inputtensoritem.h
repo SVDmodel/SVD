@@ -17,7 +17,8 @@ struct InputTensorItem {
         Variable = 5,
         Scalar = 6,
         DistanceOutside = 7,
-        SiteNPKA = 8 // old static NPKA site
+        SiteNPKA = 8, // old static NPKA site
+        Function = 9
     };
 
     /// supported data types (values copied from tensorflow types.pb.h)

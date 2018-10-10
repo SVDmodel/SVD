@@ -16,7 +16,8 @@ static std::map< std::string, InputTensorItem::DataContent> data_contents = {
     {"Var",          InputTensorItem::Variable},
     {"Scalar",          InputTensorItem::Scalar},
     {"DistanceOutside", InputTensorItem::DistanceOutside},
-    {"SiteNPKA",         InputTensorItem::SiteNPKA}
+    {"SiteNPKA",         InputTensorItem::SiteNPKA},
+    {"Function",         InputTensorItem::Function }
 };
 static std::map< std::string, InputTensorItem::DataType> data_types = {
     {"Invalid", InputTensorItem::DT_INVALID},

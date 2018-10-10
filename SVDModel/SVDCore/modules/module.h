@@ -35,8 +35,8 @@ public:
     virtual void run() {}
 protected:
     std::string mName;
-    State::StateType mType;
-    Batch::BatchType mBatchType;
+    State::StateType mType; ///< states of this type are automatically handled by the module
+    Batch::BatchType mBatchType; ///< type of the batch used by the module (e.g. DNN or Simple)
     static std::vector<std::string> mModuleNames;
 
 };

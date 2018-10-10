@@ -45,6 +45,10 @@ private:
     int i_soildepth;
 };
 
+
+/** FetchDataVars retrieves values from the model based on Expressions that
+ *  can access state/environment variables.
+ * */
 class FetchDataVars : public FetchData
 {
 public:
@@ -54,6 +58,25 @@ public:
     virtual void fetch(Cell *cell, BatchDNN *batch, size_t slot);
 private:
     std::vector<Expression*> mExpressions;
+
+};
+
+/** FetchDataFunction is the gateway to more complex data items
+ *
+ * */
+class FetchDataFunction : public FetchData
+{
+public:
+    ~FetchDataFunction() {  }
+    FetchDataFunction(InputTensorItem *item) : FetchData(item) { mFn = Invalid; }
+    virtual void setup(const Settings *settings, const std::string &key, const InputTensorItem &item);
+    virtual void fetch(Cell *cell, BatchDNN *batch, size_t slot);
+
+    // functions
+    enum EFunctions { Invalid=0,
+                      DistToSeedSource = 1};
+private:
+    EFunctions mFn;
 
 };
 

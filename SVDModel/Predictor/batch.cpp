@@ -14,6 +14,7 @@ Batch::Batch(size_t batch_size)
     mError=false;
     mType = Invalid;
     mModule = nullptr;
+    mPackageId=0;
     mCells.resize(mBatchSize);
 }
 

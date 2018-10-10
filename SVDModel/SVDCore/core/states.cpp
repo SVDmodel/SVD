@@ -94,6 +94,10 @@ void States::updateStateHandlers()
     for (auto &s : mStates) {
         // set for each state the stored handler (nullptr can be set too!)
         Module *m = mHandlers[s.type()];
+        if (m == nullptr && s.type() != State::Forest && s.type() != State::None ) {
+            spdlog::get("setup")->error("State with Id '{}' requires handling module {}, but this is not available.", s.id(), s.type());
+            throw std::logic_error("Expected handling module not found.");
+        }
         s.setModule(m);
     }
 }

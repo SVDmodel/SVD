@@ -33,6 +33,9 @@ FetchData *FetchData::createFetchObject(InputTensorItem *def)
     case InputTensorItem::Variable:
         f = new FetchDataVars(def);
         break;
+    case InputTensorItem::Function:
+        f = new FetchDataFunction(def);
+        break;
     default:
         throw std::logic_error("Unknown type of data extractor for: " + def->name);
     }
@@ -189,7 +192,7 @@ void FetchDataStandard::fetchDistanceOutside(Cell *cell, BatchDNN* batch, size_t
 void FetchDataVars::setup(const Settings *settings, const std::string &key, const InputTensorItem &item)
 {
     // expects as many expressions as 'sizeX', one-dimensional, and datatype float
-    auto lg = spdlog::get("dnn");
+    auto lg = spdlog::get("setup");
     std::string tlist = settings->valueString(key + ".transformations");
     lg->debug("Set up expressions: {}", tlist);
     bool has_error = false;
@@ -232,4 +235,30 @@ void FetchDataVars::fetch(Cell *cell, BatchDNN *batch, size_t slot)
         *p++ = static_cast<float>( expr->calculate(cw) );
     }
 
+}
+
+
+static std::vector<std::string> FetchFunctionList = {"Invalid", "DistToSeedSource"};
+void FetchDataFunction::setup(const Settings *settings, const std::string &key, const InputTensorItem &item)
+{
+    auto lg = spdlog::get("setup");
+    std::string fn = settings->valueString(key + ".function");
+    lg->debug("Set up input for function: {}", fn);
+    int idx = indexOf(FetchFunctionList, fn);
+    if (idx < 1) {
+        lg->error("Setup of FetchDataFunction: provided 'function' ('{}') is not valid. Available are: {}", fn, join(FetchFunctionList, ","));
+        throw std::logic_error("Error in setup of input " + item.name);
+    }
+    mFn = static_cast<EFunctions>(idx);
+
+}
+
+void FetchDataFunction::fetch(Cell * /*cell*/ , BatchDNN *batch, size_t slot)
+{
+    TensorWrapper *t = batch->tensor(mItem->index);
+    TensorWrap2d<float> *tw = static_cast<TensorWrap2d<float>*>(t);
+    float *p = tw->example(slot);
+
+    // TODO: really calculate ...
+    *p = 100.f / 1000.f;
 }
