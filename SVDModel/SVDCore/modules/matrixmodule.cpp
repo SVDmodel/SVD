@@ -1,9 +1,9 @@
 #include "model.h"
-#include "grassmodule.h"
+#include "matrixmodule.h"
 #include "tools.h"
 #include "filereader.h"
 
-GrassModule::GrassModule() :
+MatrixModule::MatrixModule() :
     Module("grass", State::Grass) // set name and type explcitly
 {
     // decide which type of batch to use for the module (Simple: no preprocessing)
@@ -12,12 +12,12 @@ GrassModule::GrassModule() :
     registerModule();
 }
 
-GrassModule::~GrassModule()
+MatrixModule::~MatrixModule()
 {
 
 }
 
-void GrassModule::setup()
+void MatrixModule::setup()
 {
     lg = spdlog::get("setup");
     lg->info("Setup of GrassModule");
@@ -34,13 +34,13 @@ void GrassModule::setup()
 
 }
 
-void GrassModule::prepareCell(Cell *cell)
+void MatrixModule::prepareCell(Cell *cell)
 {
     // nothing to do here!
     (void)cell;
 }
 
-void GrassModule::processBatch(Batch *batch)
+void MatrixModule::processBatch(Batch *batch)
 {
     // run the transition probabilities for the grass landcover
     for (size_t i=0;i<batch->usedSlots();++i) {

@@ -1,16 +1,16 @@
-#ifndef GRASSMODULE_H
-#define GRASSMODULE_H
+#ifndef MATRIXMODULE_H
+#define MATRIXMODULE_H
 
 #include "spdlog/spdlog.h"
 
 #include "module.h"
 #include "transitionmatrix.h"
 
-class GrassModule : public Module
+class MatrixModule : public Module
 {
 public:
-    GrassModule();
-    ~GrassModule();
+    MatrixModule();
+    ~MatrixModule();
 
     void setup();
 
@@ -27,4 +27,4 @@ private:
 
 };
 
-#endif // GRASSMODULE_H
+#endif // MATRIXMODULE_H

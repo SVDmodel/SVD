@@ -52,7 +52,7 @@ SOURCES += \
     modules/fire/firemodule.cpp \
     modules/fire/fireout.cpp \
     modules/module.cpp \
-    modules/grassmodule.cpp
+    modules/matrixmodule.cpp
 
 HEADERS += \
     modelshell.h \
@@ -82,7 +82,7 @@ HEADERS += \
     modules/fire/firemodule.h \
     modules/fire/fireout.h \
     modules/module.h \
-    modules/grassmodule.h
+    modules/matrixmodule.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

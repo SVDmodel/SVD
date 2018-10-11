@@ -2,7 +2,7 @@
 #include "model.h"
 
 // include all module headers for the factory function
-#include "grassmodule.h"
+#include "matrixmodule.h"
 #include "fire/firemodule.h"
 
 /// list of all available modules
@@ -23,7 +23,7 @@ std::shared_ptr<Module> Module::moduleFactory(std::string module_name)
 
     Module *m = nullptr;
     switch (idx) {
-    case 0: m = new GrassModule(); break;
+    case 0: m = new MatrixModule(); break;
     case 1: m = new FireModule(); break;
     default: throw std::logic_error("Module " + module_name + " is not a valid Module (Module::moduleFactory)!");
     }
