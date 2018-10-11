@@ -112,7 +112,7 @@ double TreeWrapper::value(const int variableIndex)
 */
 std::vector<std::string> InferenceDataWrapper::mVariableList = {"state",
                                                        "restime",
-                                                       "id",
+                                                       // "id", ??
                                                        "x",
                                                        "y",
                                                        "year"

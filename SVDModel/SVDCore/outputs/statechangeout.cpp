@@ -6,7 +6,7 @@
 StateChangeOut::StateChangeOut()
 {
     setName("StateChange");
-    setDescription("Details for individual state changes (potentially many output data!)");
+    setDescription("Details for individual state changes from DNN (potentially a lot of output data!)");
     mInterval=0; // every year
     mCellId=-1; // all cells
 }

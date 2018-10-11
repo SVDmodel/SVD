@@ -210,11 +210,15 @@ void Model::setupSpecies()
 
 void Model::setupModules()
 {
+    // reset module list
+    Module::clearModuleNames();
 
-    for (const auto &s : Module::allModuleNames() ) {
+    auto module_list = settings().findKeys("modules.", true);
+    for (const auto &s : module_list ) {
         if (settings().valueBool("modules." + s + ".enabled", "false")) {
+            auto module_type = settings().valueString("modules." + s + ".type", "unknown");
             lg_setup->info("Attempting to create enabled module '{}':", s);
-            std::shared_ptr<Module> module = Module::moduleFactory(s);
+            std::shared_ptr<Module> module = Module::moduleFactory(s, module_type);
             mModules.push_back(module);
             module->setup();
 
@@ -224,7 +228,7 @@ void Model::setupModules()
     // update the states to incorporate new modules
     Model::instance()->states()->updateStateHandlers();
 
-    lg_setup->info("Setup of modules completed");
+    lg_setup->info("Setup of modules completed, {} active modules: {}", Module::moduleNames().size(),  join(Module::moduleNames(), ","));
 
 }
 

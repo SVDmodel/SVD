@@ -306,11 +306,7 @@ void ModelShell::processedPackage(Batch *batch)
     }
 
 
-
-
     batch->changeState(Batch::Fill);
-
-
 
     // now the data can be freed:
     {
@@ -320,7 +316,7 @@ void ModelShell::processedPackage(Batch *batch)
     }
 
     if (mAllPackagesBuilt && mPackagesBuilt==mPackagesProcessed) {
-        lg->info( "Model: processsed Last Package! [NSent: {} NReceived: {}]", mModel->stats.NPackagesSent, mModel->stats.NPackagesDNN );
+        lg->debug( "Model: processsed Last Package (no packages pending in DNN)! [NSent: {} NReceived: {}]", mModel->stats.NPackagesSent, mModel->stats.NPackagesDNN );
         finalizeCycle();
     } else {
         lg->debug( "Model: #packages: {} sent, {} processed [total: NSent: {} NReceived: {}]", mPackagesBuilt, mPackagesProcessed, mModel->stats.NPackagesSent, mModel->stats.NPackagesDNN);
@@ -337,6 +333,11 @@ void ModelShell::allPackagesBuilt()
     //lg->debug("** all packages built, starting the last package");
     sendPendingBatches(); // start last batch (even if < than batch size)
     mAllPackagesBuilt = true;
+    if (mPackagesBuilt==mPackagesProcessed && mPackagesProcessed>0) {
+        lg->debug( "Model: processsed Last Package! [NSent: {} NReceived: {}]", mModel->stats.NPackagesSent, mModel->stats.NPackagesDNN );
+        finalizeCycle();
+    }
+
 }
 
 void ModelShell::internalRun()
@@ -485,14 +486,16 @@ void ModelShell::sendBatch(Batch *batch)
         emit newPackage(batch);
     } else {
         // directly call the function (in a thread)
-        QtConcurrent::run([](ModelShell *shell, Batch *batch) {
-            // do some work!! module->run(batch) ??
-            if (!QMetaObject::invokeMethod(shell, "processedPackage", Qt::QueuedConnection,
-                                           Q_ARG(Batch*, batch)) ) {
-                batch->setError(true);
-            }
+        processedPackage(batch);
+//        QtConcurrent::run([](ModelShell *shell, Batch *batch) {
+//            // do some work!! module->run(batch) ??
+//            if (!QMetaObject::invokeMethod(shell, "processedPackage", Qt::DirectConnection, // Qt::QueuedConnection,
+//                                           Q_ARG(Batch*, batch)) ) {
+//                batch->setError(true);
+//            }
 
-        }, this, batch);
+//        }, this, batch);
+
     }
 
 }

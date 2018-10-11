@@ -5,11 +5,12 @@
 
 #include "module.h"
 #include "transitionmatrix.h"
+#include "expression.h"
 
 class MatrixModule : public Module
 {
 public:
-    MatrixModule();
+    MatrixModule(std::string module_name);
     ~MatrixModule();
 
     void setup();
@@ -24,6 +25,8 @@ private:
 
     // store for transition probabilites for burned cells
     TransitionMatrix mMatrix;
+    Expression mKeyFormula;
+    bool mHasKeyFormula;
 
 };
 

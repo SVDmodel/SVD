@@ -97,8 +97,13 @@ void FireModule::fireSpread(const FireModule::SIgnition &ign)
     int max_ha = static_cast<int>(ign.max_size / 10000);
     int n_ha = 0;
     int n_highseverity_ha = 0;
+    int grid_max_x = grid.sizeX(), grid_max_y=grid.sizeY();
 
-    int ixmin=index.x() - 1, ixmax = index.x() + 1, iymin = index.y() - 1, iymax = index.y() + 1;
+    int ixmin=std::max(index.x() - 1,0);
+    int ixmax = std::min(index.x() + 1, grid_max_x);
+    int iymin = std::max(index.y() - 1, 0);
+    int iymax = std::min(index.y() + 1, grid_max_y);
+
     int ixmin2=ixmin, ixmax2=ixmax, iymin2=iymin, iymax2=iymax;
     int n_round, n_rounds = 1;
     while (n_ha <= max_ha) {
@@ -113,28 +118,28 @@ void FireModule::fireSpread(const FireModule::SIgnition &ign)
                             auto &px = mGrid[Point(ix-1, iy)];
                             if (px.spread == 0) {
                                 px.spread = 1;
-                                ixmin2 = std::min(ixmin, ix-1);
+                                ixmin2 = std::max(std::min(ixmin, ix-1), 0);
                             }
                         }
                         if (mGrid.isIndexValid(ix+1, iy)) {
                             auto &px = mGrid[Point(ix+1, iy)];
                             if (px.spread == 0) {
                                 px.spread = 1;
-                                ixmax2 = std::max(ixmax, ix+1);
+                                ixmax2 = std::min(std::max(ixmax, ix+1), grid_max_x);
                             }
                         }
                         if (mGrid.isIndexValid(ix, iy-1)) {
                             auto &px = mGrid[Point(ix, iy-1)];
                             if (px.spread == 0) {
                                 px.spread = 1;
-                                iymin2 = std::min(iymin, iy-1);
+                                iymin2 = std::max(std::min(iymin, iy-1), 0);
                             }
                         }
                         if (mGrid.isIndexValid(ix, iy+1)) {
                             auto &px = mGrid[Point(ix, iy+1)];
                             if (px.spread == 0) {
                                 px.spread = 1;
-                                iymax2 = std::max(iymax, iy+1);
+                                iymax2 = std::min(std::max(iymax, iy+1), grid_max_y);
                             }
                         }
                         n_ha++;

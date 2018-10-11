@@ -127,7 +127,27 @@ int indexOf(Container& container, const typename Container::value_type& element)
 /// splits the full path 'fileName' into a pair with the path as first and the filename as second.
 std::pair<std::string, std::string> splitPath (const std::string& fileName);
 
-
+/// find all keys in a map (mapOfElem) that have the given value; return a vector of keys
+// https://thispointer.com/how-to-search-by-value-in-a-map-c/
+template<typename K, typename V>
+std::vector<K> findByValue( std::map<K, V> mapOfElemen, V value)
+{
+    std::vector<K> vec;
+    auto it = mapOfElemen.begin();
+    // Iterate through the map
+    while(it != mapOfElemen.end())
+    {
+        // Check if value of this entry matches with given value
+        if(it->second == value)
+        {
+            // Push the key in given map
+            vec.push_back(it->first);
+        }
+        // Go to next entry in map
+        it++;
+    }
+    return vec;
+}
 
 
 #endif

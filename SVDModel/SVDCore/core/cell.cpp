@@ -44,6 +44,7 @@ void Cell::update()
         } else {
             // the state is not changed;
             // nonetheless, the cell will be re-evaluated in the next year
+            mResidenceTime++; // TODO: check if this messes up something with the DNN?
         }
     } else {
         // no update. The residence time changes.

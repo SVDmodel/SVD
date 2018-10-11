@@ -15,8 +15,8 @@ class Module; // forward
 
 class State {
 public:
-    enum StateType { Forest=0, Grass=1, None=99 };
-    State(state_t id, std::string composition, int structure, int function, StateType type);
+    enum StateType { Forest=0, Matrix=1, None=99 };
+    State(state_t id, std::string composition, int structure, int function, std::string handling_module);
     StateType type() const { return mType; }
     state_t id() const { return mId; }
     const std::string &compositionString() const { return mComposition; }
@@ -24,6 +24,7 @@ public:
     int structure() const {return mStructure; }
     std::string asString() const;
 
+    const std::string &moduleString() const { return mHandlingModule; }
     /// set the module handling this state
     void setModule(Module *module) { mModule = module; }
     /// get the handling module for the state
@@ -45,6 +46,7 @@ private:
     int mStructure;
     int mFunction;
     StateType mType;
+    std::string mHandlingModule; ///< string as provided in the input; mapping to actual modules via setModule()
     std::vector<double> mSpeciesShare;
 
     Module *mModule;
@@ -71,14 +73,14 @@ public:
     const State &stateById(state_t id);
 
     // handlers
-    bool registerHandler(Module *module, State::StateType state_type);
+    bool registerHandler(Module *module, const std::string &handler);
     /// update the handlers of all states
     void updateStateHandlers();
 
 private:
     std::vector<State> mStates;
     std::unordered_map<state_t, size_t> mStateSet;
-    std::map<State::StateType, Module *> mHandlers;
+    std::map<std::string,  Module*> mHandlers;
 
 };
 
