@@ -8,6 +8,10 @@
 
 #include "dnn.h"
 #include "fetchdata.h"
+#include "statechangeout.h"
+
+// static decl
+StateChangeOut *BatchDNN::mSCOut = nullptr;
 
 BatchDNN::BatchDNN(size_t batch_size) : Batch(batch_size)
 {
@@ -17,11 +21,17 @@ BatchDNN::BatchDNN(size_t batch_size) : Batch(batch_size)
     // reserve memory for the topK classes for target states and residence time
 
     mNTopK = Model::instance()->settings().valueUInt("dnn.topKNClasses", 10);
+    mNTimeClasses = Model::instance()->settings().valueUInt("dnn.restime.N", 10);
+
     mStates.resize(mBatchSize * mNTopK);
     mStateProb.resize(mBatchSize * mNTopK);
-    mTimeProb.resize(mBatchSize * mNTopK);
+    mTimeProb.resize(mBatchSize * mNTimeClasses);
 
     setupTensors();
+
+    mSCOut = dynamic_cast<StateChangeOut*>( Model::instance()->outputManager()->find("StateChange") );
+    if (mSCOut && !mSCOut->enabled())
+        mSCOut = nullptr;
 
 }
 
@@ -49,6 +59,15 @@ void BatchDNN::processResults()
     for (size_t i=0;i<usedSlots();++i) {
         inferenceData(i).writeResult();
     }
+
+    // write detailed output for every example in the batch
+    if (mSCOut) {
+        for (size_t i=0;i<usedSlots(); ++i) {
+            if (mSCOut->shouldWriteOutput(inferenceData(i)))
+                mSCOut->writeLine(stateChangeOutput(i));
+        }
+    }
+
 
 }
 
@@ -100,9 +119,8 @@ void BatchDNN::selectClasses()
     for (size_t i=0; i<usedSlots(); ++i) {
         InferenceData &id = inferenceData(i);
         // residence time: at least one year
-        restime_t rt = static_cast<restime_t>( chooseProbabilisticIndex(timeProbResult(i), mNTopK )) + 1;
-        //restime_t rt = static_cast<restime_t>( chooseProbabilisticIndex(out_time.example(i), static_cast<int>(out_time.n())) ) + 1;
-        if (rt == static_cast<restime_t>(mNTopK)) {
+        restime_t rt = static_cast<restime_t>( chooseProbabilisticIndex(timeProbResult(i), mNTimeClasses )) + 1;
+        if (rt == static_cast<restime_t>(mNTimeClasses)) {
             // the state will be the same for the next period (no change)
             id.setResult(id.state(), rt);
         } else {
@@ -129,5 +147,63 @@ void BatchDNN::selectClasses()
             id.setResult(stateId, rt);
         }
     }
+    auto lg = spdlog::get("dnn");
+    if (lg->should_log(spdlog::level::trace)) {
+
+        lg->trace("{}", inferenceData(0).dumpTensorData());
+        InferenceData &id = inferenceData(0);
+
+        std::stringstream s;
+        s << "Residence time\n";
+        float *t = timeProbResult(0);
+        for (size_t i=0; i<mNTimeClasses;++i)
+            s << i+1 << " yrs: " << (*t++)*100 << "%" << (static_cast<size_t>(id.nextTime()) - static_cast<size_t>(Model::instance()->year())==i+1 ? " ***": "")<< "\n";
+
+        s << "Next update in year: " << id.nextTime();
+        s << "\nClassifcation Results: current State " << id.state() << ": " << Model::instance()->states()->stateById(id.state()).asString() << "\n";
+        state_t *st = stateResult(0);
+        float *stp = stateProbResult(0);
+        for (size_t i=0;i <mNTopK; ++i) {
+            if (Model::instance()->states()->isValid(*st)) {
+                const State &tstate = Model::instance()->states()->stateById(*st);
+                s << *st << ": " <<  (*stp)*100.f
+                  << "% "<< tstate.asString() << (id.nextState() == *st ? " ***": "") << "\n";
+            } else {
+                s << "INVALID STATE: " << *st << "p=" << (*stp)*100.f << "\n";
+            }
+            ++st;
+            ++stp;
+        }
+        s << "Selected State: " << id.nextState()   << " : " << (Model::instance()->states()->isValid(id.nextState()) ? Model::instance()->states()->stateById(id.nextState()).asString() : "(invalid)");
+        lg->trace("Results for example 0 in the batch:");
+        lg->trace("{}", s.str());
+
+
+    }
+
+
+}
+
+/// create an output line for the item 'n'
+std::string BatchDNN::stateChangeOutput(size_t index)
+{
+    std::stringstream s;
+    char sep=',';
+    // selected state/residence time
+    const auto &id = inferenceData(index);
+
+    s << Model::instance()->year() << sep << id.environmentCell().id() << sep << id.state() << sep << id.cell().residenceTime() << sep << id.nextState() << sep << id.nextTime();
+    // states / probs
+    float *tprob = timeProbResult(index);
+    float *stp = stateProbResult(index);
+    state_t *st = stateResult(index);
+
+    for (size_t i=0;i<mNTopK;++i)
+        s <<  sep << st[i]
+           << sep << stp[i];
+   for (size_t i=0;i<mNTimeClasses;++i)
+       s << sep << tprob[i];
+
+   return s.str();
 
 }

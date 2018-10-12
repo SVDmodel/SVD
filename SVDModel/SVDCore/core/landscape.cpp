@@ -30,7 +30,7 @@ void Landscape::setup()
     Grid<int> grid;
     grid.loadGridFromFile(grid_file_name);
 
-    lg->info("Loaded the grid '{}'. Dimensions: {} x {}, with cell size: {}m. ", grid_file_name, grid.sizeX(), grid.sizeY(), grid.cellsize());
+    lg->info("Loaded the grid (landscape.grid) '{}'. Dimensions: {} x {}, with cell size: {}m. ", grid_file_name, grid.sizeX(), grid.sizeY(), grid.cellsize());
     lg->info("Metric rectangle with {}x{}m. Left-Right: {}m - {}m, Top-Bottom: {}m - {}m.  ", grid.metricRect().width(), grid.metricRect().height(), grid.metricRect().left(), grid.metricRect().right(), grid.metricRect().top(), grid.metricRect().bottom());
     if (lg->should_log(spdlog::level::trace)) {
         // some statistics:
@@ -66,6 +66,7 @@ void Landscape::setup()
         mClimateIds[cid]++;
     }
 
+    lg->info("Loaded the environment file (landscape.file) '{}'.", table_file_name);
     lg->debug("Environment: added {} entries for the variables: '{}'", mEnvironmentCells.size(), join(vars, ", "));
 
     // setup the env-grid with the same extent:

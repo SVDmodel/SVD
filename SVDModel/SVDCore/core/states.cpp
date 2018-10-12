@@ -21,6 +21,8 @@ void States::setup()
     FileReader rdr(file_name);
     rdr.requiredColumns({"stateId", "composition", "structure", "fct", "type"});
 
+    size_t i_name = rdr.columnIndex("name");
+
     while (rdr.next()) {
         // read line
         state_t id = state_t( rdr.value("stateId") );
@@ -31,8 +33,19 @@ void States::setup()
                                  (rdr.valueString("type")))
                            );
         mStateSet.insert({id, mStates.size()-1}); // save id and index
+        if (i_name != std::numeric_limits<std::size_t>::max())
+            mStates.back().setName(rdr.valueString(i_name));
 
     }
+
+    // load extra properties
+    file_name = Model::instance()->settings().valueString("states.extraFile");
+    if (!file_name.empty()) {
+        file_name = Tools::path(file_name);
+        spdlog::get("setup")->debug("Loading extra state properties from file '{}'...", file_name);
+        loadProperties(file_name);
+    }
+
     spdlog::get("setup")->debug("Loaded {} states from file '{}'", mStates.size(), file_name);
 
 }
@@ -57,7 +70,7 @@ bool States::loadProperties(const std::string &filename)
             has_errors = true;
         }
     }
-    spdlog::get("setup")->debug("Loaded {} values from file '{}'. States have now: {}", rdr.columnCount()-1, filename, join(State::valueNames()));
+    spdlog::get("setup")->debug("Loaded {} values from file '{}'. States have the following properties: {}", rdr.columnCount()-1, filename, join(State::valueNames()));
     return !has_errors;
 
 }
@@ -210,6 +223,8 @@ State::State(state_t id, std::string composition, int structure, int function, s
 
 std::string State::asString() const
 {
+    if (!mName.empty())
+        return mName;
     std::stringstream s;
     s << compositionString() << " S" << structure() << " F" << function();
     return s.str();

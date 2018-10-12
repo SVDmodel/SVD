@@ -17,6 +17,7 @@ class State {
 public:
     enum StateType { Forest=0, Matrix=1, None=99 };
     State(state_t id, std::string composition, int structure, int function, std::string handling_module);
+    void setName(const std::string &name) { mName = name; }
     StateType type() const { return mType; }
     state_t id() const { return mId; }
     const std::string &compositionString() const { return mComposition; }
@@ -46,6 +47,7 @@ private:
     int mStructure;
     int mFunction;
     StateType mType;
+    std::string mName;
     std::string mHandlingModule; ///< string as provided in the input; mapping to actual modules via setModule()
     std::vector<double> mSpeciesShare;
 

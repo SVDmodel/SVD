@@ -143,7 +143,7 @@ std::pair<Batch *, size_t> BatchManager::findValidSlot(Module *module)
     result.first = batch;
     result.second = batch->acquireSlot();
     if (result.second==0) {
-        lg->debug("Started to fill batch [{}] (first slot acquired)", static_cast<void*>(batch));
+        lg->trace("Started to fill batch [{}] (first slot acquired)", static_cast<void*>(batch));
     }
     return result;
 

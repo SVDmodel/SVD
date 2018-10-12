@@ -9,7 +9,6 @@ class Status;
 class Input;
 }
 class Batch; // forward
-class StateChangeOut; // forward
 
 #include "inputtensoritem.h"
 #include "tensorhelper.h"
@@ -25,7 +24,13 @@ public:
         assert(mInstance!=nullptr);
         return mInstance; }
 
-    bool setup();
+
+    /// set up the actual DNN (TensorFlow)
+    bool setupDNN();
+
+    /// set up the links to the main model
+    void setupInput();
+
     void setupBatch(Batch *abatch, std::vector<TensorWrapper*> &tensors);
 
     /// DNN main function: execute the DNN inference for the
@@ -39,11 +44,6 @@ public:
 
 private:
     static DNN *mInstance;
-    /// set up the actual DNN (TensorFlow)
-    bool setupDNN();
-
-    /// set up the links to the main model
-    void setupInput();
 
 
     TensorWrapper *buildTensor(size_t batch_size, InputTensorItem &item);
@@ -69,8 +69,6 @@ private:
     /// select randomly an index 0..n-1, with values the weights.
     int chooseProbabilisticIndex(float *values, int n, int skip_index=-1);
 
-    /// link to detailed output
-    StateChangeOut *mSCOut;
 
     /// definition of input tensors
     std::list<InputTensorItem> mTensorDef;

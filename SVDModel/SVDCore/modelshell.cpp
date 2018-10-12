@@ -210,6 +210,9 @@ void ModelShell::setup()
         setState(ModelRunState::Creating);
 
         if (model()->setup(  )) {
+
+            setState(ModelRunState::Created);
+
             // setup successful
             lg = spdlog::get("main");
             while (RunState::instance()->dnnState() == ModelRunState::Creating) {
@@ -253,6 +256,7 @@ void ModelShell::run(int n_steps)
     //return;
     spdlog::get("main")->info("***********************************************");
     spdlog::get("main")->info("Start the simulation of {} steps.",n_steps);
+    spdlog::get("main")->info("***********************************************");
 
     runOneStep(1);
 

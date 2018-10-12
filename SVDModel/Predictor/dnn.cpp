@@ -8,7 +8,6 @@
 #include "batchdnn.h"
 #include "batchmanager.h"
 #include "randomgen.h"
-#include "outputs/statechangeout.h"
 #include "settings.h"
 #include "fetchdata.h"
 
@@ -91,7 +90,6 @@ DNN::DNN()
         spdlog::get("dnn")->debug("DNN created: {}", static_cast<void*>(this));
     session = nullptr;
     top_k_session = nullptr;
-    mSCOut = nullptr;
     mTopK_tf = true;
     mTopK_NClasses = 10;
     mNResTimeCls = 0; mNStateCls = 0;
@@ -249,10 +247,6 @@ bool DNN::setupDNN()
             return false;
         }
     }
-    mSCOut = dynamic_cast<StateChangeOut*>( Model::instance()->outputManager()->find("StateChange") );
-    if (mSCOut && !mSCOut->enabled())
-        mSCOut = nullptr;
-
 
     lg->info("DNN Setup complete.");
     return true;
@@ -273,25 +267,7 @@ private:
     std::chrono::system_clock::time_point start_time;
 };
 
-/// create an output line for the item 'n'
-std::string stateChangeOutput(const TensorWrap2d<int32> &state_index, const TensorWrap2d<float> &scores, const TensorWrap2d<float> &time, BatchDNN *batch, size_t index)
-{
-    std::stringstream s;
-    char sep=',';
-    // selected state/residence time
-    const auto &id = batch->inferenceData(index);
 
-    s << Model::instance()->year() << sep << id.environmentCell().id() << sep << id.state() << sep << id.cell().residenceTime() << sep << id.nextState() << sep << id.nextTime();
-    // states / probs
-    for (size_t i=0;i<state_index.n();++i)
-        s <<  sep << Model::instance()->states()->stateByIndex(static_cast<size_t>(state_index.example(index)[i])).id()
-           << sep << scores.example(index)[i];
-   for (size_t i=0;i<time.n();++i)
-       s << sep << time.example(index)[i];
-
-   return s.str();
-
-}
 
 Batch * DNN::run(Batch *abatch)
 {
@@ -402,87 +378,25 @@ Batch * DNN::run(Batch *abatch)
 
     // Copy the results of the TopK (states, probabilities, residence times) to the batch
     for (size_t i=0; i<batch->usedSlots(); ++i) {
-        float *otime = out_time.example(i);
-        float *ttime = batch->timeProbResult(i);
         float *ostate = scores_flat.example(i);
         float *tstate = batch->stateProbResult(i);
         int *oidx = indices_flat.example(i);
         state_t *tidx = batch->stateResult(i);
         for (size_t r=0;r<mTopK_NClasses;++r) {
-            *ttime++ = *otime++;
+
             *tstate++ = *ostate++;
             // the result of TopK is the *index* within the input of the operation
-            // the StateId starts with 1, i.e. to convert from the index (0-based) to
-            // the state id we need to add 1.
-            // *tidx++ = static_cast<state_t>(*oidx++ + 1);
+            // the StateId starts with 1, i.e. to convert from the index (0-based).
             *tidx++ = Model::instance()->states()->stateByIndex(static_cast<size_t>(*oidx++)).id();
         }
-    }
 
-    // Now select for each example the result of the prediction
-    // choose randomly from the result
-    for (size_t i=0; i<batch->usedSlots(); ++i) {
-        InferenceData &id = batch->inferenceData(i);
-        // residence time: at least one year
-        restime_t rt = static_cast<restime_t>( chooseProbabilisticIndex(out_time.example(i), static_cast<int>(out_time.n())) ) + 1;
-        if (rt == static_cast<restime_t>(out_time.n())) {
-            // the state will be the same for the next period (no change)
-            id.setResult(id.state(), rt);
-        } else {
-            // select the next state probalistically
-            // the next state is not allowed to stay the same
-            int self_index = -1;
-            int this_state_index = id.state() - 1; // 0-based
-            for (size_t j=0;j<indices_flat.n();++j) {
-                if (indices_flat.example(i)[j] == this_state_index) {
-                    self_index = static_cast<int>(j);
-                    break;
-                }
-            }
-            size_t index = static_cast<size_t>(chooseProbabilisticIndex(scores_flat.example(i), static_cast<int>(scores_flat.n()), self_index ) );
-            size_t state_index = static_cast<size_t>(indices_flat.example(i)[index]);
-            state_t stateId = Model::instance()->states()->stateByIndex( state_index ).id();
-            if (stateId == 0) {
-                lg->warn("Warning: state 0 result in DNN - setting to state 1");
-                stateId = 1;
-            }
-            id.setResult(stateId, rt);
+        float *otime = out_time.example(i);
+        float *ttime = batch->timeProbResult(i);
+        for (size_t r=0;r<mNResTimeCls;++r) {
+            *ttime++ = *otime++;
         }
     }
 
-
-    // output
-    if (mSCOut) {
-        for (size_t i=0;i<batch->usedSlots(); ++i) {
-            if (mSCOut->shouldWriteOutput(batch->inferenceData(i)))
-                mSCOut->writeLine(stateChangeOutput(indices_flat, scores_flat, out_time, batch, i));
-        }
-    }
-
-    if (lg->should_log(spdlog::level::trace)) {
-
-        lg->trace("{}", batch->inferenceData(0).dumpTensorData());
-        InferenceData &id = batch->inferenceData(0);
-
-        std::stringstream s;
-        s << "Residence time\n";
-        float *t = out_time.example(0);
-        for (int i=0; i<outputs[1].dim_size(1);++i)
-            s << i+1 << " yrs: " << (*t++)*100 << "%" << (id.nextTime() - Model::instance()->year()==i+1 ? " ***": "")<< "\n";
-
-        s << "Next update in year: " << id.nextTime();
-        s << "\nClassifcation Results\n";
-        for (size_t i=0;i <scores_flat.n(); ++i) {
-            s << indices_flat.example(0)[i] << ": " <<  scores_flat.example(0)[i]*100.f
-              << "% "<< Model::instance()->states()->stateByIndex(indices_flat.example(0)[i]).asString() << " id: "
-              << Model::instance()->states()->stateByIndex(indices_flat.example(0)[i]).id() << "\n";
-        }
-        s << "Selected State: " << id.nextState() << " : " << Model::instance()->states()->stateById(id.nextState()).asString();
-        lg->trace("Results for example 0 in the batch:");
-        lg->trace("{}", s.str());
-
-
-    }
 
     // cleanup
     if (!mTopK_tf) {
@@ -625,16 +539,7 @@ TensorWrapper *DNN::buildTensor(size_t batch_size, InputTensorItem &item)
 
 }
 
-bool DNN::setup()
-{
-    // (1) load the stored DNN and set up the TensorFlow model
-    if (!setupDNN())
-        return false;
 
-    // (2) load the tensor-input-definition and set up the links to the main model
-    setupInput();
-    return true;
-}
 
 void DNN::setupBatch(Batch *abatch, std::vector<TensorWrapper *> &tensors)
 {

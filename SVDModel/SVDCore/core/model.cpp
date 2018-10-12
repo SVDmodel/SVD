@@ -71,6 +71,10 @@ bool Model::setup()
 
     setupExpressionWrapper();
 
+    lg_setup->info("************************************************************");
+    lg_setup->info("************   Setup completed, Ready to run  **************");
+    lg_setup->info("************************************************************");
+
     mYear = 0; // model is set up, ready to run
     return true;
 

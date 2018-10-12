@@ -155,7 +155,8 @@ void CellWrapper::setupVariables(EnvironmentCell *ecell, const State *astate)
     mVariableList = { "id", "climateId", "stateId", "residenceTime" }; // reset
 
     // add variables from states
-    for (auto &v : astate->valueNames()) {
+    const auto &names = astate->valueNames();
+    for (auto &v : names) {
         if (indexOf(mVariableList, v)>=0) {
             spdlog::get("main")->error("Setup of variable names for CellWrapper: state variable '{}' already exists! (list of variables so far: {})", v, join(mVariableList));
             throw std::logic_error("Error in setting up variable names (check log).");
@@ -165,7 +166,8 @@ void CellWrapper::setupVariables(EnvironmentCell *ecell, const State *astate)
     mMaxStateVar = mVariableList.size();
 
     // add environment variables
-    for (auto &v : ecell->variables()) {
+    const auto &enames = ecell->variables();
+    for (auto &v : enames) {
         if (indexOf(mVariableList, v)>=0) {
             spdlog::get("main")->error("Setup of variable names for CellWrapper: environment variable '{}' already exists! (list of variables so far: {})", v, join(mVariableList));
             throw std::logic_error("Error in setting up variable names (check log).");
@@ -199,7 +201,7 @@ double CellWrapper::value(const size_t variableIndex)
         return s->value(variableIndex - 4);
     } else {
         const EnvironmentCell *ec = mData->environment();
-        ec->value(variableIndex - mMaxStateVar);
+        return ec->value(variableIndex - mMaxStateVar);
     }
     return 0.;
 }

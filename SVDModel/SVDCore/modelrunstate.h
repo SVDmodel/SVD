@@ -10,7 +10,7 @@
 class ModelRunState {
 public:
     ModelRunState() : mState(Invalid) {  }
-    enum State { Invalid=0, Creating, ReadyToRun, Stopping, Running, Paused, Finished, Canceled, ErrorDuringSetup, Error };
+    enum State { Invalid=0, Creating, Created, ReadyToRun, Stopping, Running, Paused, Finished, Canceled, ErrorDuringSetup, Error };
 
     void set(State s) { if(mState!=s) { mState=s; update(); } }
     const State &state() const { return mState; }

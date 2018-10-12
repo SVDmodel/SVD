@@ -51,10 +51,21 @@ void DNNShell::setup(QString fileName)
 
     try {
         mDNN = std::unique_ptr<DNN>(new DNN());
-        if (!mDNN->setup()) {
+        if (!mDNN->setupDNN()) {
             RunState::instance()->dnnState()=ModelRunState::ErrorDuringSetup;
             return;
         }
+
+        // wait for the model thread to complete model setup before
+        // setting up the inputs (which may need data from the model)
+
+        while (RunState::instance()->modelState() == ModelRunState::Creating) {
+            lg->debug("waiting for Model thread thread...");
+            QThread::msleep(50);
+            QCoreApplication::processEvents();
+        }
+
+        mDNN->setupInput();
 
     } catch (const std::exception &e) {
         RunState::instance()->dnnState()=ModelRunState::ErrorDuringSetup;

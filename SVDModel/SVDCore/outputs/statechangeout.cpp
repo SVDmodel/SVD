@@ -16,10 +16,15 @@ void StateChangeOut::setup()
     auto lg = spdlog::get("setup");
     mInterval = Model::instance()->settings().valueInt(key("interval"));
     mFilter.setExpression(Model::instance()->settings().valueString(key("filter")));
+    int n_time = Model::instance()->settings().valueInt("dnn.restime.N");
+    int n_prob = Model::instance()->settings().valueInt("dnn.topKNClasses");
 
     openOutputFile("file", false); // false: do not write header
+    std::string cap = "year,cellId,state,restime,nextState,nextTime";
+    for (int i=0;i<n_prob;++i) cap += ",s" + to_string(i+1) + ",p" + to_string(i+1);
+    for (int i=0;i<n_time;++i) cap += ",t" + to_string(i+1);
 
-    file() << "year,cellId,state,restime,nextState,nextTime,s1,p1,s2,p2,s3,p3,s4,p4,s5,p5,s6,p6,s7,p7,s8,p8,s9,p9,s10,p10,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10" << std::endl;
+    file() << cap << std::endl;
 
 
 }

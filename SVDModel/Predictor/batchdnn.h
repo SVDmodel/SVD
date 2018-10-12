@@ -4,6 +4,8 @@
 #include "batch.h"
 #include "inferencedata.h"
 
+class StateChangeOut; // forward
+
 class BatchDNN : public Batch
 {
 public:
@@ -24,7 +26,7 @@ public:
     bool fetchPredictors(Cell *cell, size_t slot);
 
     // access to the results for the examples (used to write classes from DNN to the batch)
-    float *timeProbResult(size_t index) { return &mTimeProb[index * mNTopK]; }
+    float *timeProbResult(size_t index) { return &mTimeProb[index * mNTimeClasses]; }
     float *stateProbResult(size_t index) { return &mStateProb[index * mNTopK]; }
     state_t *stateResult(size_t index) { return &mStates[index * mNTopK]; }
 private:
@@ -34,12 +36,18 @@ private:
     void selectClasses();
     size_t chooseProbabilisticIndex(float *values, size_t n);
 
+    // state change output specific
+    /// link to detailed output
+    static StateChangeOut *mSCOut;
+    std::string stateChangeOutput(size_t index);
+
     /// the data for the individual cells
     std::vector<InferenceData> mInferenceData;
     /// a vector of tensors associated with this batch of data
     std::vector<TensorWrapper*> mTensors;
 
     size_t mNTopK; ///< number of classes for each example
+    size_t mNTimeClasses; ///< number of time classes for each example
     /// store the topK classes from the DNN for target states
     std::vector<state_t> mStates;
     /// store the prob. for the topK classes from the DNN for target states

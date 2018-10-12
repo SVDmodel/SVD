@@ -57,8 +57,7 @@ public:
     virtual void setup(const Settings *settings, const std::string &key, const InputTensorItem &item);
     virtual void fetch(Cell *cell, BatchDNN *batch, size_t slot);
 private:
-    std::vector<Expression*> mExpressions;
-
+    std::vector<Expression*> mExpressions; ///< list of expressions
 };
 
 /** FetchDataFunction is the gateway to more complex data items
@@ -77,6 +76,12 @@ public:
                       DistToSeedSource = 1};
 private:
     EFunctions mFn;
+
+    // entrypoints for the individual variables
+    void setupDisttoSeedSource();
+    float calculateDistToSeedSource(Cell *cell);
+    size_t mD2S_target; // index of target
+    size_t mD2S_seed_source; // index of source
 
 };
 
