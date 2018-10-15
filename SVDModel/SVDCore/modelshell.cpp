@@ -463,9 +463,13 @@ bool ModelShell::checkBatch(Batch *batch)
         return false;
     }
 
+    bool all_processed;
+    {
     QMutexLocker lock(&_check_batch);
     batch->finishedCellProcessing();
-    if (batch->allCellsProcessed()) {
+    all_processed = batch->allCellsProcessed();
+    }
+    if (all_processed) {
         if (batch->state()!=Batch::Fill) {
             lg->warn("Package [{}] already sent!", static_cast<void*>(batch));
             return false;

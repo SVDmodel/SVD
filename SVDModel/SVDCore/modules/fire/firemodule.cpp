@@ -97,7 +97,7 @@ void FireModule::fireSpread(const FireModule::SIgnition &ign)
     int max_ha = static_cast<int>(ign.max_size / 10000);
     int n_ha = 0;
     int n_highseverity_ha = 0;
-    int grid_max_x = grid.sizeX(), grid_max_y=grid.sizeY();
+    int grid_max_x = grid.sizeX()-1, grid_max_y=grid.sizeY()-1;
 
     int ixmin=std::max(index.x() - 1,0);
     int ixmax = std::min(index.x() + 1, grid_max_x);
