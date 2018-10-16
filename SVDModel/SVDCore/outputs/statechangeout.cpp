@@ -20,7 +20,7 @@ void StateChangeOut::setup()
     int n_prob = Model::instance()->settings().valueInt("dnn.topKNClasses");
 
     openOutputFile("file", false); // false: do not write header
-    std::string cap = "year,cellId,state,restime,nextState,nextTime";
+    std::string cap = "year,cellIndex,state,restime,nextState,nextTime";
     for (int i=0;i<n_prob;++i) cap += ",s" + to_string(i+1) + ",p" + to_string(i+1);
     for (int i=0;i<n_time;++i) cap += ",t" + to_string(i+1);
 

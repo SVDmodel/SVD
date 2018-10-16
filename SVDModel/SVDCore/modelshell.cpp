@@ -193,6 +193,8 @@ void ModelShell::createModel(QString fileName)
 
         mModel = new Model(fileName.toStdString());
         mModel->setProcessEventsCallback( std::bind(&ModelShell::processEvents, this) );
+        mCellsProcesssed=0;
+
 
     } catch (const std::exception &e) {
         if (spdlog::get("main"))
@@ -307,6 +309,7 @@ void ModelShell::processedPackage(Batch *batch)
 
     if (batch->module()) {
         batch->module()->processBatch(batch);
+        mCellsProcesssed += batch->usedSlots();
     }
 
 

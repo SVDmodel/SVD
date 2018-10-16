@@ -28,9 +28,10 @@ void FireModule::setup()
     // check if variables are available
     for (auto a : {"pSeverity", "pBurn"})
         if (State::valueIndex(a) == -1)
-            lg->error("The FireModule requires the state property '{}' which is not available.", a);
-    miBurnProbability = State::valueIndex("pBurn");
-    miHighSeverity = State::valueIndex("pSeverity");
+            throw logic_error_fmt("The FireModule requires the state property '{}' which is not available.", a);
+
+    miBurnProbability = static_cast<size_t>(State::valueIndex("pBurn"));
+    miHighSeverity = static_cast<size_t>(State::valueIndex("pSeverity"));
 
     // set up ignitions
     filename = Tools::path(settings.valueString("modules.fire.ignitionFile"));

@@ -34,6 +34,10 @@ public:
            e.g.: x+3*y --> Val1->x, Val2->y
            forceExecution: do not apply linearization */
         double calculate(const double Val1=0., const double Val2=0., const bool forceExecution=false) const;
+        bool calculateBool(const double Val1=0., const double Val2=0., const bool forceExecution=false) const {
+            double res = calculate(Val1, Val2, forceExecution);
+            return !(res==0.);
+        }
         /// calculate formula with object
         ///
         double calculate(ExpressionWrapper &object, const double variable_value1=0., const double variable_value2=0.) const;

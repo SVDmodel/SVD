@@ -24,6 +24,8 @@ public:
     restime_t residenceTime() const { return mResidenceTime; }
     /// get the year for which the next update is scheduled
     int nextUpdate() const {return mNextUpdateTime; }
+
+    /// ptr of the environment cell
     const EnvironmentCell *environment() const { return mEnvCell; }
 
     /// returns true if the cell should be updated in the current year (i.e. if the DNN should be executed)

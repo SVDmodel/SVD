@@ -34,9 +34,13 @@ void OutputManager::setup()
     for (auto s : keys) {
 
         auto toks = split(s, '.');
-        if (toks.size() != 3)
+        if (toks.size() < 3)
             throw std::logic_error("Output Manager: invalid key: " + s);
-        lg->debug("Output: {}, key: {} = {}", toks[1], toks[2], Model::instance()->settings().valueString(s));
+        lg->debug("Output: {}, key: {} {}= {}",
+                  toks[1],
+                toks[2],
+                (toks.size()>=3 ? toks[3] : ""),
+                Model::instance()->settings().valueString(s));
 
         Output *o = find(toks[1]);
         if (o == nullptr)

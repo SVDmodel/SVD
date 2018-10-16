@@ -192,7 +192,7 @@ std::string BatchDNN::stateChangeOutput(size_t index)
     // selected state/residence time
     const auto &id = inferenceData(index);
 
-    s << Model::instance()->year() << sep << id.environmentCell().id() << sep << id.state() << sep << id.cell().residenceTime() << sep << id.nextState() << sep << id.nextTime();
+    s << Model::instance()->year() << sep << id.cellIndex() << sep << id.state() << sep << id.cell().residenceTime() << sep << id.nextState() << sep << id.nextTime();
     // states / probs
     float *tprob = timeProbResult(index);
     float *stp = stateProbResult(index);

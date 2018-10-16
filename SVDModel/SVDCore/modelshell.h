@@ -56,6 +56,7 @@ public:
     std::string run_test_op(std::string what);
     int packagesBuilt() const { return mPackagesBuilt; }
     int packagesProcessed() const { return mPackagesProcessed; }
+    size_t cellsProcessed() const { return mCellsProcesssed; }
 
 signals:
     void stateChanged(QString s);
@@ -99,6 +100,7 @@ private:
     int mPackagesProcessed;
     bool mAllPackagesBuilt;
     int mPackageId;
+    size_t mCellsProcesssed; // cells that are processed in the model (not via DNN)
 
 
 

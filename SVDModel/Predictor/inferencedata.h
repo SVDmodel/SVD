@@ -25,6 +25,7 @@ public:
     void writeResult();
 
     // access
+    int cellIndex() const { return mIndex; }
     const EnvironmentCell &environmentCell() const;
     const Cell &cell() const;
 

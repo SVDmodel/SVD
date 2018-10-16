@@ -67,8 +67,8 @@ private:
     double mExtinguishProb;
 
     // index of variables
-    int miBurnProbability;
-    int miHighSeverity;
+    size_t miBurnProbability;
+    size_t miHighSeverity;
 
     // fire statistics
     std::vector< SFireStat > mStats;
