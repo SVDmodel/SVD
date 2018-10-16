@@ -8,5 +8,7 @@ Structure of the documentation:
 
 ## Chapters
 
+[Landscape configuration](configuring_the_landscape.md)
+
 
 
