@@ -2,6 +2,7 @@
 *Scaling vegetation transitions*
 
 <img src="img/SVD_ConceptFigure_1200.png" width="600">
+![SVD overview figure](img/SVD_ConceptFigure_1200.png)
 
 
 ## Installation
