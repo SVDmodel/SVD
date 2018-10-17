@@ -1,8 +1,7 @@
 # SVD Documentation
 *Scaling vegetation transitions*
 
-<img src="img/SVD_ConceptFigure_1200.png" width="600">
-![SVD overview figure](img/SVD_ConceptFigure_1200.png)
+![SVD overview figure](img/SVD_ConceptFigure_600.png)
 
 
 ## Installation
@@ -16,7 +15,7 @@
 ## Running SVD
 
 ## Reference documentation
-* [configuration file](configuration.md)
+* [configuration file](project_file.md)
 * [Setup of SVD](setup.md)
 * [SVD Outputs](outputs.md)
 
