@@ -7,9 +7,12 @@
 FireOut::FireOut()
 {
     setName("Fire");
-    setDescription("Output on fire events (one event per line) and grids for the year of the last burn.\n" \
-                   "The frequence of output grids can be controlled via the 'filter' expression (with 'year' as variable). A value of 0 deactivates the grid output. The path is specified by the "\
-                   "'path' property ($year$ is replaced with the actual year). The value of the grid is the year of the last burn in a cell or 0 for unburned cells.");
+    setDescription("Output on fire events (one event per line) and grids for the year of the last burn.\n\n" \
+                   "Grids are saved as ASCII grids to the location specified by the" \
+                   "`lastFireGrid.path` property (`$year$` is replaced with the actual year). " \
+                   "The value of the grid cells is the year of the last burn in a cell or 0 for unburned cells.\n\n" \
+                   "### Parameters\n" \
+                   " * `lastFireGrid.filter`: a grid is written only if the expression evaluates to `true` (with `year` as variable). A value of 0 deactivates the grid output.");
     // define the columns
     columns() = {
     {"year", "simulation year of the fire event", DataType::Int},

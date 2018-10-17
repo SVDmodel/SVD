@@ -6,7 +6,24 @@
 StateChangeOut::StateChangeOut()
 {
     setName("StateChange");
-    setDescription("Details for individual state changes from DNN (potentially a lot of output data!)");
+    setDescription("Details for individual state changes from DNN (potentially a lot of output data!)\n\n" \
+                   "The output contains for each cell the predicted states/probabilities (for `dnn.topKNClasses` classes), " \
+                   "and the probabilities for the year of state change.\n\n" \
+                   "### Parameters\n" \
+                   "* `filter`: a filter expression; output is written if the expression is true; available variables are: `state`, `restime`, `x`, `y`, `year`\n" \
+                   "* `interval`: output is written only every `interval` years (or every year if `interval=0`). For example, a value of 10 limits output to the simulation years 1, 11, 21, ...\n");
+    columns() = {
+    {"year", "simulation year of the state change", DataType::Int},
+    {"cellIndex", "index of the affected cell (0-based)", DataType::Int},
+    {"state", "original stateId (before change)", DataType::Int},
+    {"restime", "residence time (yrs) (before change)", DataType::Int},
+    {"nextState", "new stateId (selected from s[i])", DataType::Int},
+    {"nextTime", "year the state change (selected from t[i])", DataType::Int},
+    {"s[i]", "candidate state Id *i* (with i 1..number of top-K classes)", DataType::Int},
+    {"p[i]", "probability for state *i* (0..1)", DataType::Double},
+    {"t[i]", "probability for a change in year *i* (with i 1..number of residence time classes)", DataType::Double},
+    };
+
     mInterval=0; // every year
     mCellId=-1; // all cells
 }

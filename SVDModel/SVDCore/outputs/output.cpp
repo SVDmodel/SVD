@@ -37,6 +37,34 @@ void Output::flush()
         mFile.flush();
 }
 
+std::string Output::createDocumentation()
+{
+    std::string result;
+    result = fmt::format("<a name=\"{}\"></a>\n## {}\n", mName, mName);
+    result += fmt::format("{}\n", mDescription);
+    if (mColumns.size() > 0) {
+        result += "\n### Columns\n";
+        result += "Column|Description|Data type\n";
+        result += "------|-----------|---------\n";
+        for (auto &col : mColumns) {
+            result += fmt::format("{} | {} | {}\n", col.columnName, col.description, dataTypeString(col.type));
+        }
+        result += "\n";
+    }
+    result += "\n";
+    return result;
+}
+
+std::string Output::dataTypeString(Output::DataType type)
+{
+    switch (type) {
+    case String: return "String";
+    case Int: return "Int";
+    case Double: return "Double";
+    }
+    return "Invalid datatype!";
+}
+
 void Output::openOutputFile(std::string default_key, bool write_header)
 {
     mOutputFileName = Tools::path(Model::instance()->settings().valueString(key(default_key)));

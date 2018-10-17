@@ -457,6 +457,7 @@
      <string>Functions</string>
     </property>
     <addaction name="actionTest_DNN"/>
+    <addaction name="actioncreate_output_docs"/>
    </widget>
    <addaction name="menuFunctions"/>
   </widget>
@@ -472,6 +473,11 @@
   <action name="actionTest_DNN">
    <property name="text">
     <string>Test DNN</string>
+   </property>
+  </action>
+  <action name="actioncreate_output_docs">
+   <property name="text">
+    <string>create output docs</string>
    </property>
   </action>
  </widget>

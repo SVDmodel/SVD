@@ -5,6 +5,7 @@
 #include <QTimer>
 #include <QTime>
 #include <QMessageBox>
+#include <QClipboard>
 
 #include "testdnn.h"
 
@@ -19,7 +20,7 @@
 #include "strtools.h"
 
 
-ToyModelController *mc=0;
+static ToyModelController *mc=nullptr;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -95,7 +96,7 @@ void MainWindow::on_pbStop_clicked()
     if (mc) {
         ui->lLog->appendPlainText("Stopping ModelController...");
         delete mc;
-        mc=0;
+        mc=nullptr;
     }
 }
 
@@ -294,4 +295,14 @@ void MainWindow::on_pbTestExpre_clicked()
     initiateLogging();
     IntegrateTest it;
     it.testExpression();
+}
+
+void MainWindow::on_actioncreate_output_docs_triggered()
+{
+    std::string output_doc = Model::instance()->outputManager()->createDocumentation();
+
+    QApplication::clipboard()->setText(QString::fromStdString(output_doc));
+
+    spdlog::get("main")->info("Output documentation copied to the clipboard!");
+
 }

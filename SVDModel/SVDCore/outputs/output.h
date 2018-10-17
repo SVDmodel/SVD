@@ -43,9 +43,12 @@ public:
     bool enabled() const { return mEnabled; }
     void setEnabled(bool enable) { mEnabled = enable; }
     void flush();
+    /// builds a markdown compatible documentation from the output description
+    std::string createDocumentation();
 
     // data types
     enum DataType { String, Int, Double };
+    std::string dataTypeString(DataType type);
 
 
 

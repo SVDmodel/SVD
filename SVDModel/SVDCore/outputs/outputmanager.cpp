@@ -77,6 +77,23 @@ void OutputManager::yearEnd()
         o->flush();
 }
 
+std::string OutputManager::createDocumentation()
+{
+    std::string result;
+
+    result = "# SVD outputs\n";
+    result += "## List of outputs\n";
+    for (auto o: mOutputs) {
+        result += fmt::format("* [{}](#{})\n", o->name(), o->name());
+    }
+    result += "\n";
+
+    for (auto o : mOutputs) {
+        result += o->createDocumentation();
+    }
+    return result;
+}
+
 Output *OutputManager::find(std::string output_name)
 {
     for (auto o : mOutputs)

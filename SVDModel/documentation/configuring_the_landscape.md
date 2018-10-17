@@ -1,4 +1,7 @@
 # Configuring the landscape
+
+![Landscape](img/landscape_schema.png)
+
 ## Spatial extent of the landscape 
 The simulated landscape is defined by a grid (`landscape.grid`) and an accompanying data table (`landscape.file`).
 The metric coordinates of the landscape grid define the extent of the simulated area. The value of each grid cell

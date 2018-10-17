@@ -60,6 +60,8 @@ private slots:
 
     void on_pbTestExpre_clicked();
 
+    void on_actioncreate_output_docs_triggered();
+
 private:
     Ui::MainWindow *ui;
     std::unique_ptr<ModelController> mMC;

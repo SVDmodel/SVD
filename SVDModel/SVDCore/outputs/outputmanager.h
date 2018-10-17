@@ -19,6 +19,9 @@ public:
 
     void yearEnd();
 
+    /// builds a markdown documentation from all outputs
+    std::string createDocumentation();
+
     // access
 
     /// return the output or nullptr if 'output_name' is not a valid output.
