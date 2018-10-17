@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <mutex>
 #include "randomgen.h"
 #include "strtools.h"
 
@@ -203,10 +204,10 @@ void Expression::setExpression(const std::string& aExpression)
 }
 
 
-
+static std::mutex parse_mutex;
 void  Expression::parse(ExpressionWrapper *wrapper)
 {
-
+    std::lock_guard<std::mutex> guard(parse_mutex);
     if (m_parsed)
         return;
     try {
@@ -460,7 +461,7 @@ double Expression::calculate(ExpressionWrapper &object, const double variable_va
     double var_space[MAXLOCALVAR];
     var_space[0] = variable_value1;
     var_space[1]=variable_value2;
-    m_strict=false;
+    // m_strict=false;
     return execute(var_space,&object); // execute with local variables on stack
 }
 
@@ -640,7 +641,7 @@ int  Expression::getVarIndex(const std::string& variableName)
     int idx;
 
     if (mModelObject) {
-        idx = mModelObject->variableIndex(lowercase(variableName));
+        idx = mModelObject->variableIndex(variableName); // was lowercase(variableName) - I think we are strict in SVD
         if (idx>-1)
             return 100 + idx;
     }
@@ -651,7 +652,7 @@ int  Expression::getVarIndex(const std::string& variableName)
     }
 
     // external variables
-    if (!m_externVarNames.size()==0)
+    if (!(m_externVarNames.size()==0))
     {
         idx=index_of(m_externVarNames, variableName);
         if (idx>-1)

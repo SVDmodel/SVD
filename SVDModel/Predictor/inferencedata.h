@@ -4,17 +4,16 @@
 #include "states.h"
 #include "batchmanager.h"
 #include "environmentcell.h"
+class BatchDNN; // forward
 class Batch; // forward
 
 class InferenceData
 {
 public:
-    InferenceData(): mOldState(-1), mNextState(-1), mNextTime(-1), mBatch(nullptr), mSlot(-1) {}
-    /// check if for the given item all the data is avaialable during setup
-    static bool checkSetup(const InputTensorItem &def);
+    InferenceData(): mOldState(-1), mNextState(-1), mNextTime(-1), mBatch(nullptr), mSlot(std::numeric_limits<size_t>::max()) {}
 
     /// fills an item by pulling all the required data from the model
-    void fetchData(Cell *cell, Batch *batch, int slot);
+    void fetchData(Cell *cell, BatchDNN *batch, size_t slot);
 
     /// set the result of the DNN
     void setResult(state_t state, restime_t time);
@@ -26,28 +25,20 @@ public:
     void writeResult();
 
     // access
+    int cellIndex() const { return mIndex; }
     const EnvironmentCell &environmentCell() const;
     const Cell &cell() const;
 
     /// get a human readable string from the data in the tensors for the example in 'slot'
     std::string dumpTensorData();
 private:
-    /// pull the data from the model and stores in the Tensor
-    void internalFetchData();
-    // functions for individual content types
-    void fetchClimate(const InputTensorItem &def);
-    void fetchState(const InputTensorItem &def);
-    void fetchResidenceTime(const InputTensorItem &def);
-    void fetchNeighbors(const InputTensorItem &def);
-    void fetchSite(const InputTensorItem &def);
-    void fetchDistanceOutside(const InputTensorItem &def);
     state_t mOldState;
     state_t mNextState;
     restime_t mNextTime;
     restime_t mResidenceTime;
     int mIndex; ///< index of the cell in the landscape grid
-    Batch *mBatch; ///< link to the batch (that contains the actual Tensors)
-    int mSlot; ///< slot within the batch for this cell
+    BatchDNN *mBatch; ///< link to the batch (that contains the actual Tensors)
+    size_t mSlot; ///< slot within the batch for this cell
 };
 
 #endif // INFERENCEDATA_H

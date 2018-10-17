@@ -3,14 +3,19 @@
 #include "model.h"
 
 #include "../Predictor/inferencedata.h"
-#include "../Predictor/batch.h"
+#include "../Predictor/batchdnn.h"
 #include "grid.h"
 #include "outputs/outputmanager.h"
+
+// needed only for visualization (to be removed again)
+#include "modules/fire/firemodule.h"
+#include "modules/module.h"
 
 #include <QThread>
 #include <QCoreApplication>
 #include <QtConcurrent>
 
+Q_DECLARE_METATYPE(Batch*)
 
 ToyModelShell::ToyModelShell(QObject *parent) : QObject(parent)
 {
@@ -71,9 +76,12 @@ ModelShell::ModelShell(QObject *parent)
     Q_UNUSED(parent);
     mAbort = false;
 
-    mModel = 0;
+    mModel = nullptr;
     mPackagesBuilt = 0;
     mPackageId = 0;
+
+    qRegisterMetaType<Batch*>();
+
 
     connect(&packageWatcher, SIGNAL(finished()), this, SLOT(allPackagesBuilt()));
     //packageWatcher.setFuture(packageFuture);
@@ -148,6 +156,30 @@ std::string ModelShell::run_test_op(std::string what)
         return result;
     }
 
+    if (what=="fire_n") {
+        FireModule *module = dynamic_cast<FireModule*>(Model::instance()->module("fire"));
+        if (!module) return "fire module not active";
+        const auto &grid = module->fireGrid();
+
+        std::string result = gridToESRIRaster<SFireCell>(grid, [](const SFireCell &c)
+        {
+                return std::to_string(c.n_fire); }
+        );
+        return result;
+    }
+
+    if (what=="fire_year") {
+        FireModule *module = dynamic_cast<FireModule*>(Model::instance()->module("fire"));
+        if (!module) return "fire module not active";
+        const auto &grid = module->fireGrid();
+
+        std::string result = gridToESRIRaster<SFireCell>(grid, [](const SFireCell &c)
+        {
+                return std::to_string(c.last_burn); }
+        );
+        return result;
+    }
+
     return "invalid method";
 }
 
@@ -161,10 +193,12 @@ void ModelShell::createModel(QString fileName)
 
         mModel = new Model(fileName.toStdString());
         mModel->setProcessEventsCallback( std::bind(&ModelShell::processEvents, this) );
+        mCellsProcesssed=0;
+
 
     } catch (const std::exception &e) {
         if (spdlog::get("main"))
-            spdlog::get("main")->error("An error occured: {}", e.what());
+            spdlog::get("main")->error("An error occurred: {}", e.what());
         setState( ModelRunState::ErrorDuringSetup, QString(e.what()));
     }
 }
@@ -178,6 +212,9 @@ void ModelShell::setup()
         setState(ModelRunState::Creating);
 
         if (model()->setup(  )) {
+
+            setState(ModelRunState::Created);
+
             // setup successful
             lg = spdlog::get("main");
             while (RunState::instance()->dnnState() == ModelRunState::Creating) {
@@ -191,7 +228,7 @@ void ModelShell::setup()
 
     } catch (const std::exception &e) {
         if (spdlog::get("main"))
-            spdlog::get("main")->error("An error occured: {}", e.what());
+            spdlog::get("main")->error("An error occurred: {}", e.what());
         setState( ModelRunState::ErrorDuringSetup, QString(e.what()));
     }
 }
@@ -209,7 +246,7 @@ void ModelShell::runOneStep(int current_step)
 
 
     } catch (const std::exception &e) {
-        spdlog::get("main")->error("An error occured: {}", e.what());
+        spdlog::get("main")->error("An error occurred: {}", e.what());
         setState( ModelRunState::Error, QString(e.what()));
     }
 }
@@ -221,6 +258,7 @@ void ModelShell::run(int n_steps)
     //return;
     spdlog::get("main")->info("***********************************************");
     spdlog::get("main")->info("Start the simulation of {} steps.",n_steps);
+    spdlog::get("main")->info("***********************************************");
 
     runOneStep(1);
 
@@ -253,9 +291,10 @@ void ModelShell::setState(ModelRunState::State new_state, QString msg)
 
 
 
-QMutex lock_processed_package;
+static QMutex lock_processed_package;
 void ModelShell::processedPackage(Batch *batch)
 {
+    mModel->stats.NPackagesDNN++;
     if (RunState::instance()->cancel() || batch->hasError()) {
         mPackagesProcessed++;
         lg->debug("error/cancel packages: all built: {}, #built: {}, #processed: {}, batch-id: {}", mAllPackagesBuilt, mPackagesBuilt, mPackagesProcessed, batch->packageId());
@@ -265,24 +304,16 @@ void ModelShell::processedPackage(Batch *batch)
         return;
     }
 
+    // TODO: this is a bit too much: some handling in derived batch types (DNN), some in modules (handlers)
+    batch->processResults();
 
-    // DNN delivered processed package....
-    lg->debug("Model: received package {} [{}](from DNN). Writing back data.", batch->packageId(), (void*)batch);
-
-    // check data:
-    for (int i=0;i<batch->usedSlots();++i) {
-        if (batch->inferenceData(i).nextTime() == 0 || batch->inferenceData(i).nextState()==0) {
-            lg->error("bad data in batch {} with {} used slots. item {}: update-time: {}, update-state: {}", batch->packageId(), batch->usedSlots(), i, batch->inferenceData(i).nextTime(), batch->inferenceData(i).nextState());
-        }
+    if (batch->module()) {
+        batch->module()->processBatch(batch);
+        mCellsProcesssed += batch->usedSlots();
     }
 
 
-    for (int i=0;i<batch->usedSlots();++i) {
-        batch->inferenceData(i).writeResult();
-    }
     batch->changeState(Batch::Fill);
-
-
 
     // now the data can be freed:
     {
@@ -292,7 +323,7 @@ void ModelShell::processedPackage(Batch *batch)
     }
 
     if (mAllPackagesBuilt && mPackagesBuilt==mPackagesProcessed) {
-        lg->info( "Model: processsed Last Package! [NSent: {} NReceived: {}]", mModel->stats.NPackagesSent, mModel->stats.NPackagesDNN );
+        lg->debug( "Model: processsed Last Package (no packages pending in DNN)! [NSent: {} NReceived: {}]", mModel->stats.NPackagesSent, mModel->stats.NPackagesDNN );
         finalizeCycle();
     } else {
         lg->debug( "Model: #packages: {} sent, {} processed [total: NSent: {} NReceived: {}]", mPackagesBuilt, mPackagesProcessed, mModel->stats.NPackagesSent, mModel->stats.NPackagesDNN);
@@ -309,6 +340,11 @@ void ModelShell::allPackagesBuilt()
     //lg->debug("** all packages built, starting the last package");
     sendPendingBatches(); // start last batch (even if < than batch size)
     mAllPackagesBuilt = true;
+    if (mPackagesBuilt==mPackagesProcessed && mPackagesProcessed>0) {
+        lg->debug( "Model: processsed Last Package! [NSent: {} NReceived: {}]", mModel->stats.NPackagesSent, mModel->stats.NPackagesDNN );
+        finalizeCycle();
+    }
+
 }
 
 void ModelShell::internalRun()
@@ -324,8 +360,11 @@ void ModelShell::internalRun()
         // check for each cell if we need to do something; if yes, then
         // fill a InferenceData item within a batch of data
         //
-        packageFuture = QtConcurrent::map(mModel->landscape()->grid(), [this](Cell &cell){ this->buildInferenceData(&cell); });
+        packageFuture = QtConcurrent::map(mModel->landscape()->grid(), [this](Cell &cell){ this->evaluateCell(&cell); });
         packageWatcher.setFuture(packageFuture);
+
+        // run the modules
+        mModel->runModules();
 
         // we can run the outputs conerning the current state right now (in parallel)
         mModel->outputManager()->run("StateGrid");
@@ -334,42 +373,29 @@ void ModelShell::internalRun()
 
 }
 
-// this function is executed for each cell on the landscape
-// if a cell needs an update, the data is collected and the cell
-// is stored within a batch.
-void ModelShell::buildInferenceData(Cell *cell)
+void ModelShell::evaluateCell(Cell *cell)
 {
     if (RunState::instance()->cancel())
         return;
 
+    if (cell->isNull())
+        return;
+    if (cell->needsUpdate()==false)
+        return;
+
     try {
-        // this function is called from multiple threads....
-        if (cell->isNull())
-            return;
-        if (cell->needsUpdate()==false)
-            return;
-
-        assert(BatchManager::instance()!=nullptr);
-        std::pair<Batch*, int> newslot = BatchManager::instance()->validSlot();
-        Batch *batch = newslot.first;
-        if (!batch) {
-            if (newslot.second==0)
-                return; // cancel operation
-            else {
-                // report an error
-                RunState::instance()->setError("Error: cannot find a valid slot. Timeout?", RunState::instance()->modelState());
-                return;
-            }
+        if( Module *module = cell->state()->module() ) {
+            // extra module handles this state:
+            // get a suitable slot in a batch for the given type
+            std::pair<Batch*, size_t> slot = getSlot(cell, module);
+            // invoke the module for preprocessing
+            module->prepareCell(cell);
+            // after processing, send the batch
+            checkBatch(slot.first);
+        } else {
+            // default: Forest states and DNN
+            buildInferenceDataDNN(cell);
         }
-        InferenceData &id = batch->inferenceData(newslot.second);
-
-        // populate the InferenceData with the required data
-        id.fetchData(cell, batch, newslot.second);
-
-        // check if batch is finished and send if this is the case
-        if (checkBatch(batch))
-            lg->debug("sent package [{}] when processing slot {} (used slots: {})", (void*)batch, newslot.second, batch->usedSlots());
-
 
     } catch (const std::exception &e) {
         RunState::instance()->setError("Error: " + to_string(e.what()), RunState::instance()->modelState());
@@ -377,8 +403,61 @@ void ModelShell::buildInferenceData(Cell *cell)
 
 }
 
+// this function is executed for each cell on the landscape
+// if a cell needs an update, the data is collected and the cell
+// is stored within a batch.
+void ModelShell::buildInferenceDataDNN(Cell *cell)
+{
 
-QMutex _check_batch;
+        assert(BatchManager::instance()!=nullptr);
+        std::pair<Batch*, size_t> newslot = BatchManager::instance()->validSlot(nullptr);
+        BatchDNN *batch = dynamic_cast<BatchDNN*>(newslot.first);
+        if (!batch) {
+            if (newslot.second==0)
+                return; // the operation has been canceled while waiting for a slot above
+            else {
+                // report an error
+                RunState::instance()->setError("Error: cannot find a valid slot. Timeout?", RunState::instance()->modelState());
+                return;
+            }
+        }
+
+        // populate the batch with data for this particular cell
+        batch->fetchPredictors(cell, newslot.second);
+
+//        InferenceData &id = batch->inferenceData(newslot.second);
+
+//        // populate the InferenceData with the required data
+//        id.fetchData(cell, batch, newslot.second);
+
+        // check if batch is finished and send if this is the case
+        if (checkBatch(batch))
+            lg->debug("sent package [{}] when processing slot {} (used slots: {})", static_cast<void*>(batch), newslot.second, batch->usedSlots());
+
+
+}
+
+std::pair<Batch*, size_t> ModelShell::getSlot(Cell *cell, Module *module)
+{
+    assert(BatchManager::instance()!=nullptr);
+    std::pair<Batch*, size_t> newslot = BatchManager::instance()->validSlot(module);
+    Batch *batch = newslot.first;
+    if (!batch) {
+        if (newslot.second==0)
+            return newslot; // the operation has been canceled while waiting for a slot above
+        else {
+            // report an error
+            RunState::instance()->setError("Error: cannot find a valid slot. Timeout?", RunState::instance()->modelState());
+            return newslot;
+        }
+    }
+    batch->setCell(cell, newslot.second);
+    return newslot;
+
+}
+
+
+static QMutex _check_batch;
 /// sends a package to the Inference process when all slots are filled.
 bool ModelShell::checkBatch(Batch *batch)
 {
@@ -387,22 +466,49 @@ bool ModelShell::checkBatch(Batch *batch)
         return false;
     }
 
+    bool all_processed;
+    {
     QMutexLocker lock(&_check_batch);
     batch->finishedCellProcessing();
-    if (batch->allCellsProcessed()) {
+    all_processed = batch->allCellsProcessed();
+    }
+    if (all_processed) {
         if (batch->state()!=Batch::Fill) {
-            lg->warn("Package [{}] already sent!", (void*)batch);
+            lg->warn("Package [{}] already sent!", static_cast<void*>(batch));
             return false;
         }
-        batch->setPackageId(++mPackageId);
-        mModel->stats.NPackagesSent ++;
-        ++mPackagesBuilt;
-        lg->debug("sending package {} [{}] to Inference (built total: {})", mPackageId, (void*)batch, mPackagesBuilt);
-        emit newPackage(batch);
+
+        // send batch to inference (DNN or other threads)
+        sendBatch(batch);
         return true;
 
     }
     return false;
+}
+
+void ModelShell::sendBatch(Batch *batch)
+{
+    batch->setPackageId(++mPackageId);
+    mModel->stats.NPackagesSent ++;
+    ++mPackagesBuilt;
+    // send via signal/slot for DNN packages
+    if (batch->type()==Batch::DNN) {
+        lg->debug("sending package {} [{}] to Inference (built total: {})", mPackageId, static_cast<void*>(batch), mPackagesBuilt);
+        emit newPackage(batch);
+    } else {
+        // directly call the function (in a thread)
+        processedPackage(batch);
+//        QtConcurrent::run([](ModelShell *shell, Batch *batch) {
+//            // do some work!! module->run(batch) ??
+//            if (!QMetaObject::invokeMethod(shell, "processedPackage", Qt::DirectConnection, // Qt::QueuedConnection,
+//                                           Q_ARG(Batch*, batch)) ) {
+//                batch->setError(true);
+//            }
+
+//        }, this, batch);
+
+    }
+
 }
 
 
@@ -416,11 +522,9 @@ void ModelShell::sendPendingBatches()
 
     for (auto e : BatchManager::instance()->batches()) {
         if (e->state()==Batch::Fill && e->usedSlots()>0) {
-            e->setPackageId(++mPackageId);
-            mModel->stats.NPackagesSent ++;
-            ++mPackagesBuilt;
-            lg->debug("sending pending package {} [{}] to Inference. (total. {}, size queue: {})", mPackageId, (void*)e, mPackagesBuilt, BatchManager::instance()->batches().size());
-            emit newPackage(e);
+            sendBatch(e);
+            lg->debug("sending pending package {} [{}] to Inference. (total. {}, size queue: {})", mPackageId, static_cast<void*>(e), mPackagesBuilt, BatchManager::instance()->batches().size());
+
         }
     }
 }
@@ -442,7 +546,7 @@ void ModelShell::finalizeCycle()
 
 void ModelShell::cancel()
 {
-    lg->error("An error occured - stopping.");
+    lg->error("An error occurred - stopping.");
     setState(ModelRunState::Stopping);
 }
 

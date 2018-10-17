@@ -3,27 +3,23 @@
 
 #include "spdlog/spdlog.h"
 
-#include "tensorhelper.h"
 
-Batch::Batch(int batch_size)
+Batch::Batch(size_t batch_size)
 {
 
     mCurrentSlot = 0;
     mCellsFinished = 0;
     mBatchSize = batch_size;
-    mInferenceData.resize(mBatchSize);
     mState=Fill;
     mError=false;
+    mType = Invalid;
+    mModule = nullptr;
+    mPackageId=0;
+    mCells.resize(mBatchSize);
 }
 
 Batch::~Batch()
 {
-    // free the memory of the tensors...
-    if (spdlog::get("dnn"))
-        spdlog::get("dnn")->trace("Destructor of batch, free tensors");
-    for (auto p : mTensors) {
-        delete p;
-    }
 }
 
 Batch::BatchState Batch::changeState(Batch::BatchState newState)
@@ -38,18 +34,18 @@ Batch::BatchState Batch::changeState(Batch::BatchState newState)
     return mState;
 }
 
-int Batch::acquireSlot()
+size_t Batch::acquireSlot()
 {
     // use an atomic operation
-    int slot = mCurrentSlot.fetch_add(1); // read first, than add 1
+    size_t slot = mCurrentSlot.fetch_add(1); // read first, than add 1
     if (slot >= mBatchSize)
         throw std::logic_error("Batch::acquireSlot: batch full!");
     return slot;
 }
 
-int Batch::freeSlots()
+size_t Batch::freeSlots()
 {
-    int slot = mCurrentSlot;
+    size_t slot = mCurrentSlot;
     return mBatchSize - slot;
 }
 
@@ -65,4 +61,9 @@ bool Batch::allCellsProcessed()
         return true;
 
     return false;
+}
+
+void Batch::processResults()
+{
+    spdlog::get("main")->debug("Batch::processResults: base class called (something is missing in derived class?)");
 }

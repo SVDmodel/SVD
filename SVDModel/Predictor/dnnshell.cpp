@@ -10,6 +10,8 @@
 #include "randomgen.h"
 #include "model.h"
 #include "batch.h"
+#include "batchmanager.h"
+#include "dnn.h"
 
 
 
@@ -42,21 +44,32 @@ void DNNShell::setup(QString fileName)
     mBatchManager = std::unique_ptr<BatchManager>(new BatchManager());
     mBatchManager->setup();
     } catch (const std::exception &e) {
-        lg->error("An error occured during setup of the Batch-Manager (DNN): {}", e.what());
+        lg->error("An error occurred during setup of the Batch-Manager (DNN): {}", e.what());
         RunState::instance()->dnnState()=ModelRunState::ErrorDuringSetup;
         return;
     }
 
     try {
         mDNN = std::unique_ptr<DNN>(new DNN());
-        if (!mDNN->setup()) {
+        if (!mDNN->setupDNN()) {
             RunState::instance()->dnnState()=ModelRunState::ErrorDuringSetup;
             return;
         }
 
+        // wait for the model thread to complete model setup before
+        // setting up the inputs (which may need data from the model)
+
+        while (RunState::instance()->modelState() == ModelRunState::Creating) {
+            lg->debug("waiting for Model thread thread...");
+            QThread::msleep(50);
+            QCoreApplication::processEvents();
+        }
+
+        mDNN->setupInput();
+
     } catch (const std::exception &e) {
         RunState::instance()->dnnState()=ModelRunState::ErrorDuringSetup;
-        lg->error("An error occured during DNN setup: {}", e.what());
+        lg->error("An error occurred during DNN setup: {}", e.what());
         return;
     }
     int n_threads = Model::instance()->settings().valueInt("dnn.threads", -1);
@@ -85,11 +98,11 @@ void DNNShell::doWork(Batch *batch)
 
 
     if (batch->state()!=Batch::Fill)
-        lg->error("Batch {} [{}] is in the wrong state {}, size: {}", batch->packageId(), (void*)batch, batch->state(), batch->usedSlots());
+        lg->error("Batch {} [{}] is in the wrong state {}, size: {}", batch->packageId(), static_cast<void*>(batch), batch->state(), batch->usedSlots());
 
-    batch->changeState(Batch::DNN);
+    batch->changeState(Batch::DNNInference);
     mProcessing++;
-    lg->debug("DNNShell: received package {}. Starting DNN (batch: {}, state: {}, active threads now: {}, #processing: {}) ", batch->packageId(), (void*)batch, batch->state(), mThreads->activeThreadCount(), mProcessing);
+    lg->debug("DNNShell: received package {}. Starting DNN (batch: {}, state: {}, active threads now: {}, #processing: {}) ", batch->packageId(), static_cast<void*>(batch), batch->state(), mThreads->activeThreadCount(), mProcessing);
 
     QtConcurrent::run( mThreads,
                        [](DNNShell *shell, Batch *batch, DNN* dnn){
@@ -129,7 +142,7 @@ void DNNShell::dnnFinished(void *vbatch)
 
     batch->changeState(Batch::Finished);
 
-    lg->debug("finished data package {} [{}] (size={})", batch->packageId(), (void*)batch, batch->usedSlots());
+    lg->debug("finished data package {} [{}] (size={})", batch->packageId(), static_cast<void*>(batch), batch->usedSlots());
 
     emit workDone(batch);
     if (!isRunnig())

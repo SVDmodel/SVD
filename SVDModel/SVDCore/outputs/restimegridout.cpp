@@ -5,7 +5,11 @@
 ResTimeGridOut::ResTimeGridOut()
 {
     setName("ResTimeGrid");
-    setDescription("output of ASCII grids with the residence time (years) for each cell.");
+    setDescription("output of ASCII grids with the residence time (years) for each cell.\n" \
+                   "Grids are save to the location specified with the `path`property "
+                   "(`$year$` is replaced with the actual year).\n" \
+                   "### Parameters\n" \
+                   "* `interval`: output is written only every `interval` years (or every year if `interval=0`). For example, a value of 10 limits output to the simulation years 1, 11, 21, ...\n");
     mInterval=0;
 
 }

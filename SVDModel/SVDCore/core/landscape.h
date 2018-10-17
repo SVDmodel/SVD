@@ -30,6 +30,8 @@ public:
     /// environment-grid: pointer to EnvironmentCell, nullptr if invalid.
     Grid<EnvironmentCell*> &environment()  { return mEnvironmentGrid; }
 
+    /// a list of all climate ids (regions) that are present in the current landscape
+    const std::map<int, int> &climateIds() { return mClimateIds; }
 
 private:
     void setupInitialState();
@@ -38,7 +40,7 @@ private:
     Grid<EnvironmentCell*> mEnvironmentGrid;
     std::vector<EnvironmentCell> mEnvironmentCells;
 
-
+    std::map<int, int> mClimateIds;
 };
 
 #endif // LANDSCAPE_H

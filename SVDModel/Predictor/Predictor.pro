@@ -41,9 +41,10 @@ win32:CONFIG(release, debug|release): DEFINES +=  _ITERATOR_DEBUG_LEVEL=0
 
 win32:CONFIG(debug, debug|release): DEFINES +=  TF_DEBUG_MODE=0
 
-LIBS += -LE:/dev/tensorflow/tensorflow/contrib/cmake/build/RelWithDebInfo -ltensorflow
+#LIBS += -LE:/dev/tensorflow/tensorflow/contrib/cmake/build/RelWithDebInfo -ltensorflow
+LIBS += -L../../tensorflow/lib14 -ltensorflow
 # only required for the PredTest example:
-LIBS += -LE:\dev\tensorflow\tensorflow\contrib\cmake\build\protobuf\src\protobuf\RelWithDebInfo -llibprotobuf.lib
+# LIBS += -LE:\dev\tensorflow\tensorflow\contrib\cmake\build\protobuf\src\protobuf\RelWithDebInfo -llibprotobuf.lib
 # E:\dev\tensorflow\tensorflow\contrib\cmake\build\protobuf\src\protobuf\RelWithDebInfo
 # for profiling only:
 LIBS += -L"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v8.0/lib/x64" -lcudart
@@ -66,7 +67,10 @@ SOURCES += \
     inferencedata.cpp \
     predtest.cpp \
     dnn.cpp \
-    dnnshell.cpp
+    dnnshell.cpp \
+    batchdnn.cpp \
+    inputtensoritem.cpp \
+    fetchdata.cpp
 
 HEADERS += \
     predictortest.h \
@@ -76,7 +80,10 @@ HEADERS += \
     inferencedata.h \
     predtest.h \
     dnn.h \
-    dnnshell.h
+    dnnshell.h \
+    batchdnn.h \
+    inputtensoritem.h \
+    fetchdata.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

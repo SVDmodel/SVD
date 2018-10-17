@@ -38,6 +38,8 @@ public:
     Point (int x, int y) { mX=x; mY=y; }
     int x() const { return mX; }
     int y() const { return mY; }
+    void setX(int x) { mX = x; }
+    void setY(int y) { mY = y; }
     // operators
     Point operator+(const Point &p) {return Point(x()+p.x(), y()+p.y()); }
 private:
@@ -53,11 +55,21 @@ public:
     // setters
     void setX(const double x) {mX = x; }
     void setY(const double y) {mY = y; }
+
 private:
     double mX;
     double mY;
 };
 class Rect {
+public:
+    Rect(Point p1, Point p2) { mTop=p1.y(); mLeft=p1.x(); mBottom=p2.y(); mRight=p2.x(); }
+    Point topLeft() const { return Point(mLeft, mTop); }
+    Point bottomRight() const { return Point(mRight, mBottom); }
+private:
+    int mTop;
+    int mBottom;
+    int mLeft;
+    int mRight;
 
 };
 class RectF {
@@ -70,6 +82,9 @@ public:
     double right() const { return mRight; }
     double width() const { return mRight-mLeft; }
     double height() const { return mBottom-mTop; }
+    PointF topLeft() const { return PointF(mLeft, mTop); }
+    PointF bottomRight() const { return PointF(mRight, mBottom); }
+
     void setCoords(double left, double top, double right, double bottom) {mLeft=left; mTop=top; mRight=right; mBottom=bottom; }
     bool isNull() const { return mTop==-1. && mBottom==-1. && mLeft==-1. && mRight==-1.; }
     bool contains(double x, double y) const { return x>=mLeft && x<=mRight && y>=mTop && y<=mBottom; }
@@ -152,6 +167,8 @@ public:
     inline T& operator[](const int idx) const { return mData[idx]; }
     /// use the square bracket to access by PointF
     inline T& operator[] (const PointF &p) { return valueAt(p); }
+    /// access value at Point p
+    inline T& operator[](const Point &p)  { return valueAtIndex(p); }
 
     inline T& valueAtIndex(const Point& pos) {return valueAtIndex(pos.x(), pos.y());}  ///< value at position defined by a Point defining the two indices (x,y)
     T& valueAtIndex(const int ix, const int iy) { return mData[iy*mSizeX + ix];  } ///< const value at position defined by indices (x,y)
@@ -195,9 +212,9 @@ public:
     PointF cellCenterPoint(const Point &pos) const { return PointF( (pos.x()+0.5)*mCellsize+mRect.left(), (pos.y()+0.5)*mCellsize + mRect.top());} ///< get metric coordinates of the cells center
     /// get the metric cell center point of the cell given by index 'index'
     PointF cellCenterPoint(const int &index) const { Point pos=indexOf(index); return PointF( (pos.x()+0.5)*mCellsize+mRect.left(), (pos.y()+0.5)*mCellsize + mRect.top());}
-    /// get the metric rectangle of the cell with index @pos
-    RectF cellRect(const Point &pos) const { RectF r( PointF(mRect.left() + mCellsize*pos.x(), mRect.top() + pos.y()*mCellsize),
-                                                      QSizeF(mCellsize, mCellsize)); return r; } ///< return coordinates of rect given by @param pos.
+    /// get the metric rectangle of the cell with index @p pos
+    RectF cellRect(const Point &pos) const { RectF r( mRect.left() + mCellsize*pos.x(), mRect.top() + pos.y()*mCellsize,
+                                                      mRect.left() + mCellsize*(pos.x()+1), mRect.top() + pos.y()*(mCellsize+1)); return r; } ///< return coordinates of rect given by @param pos.
 
     /// nullValue is the value for empty/null/NA
     static T nullValue() { return std::numeric_limits<T>::min(); }
@@ -525,10 +542,10 @@ void  Grid<T>::wipe(const T value)
 {
     /* this does not work properly !!! */
     if (sizeof(T)==sizeof(int)) {
-        double temp = value;
-        double *pf = &temp;
+        T temp = value;
+        T *pf = &temp;
 
-        memset(mData, *((int*)pf), mCount*sizeof(T));
+        memset(mData, *(static_cast<int*>(pf)), mCount*sizeof(T));
     } else
         initialize(value);
 }
@@ -833,7 +850,7 @@ bool Grid<T>::loadGridFromFile(const std::string &fileName)
 
     // loop thru datalines
     int i,j;
-    const char *p=0;
+    const char *p=nullptr;
     const char *p2;
 
     --l;

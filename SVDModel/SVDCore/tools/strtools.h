@@ -5,6 +5,12 @@
 #include <string>
 #include <vector>
 #include <map>
+
+#include <exception>
+#include <spdlog/spdlog.h>
+
+#define logic_error_fmt(X, ...) std::logic_error(fmt::format( X, __VA_ARGS__ ))
+
 // convert a value to a string:
 template<class T> std::string to_string(const T& value) {
     std::ostringstream oss;
@@ -107,7 +113,7 @@ template <typename T> void delete_and_clear(std::vector<T*> &v)
  
 
 template <class Container>
-const bool contains(Container& container, const typename Container::value_type& element)
+bool contains(Container& container, const typename Container::value_type& element)
 {
     return std::find(container.begin(), container.end(), element) != container.end();
 }
@@ -115,7 +121,7 @@ const bool contains(Container& container, const typename Container::value_type& 
 /// returns the index of 'element' in the container 'container'. If 'element' is not in the container
 /// the function returns -1.
 template <class Container>
-const int indexOf(Container& container, const typename Container::value_type& element)
+int indexOf(Container& container, const typename Container::value_type& element)
 {
     auto it = std::find(container.begin(), container.end(), element);
     if (it == container.end())
@@ -127,7 +133,27 @@ const int indexOf(Container& container, const typename Container::value_type& el
 /// splits the full path 'fileName' into a pair with the path as first and the filename as second.
 std::pair<std::string, std::string> splitPath (const std::string& fileName);
 
-
+/// find all keys in a map (mapOfElem) that have the given value; return a vector of keys
+// https://thispointer.com/how-to-search-by-value-in-a-map-c/
+template<typename K, typename V>
+std::vector<K> findByValue( std::map<K, V> mapOfElemen, V value)
+{
+    std::vector<K> vec;
+    auto it = mapOfElemen.begin();
+    // Iterate through the map
+    while(it != mapOfElemen.end())
+    {
+        // Check if value of this entry matches with given value
+        if(it->second == value)
+        {
+            // Push the key in given map
+            vec.push_back(it->first);
+        }
+        // Go to next entry in map
+        it++;
+    }
+    return vec;
+}
 
 
 #endif

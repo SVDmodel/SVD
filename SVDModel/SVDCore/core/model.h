@@ -14,7 +14,6 @@
 #include "externalseeds.h"
 #include "outputs/outputmanager.h"
 
-
 class Model
 {
 public:
@@ -26,6 +25,8 @@ public:
 
     void newYear();
     void finalizeYear();
+
+    void runModules();
 
     // callbacks
     void setProcessEventsCallback( std::function<void()> event) { mProcessEvents = event; }
@@ -45,13 +46,15 @@ public:
     /// year=0 after setup, and incremented whenever a new step starts, i.e. first sim. year=1, 2nd year=2, ...
     int year() const { return mYear; }
 
-    /// return the available states
+    /// return the model components
     std::shared_ptr<States> states() const { return mStates; }
     const std::vector<std::string> &species() { return mSpeciesList; }
     std::shared_ptr<Landscape> &landscape() { return mLandscape; }
     std::shared_ptr<Climate> &climate() { return mClimate; }
     const ExternalSeeds &externalSeeds() {return mExternalSeeds; }
 
+    /// return ptr to a module with the given name, or nullptr if not available
+    Module *module(const std::string &name);
 
     /// access to the output machinery
     std::shared_ptr<OutputManager> &outputManager() { return mOutputManager; }
@@ -60,7 +63,7 @@ public:
     /// access to the model configuration
     const Settings &settings() const { return mSettings; }
     struct SystemStats {
-        SystemStats(): NPackagesDNN(0), NPackagesSent(0), NPackagesTotalDNN(0), NPackagesTotalSent(0) {}
+        SystemStats(): NPackagesSent(0),  NPackagesDNN(0), NPackagesTotalSent(0), NPackagesTotalDNN(0)  {}
         size_t NPackagesSent;
         size_t NPackagesDNN;
         size_t NPackagesTotalSent;
@@ -73,6 +76,9 @@ private:
 
     // setup functions
     void setupSpecies();
+    void setupModules();
+
+    void setupExpressionWrapper();
 
     // helpers
     Settings mSettings;
@@ -90,6 +96,8 @@ private:
     std::shared_ptr<Landscape> mLandscape;
     ExternalSeeds mExternalSeeds;
     std::shared_ptr<OutputManager> mOutputManager;
+    // modules
+    std::vector< std::shared_ptr<Module> > mModules;
     // loggers
     std::shared_ptr<spdlog::logger> lg_main;
     std::shared_ptr<spdlog::logger> lg_setup;

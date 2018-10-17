@@ -2,19 +2,25 @@
 #define BATCH_H
 
 #include <list>
+#include <atomic>
+#include <vector>
 
-#include "inferencedata.h"
+//#include "inferencedata.h"
 
 class BatchManager; // forward
+class Cell; // forward
+class Module; // forward
 
 class Batch
 {
 public:
-    Batch(int batch_size);
-    ~Batch();
+    Batch(size_t batch_size);
+    virtual ~Batch();
 
     /// the state of the batch
-    enum BatchState { Fill=0, DNN=1, Finished=2, FinishedDNN=3};
+    enum BatchState { Fill=0, DNNInference=1, Finished=2, FinishedDNN=3};
+    enum BatchType { Invalid=0, DNN=1, Simple=2 };
+    BatchType type() const { return mType; }
     BatchState state() const { return mState; }
     BatchState changeState(BatchState newState);
 
@@ -23,14 +29,19 @@ public:
 
     int packageId() const { return mPackageId; }
     void setPackageId(int id) { mPackageId = id; }
-    int batchSize() const { return mBatchSize; }
+    void setModule(Module *module) { mModule = module; }
+    Module *module() const { return mModule; }
+    size_t batchSize() const { return mBatchSize; }
 
     /// get slot number in the batch (atomic access)
-    int acquireSlot();
+    size_t acquireSlot();
     /// number of slots that are free
-    int freeSlots();
+    size_t freeSlots();
     /// number of slots currently in use
-    int usedSlots() { return mCurrentSlot; }
+    size_t usedSlots() { return mCurrentSlot; }
+
+    void setCell(Cell* cell, size_t slot) { mCells[slot] = cell; }
+    const std::vector<Cell*> &cells() const { return mCells; }
 
     /// is called when a cell is finished (decrease the atomic counter)
     void finishedCellProcessing();
@@ -38,24 +49,21 @@ public:
     /// returns true if the batch is full and all cells are processed
     bool allCellsProcessed();
 
-    /// get a specific tensor from the batch
-    /// the 'index' is stored in the tensor definition.
-    TensorWrapper *tensor(int index) {return mTensors[index]; }
+    virtual void processResults();
 
-    /// access to the InferenceData
-    InferenceData &inferenceData(size_t slot) { if (slot<mInferenceData.size()) return mInferenceData[slot];
-        throw std::logic_error("Batch: invalid slot!");}
 
-private:
+protected:
     bool mError;
     BatchState mState;
-    std::vector<InferenceData> mInferenceData;
-    /// the tensors associated with this batch of data
-    std::vector<TensorWrapper*> mTensors;
-    std::atomic<int> mCurrentSlot; ///< atomic access; number of currently used slots (not the index!)
-    std::atomic<int> mCellsFinished; ///< number of cells which already finished during the "filling"
-    int mBatchSize;
+    BatchType mType;
+    std::atomic<size_t> mCurrentSlot; ///< atomic access; number of currently used slots (not the index!)
+    std::atomic<size_t> mCellsFinished; ///< number of cells which already finished during the "filling"
+    size_t mBatchSize;
     int mPackageId;
+    /// minimal storage: the cells
+    std::vector< Cell* > mCells;
+    /// the handling module if present
+    Module *mModule;
     friend class BatchManager;
 };
 

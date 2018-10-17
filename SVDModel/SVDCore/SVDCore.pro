@@ -47,7 +47,12 @@ SOURCES += \
     core/externalseeds.cpp \
     outputs/statechangeout.cpp \
     tools/expression.cpp \
-    tools/expressionwrapper.cpp
+    tools/expressionwrapper.cpp \
+    core/transitionmatrix.cpp \
+    modules/fire/firemodule.cpp \
+    modules/fire/fireout.cpp \
+    modules/module.cpp \
+    modules/matrixmodule.cpp
 
 HEADERS += \
     modelshell.h \
@@ -72,7 +77,12 @@ HEADERS += \
     core/externalseeds.h \
     outputs/statechangeout.h \
     tools/expression.h \
-    tools/expressionwrapper.h
+    tools/expressionwrapper.h \
+    core/transitionmatrix.h \
+    modules/fire/firemodule.h \
+    modules/fire/fireout.h \
+    modules/module.h \
+    modules/matrixmodule.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

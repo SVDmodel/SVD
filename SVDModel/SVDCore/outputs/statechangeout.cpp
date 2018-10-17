@@ -6,7 +6,24 @@
 StateChangeOut::StateChangeOut()
 {
     setName("StateChange");
-    setDescription("Details for individual state changes (potentially many output data!)");
+    setDescription("Details for individual state changes from DNN (potentially a lot of output data!)\n\n" \
+                   "The output contains for each cell the predicted states/probabilities (for `dnn.topKNClasses` classes), " \
+                   "and the probabilities for the year of state change.\n\n" \
+                   "### Parameters\n" \
+                   "* `filter`: a filter expression; output is written if the expression is true; available variables are: `state`, `restime`, `x`, `y`, `year`\n" \
+                   "* `interval`: output is written only every `interval` years (or every year if `interval=0`). For example, a value of 10 limits output to the simulation years 1, 11, 21, ...\n");
+    columns() = {
+    {"year", "simulation year of the state change", DataType::Int},
+    {"cellIndex", "index of the affected cell (0-based)", DataType::Int},
+    {"state", "original stateId (before change)", DataType::Int},
+    {"restime", "residence time (yrs) (before change)", DataType::Int},
+    {"nextState", "new stateId (selected from s[i])", DataType::Int},
+    {"nextTime", "year the state change (selected from t[i])", DataType::Int},
+    {"s[i]", "candidate state Id *i* (with i 1..number of top-K classes)", DataType::Int},
+    {"p[i]", "probability for state *i* (0..1)", DataType::Double},
+    {"t[i]", "probability for a change in year *i* (with i 1..number of residence time classes)", DataType::Double},
+    };
+
     mInterval=0; // every year
     mCellId=-1; // all cells
 }
@@ -16,14 +33,15 @@ void StateChangeOut::setup()
     auto lg = spdlog::get("setup");
     mInterval = Model::instance()->settings().valueInt(key("interval"));
     mFilter.setExpression(Model::instance()->settings().valueString(key("filter")));
-    mOutputFile = Tools::path(Model::instance()->settings().valueString(key("file")));
-    lg->debug("Setup of ResTimeGrid output, set interval to {}, filter to: '{}', path to: {}.", mInterval, mFilter.expression(), mOutputFile);
-    mFile.open(mOutputFile, std::fstream::out);
-    if (mFile.fail()) {
-      lg->error("Cannot create output file: '{}' (StateChangeOut): {}", mOutputFile, strerror(errno));
-      throw std::logic_error("Error in setup of StateChange output.");
-    }
-    mFile << "year,cellId,state,restime,nextState,nextTime,s1,p1,s2,p2,s3,p3,s4,p4,s5,p5,s6,p6,s7,p7,s8,p8,s9,p9,s10,p10,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10" << std::endl;
+    int n_time = Model::instance()->settings().valueInt("dnn.restime.N");
+    int n_prob = Model::instance()->settings().valueInt("dnn.topKNClasses");
+
+    openOutputFile("file", false); // false: do not write header
+    std::string cap = "year,cellIndex,state,restime,nextState,nextTime";
+    for (int i=0;i<n_prob;++i) cap += ",s" + to_string(i+1) + ",p" + to_string(i+1);
+    for (int i=0;i<n_time;++i) cap += ",t" + to_string(i+1);
+
+    file() << cap << std::endl;
 
 
 }
@@ -38,7 +56,7 @@ void StateChangeOut::execute()
 
 }
 
-std::mutex filter_mtx;
+static std::mutex filter_mtx;
 bool StateChangeOut::shouldWriteOutput(const InferenceData &id)
 {
     int year =  Model::instance()->year();
@@ -50,15 +68,16 @@ bool StateChangeOut::shouldWriteOutput(const InferenceData &id)
         return true;
 
     std::lock_guard<std::mutex> guard(filter_mtx);
-    CellWrapper wrap(&id);
-    if (mFilter.calculate(wrap))
+    InferenceDataWrapper wrap(&id);
+    if (mFilter.calculateBool(wrap))
         return true;
     return false;
 }
 
-std::mutex output_mutex;
+static std::mutex output_mutex;
 void StateChangeOut::writeLine(std::string content)
 {
     std::lock_guard<std::mutex> guard(output_mutex);
-    mFile << content << std::endl;
+    out() << content;
+    out().write();
 }

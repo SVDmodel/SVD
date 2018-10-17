@@ -144,14 +144,17 @@ std::unordered_map<std::string, std::string> ModelController::systemStatus()
     result["dnnBatchesProcessed"] = to_string(dnnShell()->batchesProcessed());
     result["dnnCellsProcessed"] = to_string(dnnShell()->cellsProcessed());
     result["cellsPerSecond"] = to_string(dnnShell()->cellsProcessed() / (mStopWatch.elapsed()>0 ? mStopWatch.elapsed()/1000. : 1.));
+    result["modelCellsProcessed"] = to_string(shell()->cellsProcessed());
+    result["modelCellsPerSecond"] = to_string(shell()->cellsProcessed() / (mStopWatch.elapsed()>0 ? mStopWatch.elapsed()/1000. : 1.));
 
-    int n_fill=0, n_finished=0, n_dnn=0;
-    int n_open_slots = 0;
+    size_t n_fill=0, n_finished=0, n_dnn=0;
+    size_t n_open_slots = 0;
     for (auto e : BatchManager::instance()->batches()) {
         switch (e->state()) {
         case Batch::Fill: ++n_fill; n_open_slots += e->freeSlots();  break;
         case Batch::Finished: ++n_finished; break;
-        case Batch::DNN: ++n_dnn; break;
+        case Batch::DNNInference: ++n_dnn; break;
+        default: break;
         }
     }
     result["batches"] = to_string( BatchManager::instance()->batches().size() );

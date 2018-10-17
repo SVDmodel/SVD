@@ -14,14 +14,17 @@ public:
     bool isSetup() const { return mIsSetup; }
 
     /// executes the output 'output_name'.
+    /// returns true if the output was actually executed.
     bool run(const std::string &output_name);
 
     void yearEnd();
 
+    /// builds a markdown documentation from all outputs
+    std::string createDocumentation();
+
     // access
 
     /// return the output or nullptr if 'output_name' is not a valid output.
-    /// returns true if the output was actually executed
     Output *find(std::string output_name);
 private:
     std::vector<Output*> mOutputs;

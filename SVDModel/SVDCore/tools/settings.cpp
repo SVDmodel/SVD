@@ -100,12 +100,21 @@ bool Settings::requiredKeys(std::string praefix, const std::vector<std::string> 
     throw std::logic_error("Error: Required column(s) not in settings: " + msg);
 }
 
-std::vector<std::string> Settings::findKeys(std::string start_with) const
+std::vector<std::string> Settings::findKeys(std::string start_with, bool one_level) const
 {
     std::vector<std::string> keys;
     for (auto it=mValues.begin(); it!=mValues.end(); ++it) {
-        if(it->first.substr(0, start_with.size()) == start_with)
-            keys.push_back(it->first);
+        if(it->first.substr(0, start_with.size()) == start_with) {
+            if (one_level) {
+                std::string rest = it->first.substr(start_with.size());
+                rest = rest.substr(0, rest.find('.') );
+                if (indexOf(keys, rest)==-1)
+                    keys.push_back(rest);
+
+            } else {
+                keys.push_back(it->first);
+            }
+        }
     }
 
     return keys;

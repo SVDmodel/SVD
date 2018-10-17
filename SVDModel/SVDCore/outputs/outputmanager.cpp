@@ -9,6 +9,7 @@
 #include "stategridout.h"
 #include "restimegridout.h"
 #include "statechangeout.h"
+#include "modules/fire/fireout.h"
 
 OutputManager::OutputManager()
 {
@@ -16,6 +17,7 @@ OutputManager::OutputManager()
     mOutputs.push_back(new StateGridOut());
     mOutputs.push_back(new ResTimeGridOut());
     mOutputs.push_back(new StateChangeOut());
+    mOutputs.push_back(new FireOut());
 }
 
 OutputManager::~OutputManager()
@@ -32,9 +34,13 @@ void OutputManager::setup()
     for (auto s : keys) {
 
         auto toks = split(s, '.');
-        if (toks.size() != 3)
+        if (toks.size() < 3)
             throw std::logic_error("Output Manager: invalid key: " + s);
-        lg->debug("Output: {}, key: {} = {}", toks[1], toks[2], Model::instance()->settings().valueString(s));
+        lg->debug("Output: {}, key: {} {}= {}",
+                  toks[1],
+                toks[2],
+                (toks.size()>=3 ? toks[3] : ""),
+                Model::instance()->settings().valueString(s));
 
         Output *o = find(toks[1]);
         if (o == nullptr)
@@ -69,6 +75,23 @@ void OutputManager::yearEnd()
 {
     for (auto o : mOutputs)
         o->flush();
+}
+
+std::string OutputManager::createDocumentation()
+{
+    std::string result;
+
+    result = "# SVD outputs\n";
+    result += "## List of outputs\n";
+    for (auto o: mOutputs) {
+        result += fmt::format("* [{}](#{})\n", o->name(), o->name());
+    }
+    result += "\n";
+
+    for (auto o : mOutputs) {
+        result += o->createDocumentation();
+    }
+    return result;
 }
 
 Output *OutputManager::find(std::string output_name)

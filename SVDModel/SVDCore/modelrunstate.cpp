@@ -77,7 +77,7 @@ void RunState::set(ModelRunState state)
     //
 }
 
-std::mutex runstate_mutex;
+static std::mutex runstate_mutex;
 void RunState::update(ModelRunState *source)
 {
     if (mInUpdate)
@@ -110,5 +110,5 @@ void RunState::setError(std::string error_message, ModelRunState &state)
     state=ModelRunState::Error;
     setCancel(true);
     if (spdlog::get("main"))
-        spdlog::get("main")->error("An error occured in {}: {}", (&state == &mDNN ? "DNN":"Model"), error_message);
+        spdlog::get("main")->error("An error occurred in {}: {}", (&state == &mDNN ? "DNN":"Model"), error_message);
 }

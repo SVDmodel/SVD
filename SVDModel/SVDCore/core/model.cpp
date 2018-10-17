@@ -2,10 +2,12 @@
 #include "tools.h"
 #include "strtools.h"
 #include "../Predictor/batchmanager.h"
+#include "modules/module.h"
+#include "expressionwrapper.h"
 
 #include <QThreadPool>
 
-Model *Model::mInstance = 0;
+Model *Model::mInstance = nullptr;
 
 Model::Model(const std::string &fileName)
 {
@@ -57,14 +59,21 @@ bool Model::setup()
     mStates = std::shared_ptr<States>(new States());
     mStates->setup();
 
-    mClimate = std::shared_ptr<Climate>(new Climate());
-    mClimate->setup();
-
     mLandscape = std::shared_ptr<Landscape>(new Landscape());
     mLandscape->setup();
 
+    mClimate = std::shared_ptr<Climate>(new Climate());
+    mClimate->setup();
+
     mExternalSeeds.setup();
 
+    setupModules();
+
+    setupExpressionWrapper();
+
+    lg_setup->info("************************************************************");
+    lg_setup->info("************   Setup completed, Ready to run  **************");
+    lg_setup->info("************************************************************");
 
     mYear = 0; // model is set up, ready to run
     return true;
@@ -85,6 +94,24 @@ void Model::finalizeYear()
 
     stats.NPackagesTotalSent += stats.NPackagesSent;
     stats.NPackagesTotalDNN += stats.NPackagesDNN;
+}
+
+void Model::runModules()
+{
+    auto lg = spdlog::get("main");
+    lg->debug("Run modules (year {})", year());
+    for (auto &module : mModules) {
+        lg->debug("Run module '{}'", module->name());
+        module->run();
+    }
+}
+
+Module *Model::module(const std::string &name)
+{
+    for (const auto &m : mModules)
+        if (m->name() == name)
+            return m.get();
+    return nullptr;
 }
 
 void Model::newYear()
@@ -183,4 +210,37 @@ void Model::setupSpecies()
         lg_setup->trace("************");
     }
 
+}
+
+void Model::setupModules()
+{
+    // reset module list
+    Module::clearModuleNames();
+
+    auto module_list = settings().findKeys("modules.", true);
+    for (const auto &s : module_list ) {
+        if (settings().valueBool("modules." + s + ".enabled", "false")) {
+            auto module_type = settings().valueString("modules." + s + ".type", "unknown");
+            lg_setup->info("Attempting to create enabled module '{}':", s);
+            std::shared_ptr<Module> module = Module::moduleFactory(s, module_type);
+            mModules.push_back(module);
+            module->setup();
+
+        }
+    }
+
+    // update the states to incorporate new modules
+    Model::instance()->states()->updateStateHandlers();
+
+    lg_setup->info("Setup of modules completed, {} active modules: {}", Module::moduleNames().size(),  join(Module::moduleNames(), ","));
+
+}
+
+void Model::setupExpressionWrapper()
+{
+    EnvironmentCell &ec = mLandscape->environmentCell(0);
+    const State &s = mStates->stateByIndex(0);
+    CellWrapper::setupVariables(&ec, &s);
+    CellWrapper cw(nullptr);
+    lg_setup->debug("Setup of variables for expressions completed. List of variables: {}", join(cw.getVariablesList()) );
 }
