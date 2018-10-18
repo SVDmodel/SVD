@@ -92,7 +92,7 @@ int ExternalSeeds::setupFromStates(FileReader &rdr, Grid<int> &eseed)
     while (rdr.next()) {
         int id = static_cast<int>(rdr.value(i_id));
         SItem &item = item_map[id];
-        for (int i=1;i<rdr.columnCount();i+=2) {
+        for (size_t i=1;i<rdr.columnCount();i+=2) {
             if (rdr.columnName(i) != "state" || i+1>=rdr.columnCount() || rdr.columnName(i+1)!="fraction") {
                 lg->error("Setup of external seeds from state file: invalid column at index {}. Expected are pairs of 'state' and 'fraction' columns. ", i);
                 throw std::logic_error("External seeds error (check log)");
@@ -139,7 +139,7 @@ int ExternalSeeds::setupFromSpeciesShares(FileReader &rdr, Grid<int> &eseed)
     auto species_names = Model::instance()->species();
     std::vector<int> col_idx(rdr.columnCount(), -1);
 
-    for (int i=0;i<rdr.columnCount();++i) {
+    for (size_t i=0;i<rdr.columnCount();++i) {
         if (i != i_id) {
             if (rdr.columnName(i)[0] != 'l' && rdr.columnName(i)[0] != 'm')
                 throw std::logic_error("Setup of external species: invalid column name '" + rdr.columnName(i) + "'. Column format: [l|m]_<speciesId>. ");
@@ -158,12 +158,12 @@ int ExternalSeeds::setupFromSpeciesShares(FileReader &rdr, Grid<int> &eseed)
             throw std::logic_error("Setup of external seeds: Invalid mixture type: " + to_string(mixture_id)+" - Key already used.");
         std::vector<double> spec_shares(species_names.size()*2, 0.);
 
-        for (int i=0;i<rdr.columnCount();++i) {
+        for (size_t i=0;i<rdr.columnCount();++i) {
             if (i!=i_id) {
                 double val = rdr.value(i);
                 if (val<0. || val>1.)
                     throw std::logic_error("Setup of external species: Invalid share of mixture type " + to_string(mixture_id) + ", column: " + rdr.columnName(i) + "; range has to be [0..1], value is: " + to_string(val));
-                spec_shares[ col_idx[i] ] = val;
+                spec_shares[ static_cast<size_t>(col_idx[i]) ] = val;
 
             }
         }

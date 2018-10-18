@@ -147,12 +147,12 @@ double InferenceDataWrapper::value(const size_t variableIndex)
  * Wrapper for cells
 */
 
-std::vector<std::string> CellWrapper::mVariableList = { "id", "climateId", "stateId", "residenceTime" };
+std::vector<std::string> CellWrapper::mVariableList = { "index", "environmentId" "climateId", "stateId", "residenceTime" };
 size_t CellWrapper::mMaxStateVar = 0;
 
 void CellWrapper::setupVariables(EnvironmentCell *ecell, const State *astate)
 {
-    mVariableList = { "id", "climateId", "stateId", "residenceTime" }; // reset
+    mVariableList = {  "index", "environmentId" "climateId", "stateId", "residenceTime" }; // reset
 
     // add variables from states
     const auto &names = astate->valueNames();
@@ -184,21 +184,22 @@ void CellWrapper::setupVariables(EnvironmentCell *ecell, const State *astate)
 double CellWrapper::value(const size_t variableIndex)
 {
 
-    if (variableIndex < 4) {
+    if (variableIndex < 5) {
         // fixed variables: id, climateId
 
         switch (variableIndex) {
-        case 0: return static_cast<double>(mData->environment()->id());
-        case 1: return static_cast<double>(mData->environment()->climateId());
-        case 2: return static_cast<double>(mData->stateId());
-        case 3: return static_cast<double>(mData->residenceTime());
+        case 0: return 0.; // TODO: cell index
+        case 1: return static_cast<double>(mData->environment()->id());
+        case 2: return static_cast<double>(mData->environment()->climateId());
+        case 3: return static_cast<double>(mData->stateId());
+        case 4: return static_cast<double>(mData->residenceTime());
         }
 
 
     } else if (variableIndex < mMaxStateVar) {
         // state variable
         const State *s = mData->state();
-        return s->value(variableIndex - 4);
+        return s->value(variableIndex - 5);
     } else {
         const EnvironmentCell *ec = mData->environment();
         return ec->value(variableIndex - mMaxStateVar);

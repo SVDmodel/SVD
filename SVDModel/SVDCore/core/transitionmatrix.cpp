@@ -42,8 +42,7 @@ state_t TransitionMatrix::transition(state_t stateId, int key)
 {
     auto it = mTM.find({stateId, key});
     if (it == mTM.end()) {
-        spdlog::get("main")->error("TransitionMatrix: no valid transitions found for state {}, key {}", stateId, key);
-        throw std::logic_error(fmt::format("TransitionMatrix: no valid transitions found for state {}, key {}", stateId, key));
+        throw logic_error_fmt("TransitionMatrix: no valid transitions found for state {}, key {}", stateId, key);
     }
 
     const auto &prob = it->second;
@@ -61,6 +60,5 @@ state_t TransitionMatrix::transition(state_t stateId, int key)
         if (p < p_sum)
             return item.first;
     }
-    spdlog::get("main")->error("TransitionMatrix: no valid target found for state {}, key {}", stateId, key);
-    throw std::logic_error("Error in TransitionMatrix");
+    throw logic_error_fmt("TransitionMatrix: no valid target found for state {}, key {}", stateId, key);
 }

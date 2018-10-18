@@ -5,7 +5,7 @@
 #include "filereader.h"
 #include "randomgen.h"
 
-FireModule::FireModule(): Module("fire", State::None)
+FireModule::FireModule(std::string module_name): Module(module_name, State::None)
 {
 
 }
@@ -13,7 +13,7 @@ FireModule::FireModule(): Module("fire", State::None)
 void FireModule::setup()
 {
     lg = spdlog::get("setup");
-    lg->info("Setup of FireModule");
+    lg->info("Setup of FireModule '{}'", name());
     auto settings = Model::instance()->settings();
     settings.requiredKeys("modules.fire", {"transitionFile", "stateFile", "ignitionFile", "extinguishProb"});
 
@@ -52,7 +52,7 @@ void FireModule::setup()
     mGrid.setup(grid.metricRect(), grid.cellsize());
     lg->debug("Created fire grid {} x {} cells.", mGrid.sizeX(), mGrid.sizeY());
 
-    lg->info("Setup of FireModule complete.");
+    lg->info("Setup of FireModule '{}' complete.", name());
 
     lg = spdlog::get("main");
 

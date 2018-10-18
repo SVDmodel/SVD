@@ -32,7 +32,7 @@ struct SFireStat {
 class FireModule : public Module
 {
 public:
-    FireModule();
+    FireModule(std::string module_name);
     void setup();
 
     void run();
