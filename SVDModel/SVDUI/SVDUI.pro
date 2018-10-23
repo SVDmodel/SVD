@@ -5,6 +5,8 @@
 #-------------------------------------------------
 
 QT       += core gui concurrent
+QT       += datavisualization
+
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -21,24 +23,31 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # In order to do so, uncomment the following line.
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
-INCLUDEPATH += ../SVDCore ../SVDCore/third_party ../SVDCore/tools ../SVDCore/core ../SVDCore/outputs
+INCLUDEPATH += ../SVDCore ../SVDCore/third_party ../SVDCore/tools ../SVDCore/core ../SVDCore/outputs visualization
 
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
     modelcontroller.cpp \
     testdnn.cpp \
-    integratetest.cpp
+    integratetest.cpp \
+    visualization/surfacegraph.cpp \
+    visualization/topographicseries.cpp \
+    visualization/cameracontrol.cpp
 
 HEADERS += \
         mainwindow.h \
     modelcontroller.h \
     testdnn.h \
-    integratetest.h
+    integratetest.h \
+    visualization/surfacegraph.h \
+    visualization/topographicseries.h \
+    visualization/cameracontrol.h
 
 FORMS += \
         mainwindow.ui \
-    testdnn.ui
+    testdnn.ui \
+    visualization/cameracontrol.ui
 
 win32:CONFIG (release, debug|release): LIBS += -L../Predictor/release -lPredictor
 else:win32:CONFIG (debug, debug|release): LIBS += -L../Predictor/debug -lPredictor

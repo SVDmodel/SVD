@@ -19,6 +19,8 @@
 #include "spdlog/spdlog.h"
 #include "strtools.h"
 
+// visualization
+#include "cameracontrol.h"
 
 static ToyModelController *mc=nullptr;
 
@@ -255,8 +257,8 @@ void MainWindow::on_pbRunModel_clicked()
 
 void MainWindow::on_pbRun_clicked()
 {
-    std::string s = mMC->shell()->run_test_op(ui->cbOption->currentText().toStdString());
-    writeFile(ui->lParam->text().toStdString(), s);
+//    std::string s = mMC->shell()->run_test_op(ui->cbOption->currentText().toStdString());
+//    writeFile(ui->lParam->text().toStdString(), s);
 
 }
 
@@ -305,4 +307,17 @@ void MainWindow::on_actioncreate_output_docs_triggered()
 
     spdlog::get("main")->info("Output documentation copied to the clipboard!");
 
+}
+
+void MainWindow::on_pbTestVis_clicked()
+{
+    // open form for camera control
+    CameraControl *cntrl = new CameraControl(this);
+    cntrl->setSurfaceGraph( ui->main3d );
+    QObject::connect(ui->main3d, &SurfaceGraph::cameraChanged, cntrl, &CameraControl::cameraChanged);
+    cntrl->show();
+
+    ui->main3d->setFilename("e:/Daten/SVD/projects/gye/gis/dem.asc");
+
+    ui->main3d->show();
 }
