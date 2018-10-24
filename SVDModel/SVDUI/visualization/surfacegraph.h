@@ -50,12 +50,13 @@ public:
     ~SurfaceGraph();
 
     void setFilename(QString grid_file_name);
-    void setup();
+    void setup(Grid<float> &dem, float min_h, float max_h);
 
     void toggleSurfaceTexture(bool enable);
     void clickCamera();
 
     QtDataVisualization::Q3DSurface *graph() { return m_graph; }
+    TopographicSeries *topoSeries() { return m_topography; }
 signals:
     void cameraChanged();
 private:
@@ -69,7 +70,7 @@ private:
     //float m_areaWidth;
     //float m_areaHeight;
 
-    Grid<float> m_Grid;
+    Grid<float> *mDem;
 
     // CustomInputHandler *m_inputHandler;
 };

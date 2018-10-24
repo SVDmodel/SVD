@@ -39,7 +39,7 @@ void OutputManager::setup()
         lg->debug("Output: {}, key: {} {}= {}",
                   toks[1],
                 toks[2],
-                (toks.size()>=3 ? toks[3] : ""),
+                (toks.size()>3 ? toks[3] : ""),
                 Model::instance()->settings().valueString(s));
 
         Output *o = find(toks[1]);

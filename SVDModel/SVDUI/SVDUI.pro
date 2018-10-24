@@ -33,7 +33,8 @@ SOURCES += \
     integratetest.cpp \
     visualization/surfacegraph.cpp \
     visualization/topographicseries.cpp \
-    visualization/cameracontrol.cpp
+    visualization/cameracontrol.cpp \
+    visualization/landscapevisualization.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -42,7 +43,8 @@ HEADERS += \
     integratetest.h \
     visualization/surfacegraph.h \
     visualization/topographicseries.h \
-    visualization/cameracontrol.h
+    visualization/cameracontrol.h \
+    visualization/landscapevisualization.h
 
 FORMS += \
         mainwindow.ui \

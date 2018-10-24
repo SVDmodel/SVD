@@ -59,6 +59,8 @@ public:
     bool isError() const { return mModel.in({ModelRunState::Error, ModelRunState::ErrorDuringSetup}); }
     bool isModelRunning() const { return mModel.in({ModelRunState::Creating, ModelRunState::Running, ModelRunState::Stopping}); }
     bool isModelFinished() const { return mModel.in({ModelRunState::Error, ModelRunState::ErrorDuringSetup, ModelRunState::Finished, ModelRunState::Canceled});}
+    bool isModelPaused() const { return mModel.in({ ModelRunState::ReadyToRun, ModelRunState::Paused}); }
+    bool isModelValid() const { return isModelRunning() || isModelFinished() || isModelPaused(); }
 private:
     ModelRunState mModel;
     ModelRunState mDNN;

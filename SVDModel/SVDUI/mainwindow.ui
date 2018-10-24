@@ -294,7 +294,14 @@
     <addaction name="actionTest_DNN"/>
     <addaction name="actioncreate_output_docs"/>
    </widget>
+   <widget class="QMenu" name="menuVisualization">
+    <property name="title">
+     <string>Visualization</string>
+    </property>
+    <addaction name="actionRender_to_file"/>
+   </widget>
    <addaction name="menuFunctions"/>
+   <addaction name="menuVisualization"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <property name="toolButtonStyle">
@@ -383,6 +390,12 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="dockWidget">
+   <property name="minimumSize">
+    <size>
+     <width>150</width>
+     <height>38</height>
+    </size>
+   </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
@@ -390,14 +403,76 @@
     <widget class="QPushButton" name="pbTestVis">
      <property name="geometry">
       <rect>
-       <x>0</x>
-       <y>50</y>
+       <x>10</x>
+       <y>10</y>
        <width>75</width>
        <height>23</height>
       </rect>
      </property>
      <property name="text">
       <string>PushButton</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="lExpression">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>240</y>
+       <width>111</width>
+       <height>20</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pbRenderExpression">
+     <property name="geometry">
+      <rect>
+       <x>110</x>
+       <y>240</y>
+       <width>41</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>show</string>
+     </property>
+    </widget>
+    <widget class="QRadioButton" name="visExpression">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>220</y>
+       <width>82</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Expression</string>
+     </property>
+    </widget>
+    <widget class="QRadioButton" name="visState">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>200</y>
+       <width>82</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>State</string>
+     </property>
+    </widget>
+    <widget class="QRadioButton" name="visNone">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>180</y>
+       <width>82</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Nothing</string>
      </property>
     </widget>
    </widget>
@@ -439,6 +514,11 @@
     <string>Run</string>
    </property>
   </action>
+  <action name="actionRender_to_file">
+   <property name="text">
+    <string>Render to file</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -452,5 +532,22 @@
  <resources>
   <include location="res/resource.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>lExpression</sender>
+   <signal>returnPressed()</signal>
+   <receiver>pbRenderExpression</receiver>
+   <slot>click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1036</x>
+     <y>326</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1094</x>
+     <y>330</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

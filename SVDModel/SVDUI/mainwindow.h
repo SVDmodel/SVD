@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "modelcontroller.h"
+#include "landscapevisualization.h"
 
 namespace Ui {
 class MainWindow;
@@ -23,6 +24,8 @@ public:
 private slots:
     void modelStateChanged(QString s);
     void modelUpdate();
+    void finishedYear();
+    void checkVisualization();
 
     void on_actionTest_DNN_triggered();
 
@@ -64,9 +67,18 @@ private slots:
 
     void on_pbTestVis_clicked();
 
+    void on_pbRenderExpression_clicked();
+
+    void on_visState_clicked() { checkVisualization(); }
+    void on_visExpression_clicked() {checkVisualization(); }
+    void on_visNone_clicked() {checkVisualization(); }
+
+    void on_actionRender_to_file_triggered();
+
 private:
     Ui::MainWindow *ui;
     std::unique_ptr<ModelController> mMC;
+    LandscapeVisualization *mLandscapeVis;
     QTimer mUpdateModelTimer;
 };
 

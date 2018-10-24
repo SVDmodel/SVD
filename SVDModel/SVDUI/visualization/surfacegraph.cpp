@@ -39,6 +39,19 @@
 #include <QScreen>
 #include <QLayout>
 
+
+// dummy axis formatter
+class DummyAxisFormatter:  public QtDataVisualization::QValue3DAxisFormatter {
+public:
+    virtual QValue3DAxisFormatter *createNewInstance() const { return new DummyAxisFormatter();}
+    virtual void recalculate() {}
+    virtual QStringList &labelStrings() const { return empty_list; }
+    virtual QVector<float> &labelPositions() const { return empty_vec; }
+private:
+    mutable QStringList empty_list;
+    mutable QVector<float> empty_vec;
+};
+
 //using namespace QtDataVisualization;
 
 //const float areaWidth = 8000.0f;
@@ -51,6 +64,7 @@ SurfaceGraph::SurfaceGraph(QWidget *parent) : QWidget(parent)
 
     QtDataVisualization::Q3DSurface *graph = new QtDataVisualization::Q3DSurface();
     m_graph = graph;
+    m_topography = nullptr;
     //QWidget::createWindowContainer();
 
     QWidget *container = QWidget::createWindowContainer(graph);
@@ -76,84 +90,28 @@ SurfaceGraph::SurfaceGraph(QWidget *parent) : QWidget(parent)
         msgBox.exec();
     }
 
-}
-
-SurfaceGraph::~SurfaceGraph()
-{
-    delete m_graph;
-}
-
-void SurfaceGraph::setFilename(QString grid_file_name)
-{
-    m_Grid.loadGridFromFile(grid_file_name.toStdString());
-    setup();
-
-}
-
-void SurfaceGraph::setup()
-{
-    // load grid
-    //m_areaWidth = m_Grid.metricSizeX();
-    //m_areaHeight = m_Grid.metricSizeY();
-    float max_h = m_Grid.max();
-    float min_h = m_Grid.min();
-
-    //const float aspectRatio = 0.1389f;
-    //const float minRange = m_areaWidth * 0.49f;
-
-
     m_graph->setAxisX(new QtDataVisualization::QValue3DAxis);
     m_graph->setAxisY(new QtDataVisualization::QValue3DAxis);
     m_graph->setAxisZ(new QtDataVisualization::QValue3DAxis);
-    m_graph->axisX()->setLabelFormat("%i");
-    m_graph->axisZ()->setLabelFormat("%i");
-    m_graph->axisX()->setRange(0.0f, m_Grid.metricSizeX());
-    m_graph->axisY()->setRange(min_h, max_h*6);
-    m_graph->axisZ()->setRange(0.0f, m_Grid.metricSizeY());
+
     m_graph->axisX()->setLabelAutoRotation(30);
     m_graph->axisY()->setLabelAutoRotation(90);
     m_graph->axisZ()->setLabelAutoRotation(30);
 
-    //m_graph->axisY()->setSegmentCount(1);
-
     m_graph->axisY()->setTitleVisible(false);
+
+
+    //DummyAxisFormatter *af = new DummyAxisFormatter();
+    m_graph->axisX()->setFormatter(new DummyAxisFormatter);
+    m_graph->axisY()->setFormatter(new DummyAxisFormatter);
+    m_graph->axisZ()->setFormatter(new DummyAxisFormatter);
+
 
     m_graph->activeTheme()->setType(QtDataVisualization::Q3DTheme::ThemePrimaryColors);
 
     QFont font = m_graph->activeTheme()->font();
     font.setPointSize(12);
     m_graph->activeTheme()->setFont(font);
-
-    m_topography = new TopographicSeries();
-    // m_topography->setTopographyFile(":/maps/topography", m_areaWidth, m_areaHeight);
-
-    m_topography->setGrid(m_Grid, min_h);
-
-    m_topography->setItemLabelFormat(QStringLiteral("@yLabel m"));
-
-/*    m_highlight = new HighlightSeries();
-    m_highlight->setTopographicSeries(m_topography);
-    m_highlight->setMinHeight(600.0f); // minRange * aspectRatio
-    m_highlight->handleGradientChange(max_h);
-//! [1]
-    QObject::connect(m_graph->axisY(), &QValue3DAxis::maxChanged,
-                     m_highlight, &HighlightSeries::handleGradientChange);
-//! [1] */
-
-    m_graph->addSeries(m_topography);
-/*    m_graph->addSeries(m_highlight);
-
-    m_inputHandler = new CustomInputHandler(m_graph);
-    m_inputHandler->setHighlightSeries(m_highlight);
-    m_inputHandler->setAxes(m_graph->axisX(), m_graph->axisY(), m_graph->axisZ());
-    m_inputHandler->setLimits(0.0f, m_Grid.metricSizeX(), max_h); // 0.0f, m_areaWidth, minRange
-    m_inputHandler->setAspectRatio(aspectRatio);
-
-    m_graph->setActiveInputHandler(m_inputHandler); */
-
-
-    // custom themeing
-
 
     QtDataVisualization::Q3DTheme *theme = new QtDataVisualization::Q3DTheme(QtDataVisualization::Q3DTheme::ThemeDigia);
     // theme->setAmbientLightStrength(0.3f);
@@ -186,6 +144,40 @@ void SurfaceGraph::setup()
     QObject::connect(m_graph->scene()->activeCamera(), &QtDataVisualization::Q3DCamera::xRotationChanged, this, &SurfaceGraph::cameraChanged);
     QObject::connect(m_graph->scene()->activeCamera(), &QtDataVisualization::Q3DCamera::yRotationChanged, this, &SurfaceGraph::cameraChanged);
 
+}
+
+SurfaceGraph::~SurfaceGraph()
+{
+    delete m_graph;
+}
+
+void SurfaceGraph::setFilename(QString grid_file_name)
+{
+//    m_Grid.loadGridFromFile(grid_file_name.toStdString());
+//    setup();
+
+}
+
+void SurfaceGraph::setup(Grid<float> &dem, float min_h, float max_h)
+{
+    mDem = &dem;
+
+    m_graph->axisX()->setLabelFormat("%i");
+    m_graph->axisZ()->setLabelFormat("%i");
+    m_graph->axisX()->setRange(0.0f, dem.metricSizeX());
+    m_graph->axisY()->setRange(min_h, max_h*6);
+    m_graph->axisZ()->setRange(0.0f, dem.metricSizeY());
+
+
+    m_topography = new TopographicSeries();
+
+    m_topography->setGrid(dem, min_h);
+
+    m_topography->setItemLabelFormat(QStringLiteral("@yLabel m"));
+
+
+    m_graph->addSeries(m_topography);
+
 
 }
 
@@ -214,7 +206,7 @@ void SurfaceGraph::toggleSurfaceTexture(bool enable)
     QImage img = m_topography->texture();
     bool new_img = false;
     if (img.isNull()) {
-        img = QImage(m_Grid.sizeX(), m_Grid.sizeY(), QImage::Format_ARGB32_Premultiplied);
+        //img = QImage(m_Grid.sizeX(), m_Grid.sizeY(), QImage::Format_ARGB32_Premultiplied);
         new_img = true;
     }
     for (int x=0;x<img.width();++x)
@@ -223,7 +215,7 @@ void SurfaceGraph::toggleSurfaceTexture(bool enable)
                 float value = y/float(img.height())*y/float(img.height());
                 QRgb col = color_map.pixel( value * color_map.width(),1);
                 //QRgb col = qRgba( x % 256, y % 256, 127, int(120+x/10));
-                if (m_Grid(x,y)>1189.f)
+                if ((*mDem)(x,y)>1189.f)
                     img.setPixel(x,img.height()-y-1,col);
                 else
                     img.setPixel(x,img.height()-y-1,qRgba(255,255,255,127));

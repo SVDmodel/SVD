@@ -152,7 +152,7 @@ size_t CellWrapper::mMaxStateVar = 0;
 
 void CellWrapper::setupVariables(EnvironmentCell *ecell, const State *astate)
 {
-    mVariableList = {  "index", "environmentId" "climateId", "stateId", "residenceTime" }; // reset
+    mVariableList = {  "index", "environmentId", "climateId", "stateId", "residenceTime" }; // reset
 
     // add variables from states
     const auto &names = astate->valueNames();

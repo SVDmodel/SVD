@@ -22,6 +22,7 @@ void States::setup()
     rdr.requiredColumns({"stateId", "composition", "structure", "fct", "type"});
 
     size_t i_name = rdr.columnIndex("name");
+    size_t i_color = rdr.columnIndex("color");
 
     while (rdr.next()) {
         // read line
@@ -35,6 +36,8 @@ void States::setup()
         mStateSet.insert({id, mStates.size()-1}); // save id and index
         if (i_name != std::numeric_limits<std::size_t>::max())
             mStates.back().setName(rdr.valueString(i_name));
+        if (i_color != std::numeric_limits<std::size_t>::max())
+            mStates.back().setColorName(rdr.valueString(i_color));
 
     }
 

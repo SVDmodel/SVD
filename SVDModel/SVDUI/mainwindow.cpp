@@ -34,8 +34,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // start up the model shell
     mMC = std::unique_ptr<ModelController>(new ModelController());
-    initiateModelController();
 
+    // initialize visualization
+    mLandscapeVis = new LandscapeVisualization(this);
+
+    // signals & slots
+    initiateModelController();
 
 }
 
@@ -56,8 +60,13 @@ MainWindow::~MainWindow()
 
 void MainWindow::modelStateChanged(QString s)
 {
+    if (mMC->state()->state() == ModelRunState::ReadyToRun && !mLandscapeVis->isValid()) {
+        // setup of the visualization
+        mLandscapeVis->setup(ui->main3d);
+    }
+
     // stop the update timer...
-    if (mMC->state()->isModelFinished()) {
+    if (mMC->state()->isModelFinished() || mMC->state()->isModelPaused()) {
         mUpdateModelTimer.stop();
         modelUpdate();
     }
@@ -70,9 +79,28 @@ void MainWindow::modelUpdate()
     //QTime().addMSecs(stime).toString(Qt::ISODateWithMs)
     ui->lModelState->setText(QString("%1 - %2").arg( QTime(0,0).addMSecs(stime).toString(Qt::ISODate) ).arg(QString::fromStdString(RunState::instance()->asString())));
     on_pbUpdateStats_clicked();
-    if (mMC->state()->isModelFinished()) {
+    if (mMC->state()->isModelFinished() || mMC->state()->isModelPaused()) {
         mUpdateModelTimer.stop();
     }
+}
+
+void MainWindow::finishedYear()
+{
+    if (mLandscapeVis->isValid())
+        mLandscapeVis->update();
+}
+
+void MainWindow::checkVisualization()
+{
+    // for any radiobuttion
+    if (ui->visExpression->isChecked())
+        mLandscapeVis->renderExpression(ui->lExpression->text());
+
+    if (ui->visState->isChecked())
+        mLandscapeVis->setRenderType(LandscapeVisualization::RenderState);
+
+    if (ui->visNone->isChecked())
+        mLandscapeVis->setRenderType(LandscapeVisualization::RenderNone);
 }
 
 
@@ -206,6 +234,8 @@ void MainWindow::initiateModelController()
     connect(mMC.get(), &ModelController::finishedYear, ui->progressBar, &QProgressBar::setValue);
     connect(mMC.get(), &ModelController::finished, [this]() { ui->progressBar->setValue(ui->progressBar->maximum());});
 
+    connect(mMC.get(), &ModelController::finishedYear, mLandscapeVis, &LandscapeVisualization::update);
+
     connect(&mUpdateModelTimer, &QTimer::timeout, this, &MainWindow::modelUpdate);
 
     //connect(mMC.get(), &ModelController::stateChanged, ui->statusBar, &QStatusBar::showMessage);
@@ -235,6 +265,7 @@ void MainWindow::on_pbLoad_clicked()
     ui->lModelState->setProperty("starttime", QTime::currentTime());
     mMC.reset();
     mMC.reset(new ModelController()); // this frees the current model
+    mLandscapeVis->invalidate();
     initiateModelController();
 
     mMC->setup(ui->lConfigFile->text());
@@ -244,6 +275,7 @@ void MainWindow::on_pbLoad_clicked()
 void MainWindow::on_pbDeleteModel_clicked()
 {
     mMC->shutdown();
+    mLandscapeVis->invalidate();
 }
 
 void MainWindow::on_pbRunModel_clicked()
@@ -320,4 +352,16 @@ void MainWindow::on_pbTestVis_clicked()
     ui->main3d->setFilename("e:/Daten/SVD/projects/gye/gis/dem.asc");
 
     ui->main3d->show();
+}
+
+void MainWindow::on_pbRenderExpression_clicked()
+{
+    if (mLandscapeVis->isValid())
+        mLandscapeVis->renderExpression(ui->lExpression->text());
+}
+
+
+void MainWindow::on_actionRender_to_file_triggered()
+{
+    mLandscapeVis->renderToFile();
 }
