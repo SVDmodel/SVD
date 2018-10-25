@@ -7,6 +7,10 @@
 #include <QMessageBox>
 #include <QClipboard>
 #include <QFileDialog>
+#include <QQuickView>
+#include <QQmlEngine>
+#include <QQmlContext>
+
 
 #include "testdnn.h"
 
@@ -53,6 +57,20 @@ MainWindow::MainWindow(QWidget *parent) :
 
     checkAvailableActions();
 
+    // setup the ruler (QML based)
+    QQuickView *view = new QQuickView();
+    // mRuler = view;
+    QWidget *container = QWidget::createWindowContainer(view, this);
+    mPalette = new ColorPalette();
+    view->engine()->rootContext()->setContextProperty("rulercolors", mPalette);
+    view->setResizeMode(QQuickView::SizeRootObjectToView);
+    view->setSource(QUrl("qrc:/qml/ruler.qml"));
+    //view->show();
+    ui->projectOptionsLayout->removeWidget(ui->legendContainer);
+    ui->projectOptionsLayout->addWidget(container);
+
+
+
 }
 
 
@@ -80,7 +98,7 @@ void MainWindow::modelStateChanged(QString s)
 {
     if (mMC->state()->state() == ModelRunState::ReadyToRun && !mLandscapeVis->isValid()) {
         // setup of the visualization
-        mLandscapeVis->setup(ui->main3d);
+        mLandscapeVis->setup(ui->main3d, mPalette);
     }
 
     // stop the update timer...
@@ -276,7 +294,7 @@ void MainWindow::on_pbTestVis_clicked()
 {
     // open form for camera control
     CameraControl *cntrl = new CameraControl(this);
-    cntrl->setSurfaceGraph( ui->main3d );
+    cntrl->setSurfaceGraph( ui->main3d);
     QObject::connect(ui->main3d, &SurfaceGraph::cameraChanged, cntrl, &CameraControl::cameraChanged);
     cntrl->show();
 

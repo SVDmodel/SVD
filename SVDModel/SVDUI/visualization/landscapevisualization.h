@@ -5,6 +5,7 @@
 #include <QImage>
 #include "grid.h"
 #include "expression.h"
+#include "colorpalette.h"
 
 class SurfaceGraph; // forward
 
@@ -15,7 +16,7 @@ public:
     enum RenderType {RenderNone, RenderState, RenderExpression};
     LandscapeVisualization(QObject *parent=nullptr);
     ~LandscapeVisualization();
-    void setup(SurfaceGraph *graph);
+    void setup(SurfaceGraph *graph, ColorPalette *palette);
 
     bool isValid() const {return mIsValid; }
     void invalidate() { mIsValid = false;  mCurrentType = RenderNone; }
@@ -58,6 +59,11 @@ private:
     int mRenderCount;
     bool mIsValid;
     RenderType mCurrentType;
+
+    ColorPalette *mPalette;
+
+    Palette *mStatePalette;
+    Palette *mContinuousPalette;
 
 };
 

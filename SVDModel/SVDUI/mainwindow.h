@@ -7,6 +7,7 @@
 
 #include "modelcontroller.h"
 #include "landscapevisualization.h"
+#include "colorpalette.h"
 
 namespace Ui {
 class MainWindow;
@@ -17,7 +18,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(QWidget *parent = nullptr);
     void initiateLogging();
     void initiateModelController();
     ~MainWindow();
@@ -89,6 +90,7 @@ private:
     Ui::MainWindow *ui;
     std::unique_ptr<ModelController> mMC;
     LandscapeVisualization *mLandscapeVis;
+    ColorPalette *mPalette;
     QTimer mUpdateModelTimer;
 };
 

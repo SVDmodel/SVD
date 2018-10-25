@@ -16,6 +16,7 @@
 LandscapeVisualization::LandscapeVisualization(QObject *parent): QObject(parent)
 {
     mGraph = nullptr;
+    mPalette = nullptr;
     mRenderCount = 0;
     mIsValid = false;
     mCurrentType = RenderNone;
@@ -25,10 +26,11 @@ LandscapeVisualization::~LandscapeVisualization()
 {
 }
 
-void LandscapeVisualization::setup(SurfaceGraph *graph)
+void LandscapeVisualization::setup(SurfaceGraph *graph, ColorPalette *palette)
 {
     auto lg = spdlog::get("setup");
     mGraph = graph;
+    mPalette = palette;
     if (!Model::hasInstance())
         return;
 
@@ -132,6 +134,7 @@ void LandscapeVisualization::doRenderExpression(bool auto_scale)
     if (mExpression.isEmpty())
         return;
 
+    mPalette->setCaption(QString::fromStdString(mExpression.expression()));
     CellWrapper cw(nullptr);
     auto &grid = Model::instance()->landscape()->grid();
     double value;
@@ -149,11 +152,12 @@ void LandscapeVisualization::doRenderExpression(bool auto_scale)
                 max_value = std::max(max_value, value);
             }
         }
-        if (min_value == max_value)
-            max_value = min_value + 1.; // avoid div by 0 later
+        //if (min_value == max_value)
+        //    max_value = min_value + 1.; // avoid div by 0 later
     }
+    mContinuousPalette->setAbsolutValueRange(min_value, max_value);
 
-    double value_rel;
+    //double value_rel;
     QRgb fill_color=QColor(127,127,127,127).rgba();
 
     const uchar *cline = mRenderTexture.scanLine(0);
@@ -165,8 +169,9 @@ void LandscapeVisualization::doRenderExpression(bool auto_scale)
             if (!c.isNull()) {
                 cw.setData(&c);
                 value = mExpression.calculate(cw);
-                value_rel = (value - min_value) / (max_value - min_value);
-                *line = colorValue(value_rel);
+                *line = mContinuousPalette->color(value);
+                //value_rel = (value - min_value) / (max_value - min_value);
+                //*line = colorValue(value_rel);
             } else {
                 *line = fill_color;
             }
@@ -181,6 +186,11 @@ void LandscapeVisualization::doRenderExpression(bool auto_scale)
 
 void LandscapeVisualization::doRenderState()
 {
+    //mPalette->setCaption("State", "show states with state-specific colors.");
+    //mPalette->setFactorColors(colors);
+    //mPalette->setFactorLabels(speciesnames);
+    //mRulerColors->setPalette(GridViewCustom, 0., 1.);
+
     checkTexture();
     auto &grid = Model::instance()->landscape()->grid();
 
@@ -194,7 +204,8 @@ void LandscapeVisualization::doRenderState()
         for (int x=0; x<grid.sizeX(); ++x, ++line) {
             const Cell &c = grid(x,y);
             if (!c.isNull()) {
-                *line = mStateColorLookup[c.state()->id()];
+                *line = mStatePalette->color(c.state()->id());
+                //*line = mStateColorLookup[c.state()->id()];
             } else {
                 *line = fill_color;
             }
@@ -203,7 +214,7 @@ void LandscapeVisualization::doRenderState()
     mGraph->topoSeries()->setTexture(mRenderTexture);
     ++mRenderCount;
 
-    spdlog::get("main")->info("Rendered state, Render#: {}", mExpression.expression(), mRenderCount);
+    spdlog::get("main")->info("Rendered state, Render#: {}", mRenderCount);
 
 
 }
@@ -219,48 +230,71 @@ void LandscapeVisualization::checkTexture()
 
 void LandscapeVisualization::setupColorRamps()
 {
-    QLinearGradient gr(0,0,1000,1);
+    mContinuousPalette = new Palette();
 
-    gr.setColorAt(0.0, Qt::black);
-    gr.setColorAt(0.33, Qt::blue);
-    gr.setColorAt(0.67, Qt::red);
-    gr.setColorAt(1.0, Qt::yellow);
-    //gr.setCoordinateMode(QGradient::StretchToDeviceMode);
-    QBrush brush(gr);
-    QImage color_map(1000, 10, QImage::Format_ARGB32_Premultiplied);
+    std::vector< std::pair< float, QString> > stops = {{0.0, "black"},
+                                                       {0.33, "blue"},
+                                                       {0.67, "red"},
+                                                       {1.0, "yellow"}};
 
-    QPainter painter(&color_map);
-    painter.setBrush(brush);
-    painter.drawRect(color_map.rect());
-    //painter.fillRect(color_map.rect(), brush);
-    painter.end();
+    mContinuousPalette->setupContinuousPalette("black-yellow", stops);
 
-    mColorLookup.clear();
-    for (int i=0;i<1000;++i)
-        mColorLookup.push_back(color_map.pixel(i,1));
+
+//    QLinearGradient gr(0,0,1000,1);
+
+//    gr.setColorAt(0.0, Qt::black);
+//    gr.setColorAt(0.33, Qt::blue);
+//    gr.setColorAt(0.67, Qt::red);
+//    gr.setColorAt(1.0, Qt::yellow);
+//    //gr.setCoordinateMode(QGradient::StretchToDeviceMode);
+//    QBrush brush(gr);
+//    QImage color_map(1000, 10, QImage::Format_ARGB32_Premultiplied);
+
+//    QPainter painter(&color_map);
+//    painter.setBrush(brush);
+//    painter.drawRect(color_map.rect());
+//    //painter.fillRect(color_map.rect(), brush);
+//    painter.end();
+
+//    mColorLookup.clear();
+//    for (int i=0;i<1000;++i)
+//        mColorLookup.push_back(color_map.pixel(i,1));
 }
 
 void LandscapeVisualization::setupStateColors()
 {
     const auto &states = Model::instance()->states()->states();
-    int max_state_id=0;
-    for (const auto &s : states)
-        max_state_id = std::max(max_state_id, static_cast<int>(s.id()));
 
-    mStateColorLookup.clear();
-    mStateColorLookup.resize(max_state_id);
-
-    QRgb no_value = QColor(100,100,100).rgba();
+    Palette *pal = new Palette();
+    QVector<QString> color_names;
+    QVector<int> factor_values;
+    QVector<QString> factor_labels;
     for (const auto &s : states) {
-        mStateColorLookup[static_cast<int>(s.id())] = no_value;
-        if (!s.colorName().empty()) {
-            QColor col(QString::fromStdString(s.colorName()));
-            if (col.isValid())
-                mStateColorLookup[static_cast<int>(s.id())] = col.rgba();
-            else
-                spdlog::get("main")->warn("The color '{}' for stateId '{}' is not valid (see Qt doc for valid color names)!", s.colorName(), s.id());
-        }
-
+        color_names.push_back(QString::fromStdString(s.colorName()));
+        factor_values.push_back(s.id());
+        factor_labels.push_back(QString::fromStdString(s.asString()));
     }
+    pal->setupFactorPalette("States", color_names, factor_values, factor_labels);
+    mStatePalette = pal;
+
+//    int max_state_id=0;
+//    for (const auto &s : states)
+//        max_state_id = std::max(max_state_id, static_cast<int>(s.id()));
+
+//    mStateColorLookup.clear();
+//    mStateColorLookup.resize(max_state_id + 1);
+
+//    QRgb no_value = QColor(100,100,100).rgba();
+//    for (const auto &s : states) {
+//        mStateColorLookup[static_cast<int>(s.id())] = no_value;
+//        if (!s.colorName().empty()) {
+//            QColor col(QString::fromStdString(s.colorName()));
+//            if (col.isValid())
+//                mStateColorLookup[static_cast<int>(s.id())] = col.rgba();
+//            else
+//                spdlog::get("main")->warn("The color '{}' for stateId '{}' is not valid (see Qt doc for valid color names)!", s.colorName(), s.id());
+//        }
+
+//    }
 
 }

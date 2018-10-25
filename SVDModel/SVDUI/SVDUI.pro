@@ -6,6 +6,8 @@
 
 QT       += core gui concurrent
 QT       += datavisualization
+QT       += quick
+
 
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
@@ -34,7 +36,8 @@ SOURCES += \
     visualization/surfacegraph.cpp \
     visualization/topographicseries.cpp \
     visualization/cameracontrol.cpp \
-    visualization/landscapevisualization.cpp
+    visualization/landscapevisualization.cpp \
+    visualization/colorpalette.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -44,7 +47,8 @@ HEADERS += \
     visualization/surfacegraph.h \
     visualization/topographicseries.h \
     visualization/cameracontrol.h \
-    visualization/landscapevisualization.h
+    visualization/landscapevisualization.h \
+    visualization/colorpalette.h
 
 FORMS += \
         mainwindow.ui \
