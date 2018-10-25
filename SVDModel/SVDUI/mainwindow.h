@@ -21,6 +21,10 @@ public:
     void initiateLogging();
     void initiateModelController();
     ~MainWindow();
+
+protected:
+     void closeEvent(QCloseEvent *event);
+
 private slots:
     void modelStateChanged(QString s);
     void modelUpdate();
@@ -45,13 +49,6 @@ private slots:
 
     void on_pushButton_4_clicked();
 
-    void on_pbLoad_clicked();
-
-    void on_pbDeleteModel_clicked();
-
-    void on_pbRunModel_clicked();
-
-    void on_pbRun_clicked();
 
     void on_pushButton_5_clicked();
 
@@ -75,7 +72,30 @@ private slots:
 
     void on_actionRender_to_file_triggered();
 
+    void on_actionSetupProject_triggered();
+
+    void on_actionRunSim_triggered();
+
+    void on_actionStopSim_triggered();
+
+    void on_actiondelete_model_triggered();
+
+
+    void on_openProject_clicked();
+
+
+    void menuRecent_files();
+
+    void on_actionOpenProject_triggered();
+
 private:
+    QList<QString> mRecentFileList;
+
+    void readSettings(); ///< read UI settings from ini file
+    void writeSettings(); ///< save UI settings
+    void recentFileMenu(); ///< update the list of recently used project files
+    void checkAvailableActions(); ///< check status of the actions (run, cancel, ...)
+
     Ui::MainWindow *ui;
     std::unique_ptr<ModelController> mMC;
     LandscapeVisualization *mLandscapeVis;

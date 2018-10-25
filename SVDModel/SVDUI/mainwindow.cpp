@@ -6,6 +6,7 @@
 #include <QTime>
 #include <QMessageBox>
 #include <QClipboard>
+#include <QFileDialog>
 
 #include "testdnn.h"
 
@@ -41,6 +42,19 @@ MainWindow::MainWindow(QWidget *parent) :
     // signals & slots
     initiateModelController();
 
+    // some UI tweaks
+    ui->mainToolBar->addWidget(ui->sYears);
+    ui->mainToolBar->addWidget(ui->progressBarContainer);
+
+    readSettings();
+
+    QString lastconfigfile = QSettings().value("project/lastprojectfile").toString();
+    //QString lastXml = Helper::loadTextFile( QCoreApplication::applicationDirPath()+ "/lastxmlfile.txt" );
+    if (!lastconfigfile.isEmpty() && QFile::exists(lastconfigfile))
+        ui->lConfigFile->setText(lastconfigfile);
+
+    checkAvailableActions();
+
 }
 
 
@@ -58,6 +72,12 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    writeSettings();
+    event->accept();
+}
+
 void MainWindow::modelStateChanged(QString s)
 {
     if (mMC->state()->state() == ModelRunState::ReadyToRun && !mLandscapeVis->isValid()) {
@@ -70,6 +90,8 @@ void MainWindow::modelStateChanged(QString s)
         mUpdateModelTimer.stop();
         modelUpdate();
     }
+
+    checkAvailableActions();
 
 }
 
@@ -255,44 +277,7 @@ void MainWindow::on_pushButton_5_clicked()
     it.testTensor();
 }
 
-void MainWindow::on_pbLoad_clicked()
-{
-    // create & load model
-    if (mMC && mMC->model()) {
-        if (QMessageBox::question(this, "Confirm reload", "The model is already created. Create a new model?")==QMessageBox::No)
-            return;
-    }
-    ui->lModelState->setProperty("starttime", QTime::currentTime());
-    mMC.reset();
-    mMC.reset(new ModelController()); // this frees the current model
-    mLandscapeVis->invalidate();
-    initiateModelController();
 
-    mMC->setup(ui->lConfigFile->text());
-    mUpdateModelTimer.start(100);
-}
-
-void MainWindow::on_pbDeleteModel_clicked()
-{
-    mMC->shutdown();
-    mLandscapeVis->invalidate();
-}
-
-void MainWindow::on_pbRunModel_clicked()
-{
-    ui->progressBar->reset();
-    ui->progressBar->setMaximum( ui->sYears->value() );
-    mMC->run( ui->sYears->value() );
-    ui->lModelState->setProperty("starttime", QTime::currentTime());
-    mUpdateModelTimer.start(100);
-}
-
-void MainWindow::on_pbRun_clicked()
-{
-//    std::string s = mMC->shell()->run_test_op(ui->cbOption->currentText().toStdString());
-//    writeFile(ui->lParam->text().toStdString(), s);
-
-}
 
 
 
@@ -313,8 +298,7 @@ void MainWindow::on_pbUpdateStats_clicked()
 
 void MainWindow::on_pbCancel_clicked()
 {
-    if (mMC && mMC->model())
-        mMC->shutdown();
+
 }
 
 void MainWindow::on_pbTestTF_clicked()
@@ -365,3 +349,175 @@ void MainWindow::on_actionRender_to_file_triggered()
 {
     mLandscapeVis->renderToFile();
 }
+
+void MainWindow::on_actionSetupProject_triggered()
+{
+    // save currently selected config file
+    recentFileMenu();
+
+    // create & load model
+    if (mMC && mMC->model()) {
+        if (QMessageBox::question(this, "Confirm reload", "The model is already created. Create a new model?")==QMessageBox::No)
+            return;
+    }
+    ui->lModelState->setProperty("starttime", QTime::currentTime());
+    mMC.reset();
+    mMC.reset(new ModelController()); // this frees the current model
+    mLandscapeVis->invalidate();
+    initiateModelController();
+
+    mMC->setup(ui->lConfigFile->text());
+    mUpdateModelTimer.start(100);
+
+}
+
+void MainWindow::on_actionRunSim_triggered()
+{
+    ui->progressBar->reset();
+    ui->progressBar->setMaximum( ui->sYears->value() );
+    mMC->run( ui->sYears->value() );
+    ui->lModelState->setProperty("starttime", QTime::currentTime());
+    mUpdateModelTimer.start(100);
+}
+
+void MainWindow::on_actionStopSim_triggered()
+{
+    if (mMC && mMC->model())
+        mMC->shutdown();
+}
+
+void MainWindow::on_actiondelete_model_triggered()
+{
+    mMC->shutdown();
+    mLandscapeVis->invalidate();
+    checkAvailableActions();
+}
+
+
+void MainWindow::on_openProject_clicked()
+{
+    QString the_filter = "*.conf;;All files (*.*)";
+
+    QString fileName = QFileDialog::getOpenFileName(this,
+     "Select project config file", "", the_filter);
+
+
+    if (fileName.isEmpty())
+        return;
+
+    ui->lConfigFile->setText(fileName);
+
+}
+
+void MainWindow::on_actionOpenProject_triggered()
+{
+    on_openProject_clicked();
+}
+
+
+void MainWindow::menuRecent_files()
+{
+    QAction* action = dynamic_cast<QAction*>(sender());
+    if (action)
+        ui->lConfigFile->setText(action->text());
+
+}
+
+void MainWindow::readSettings()
+{
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+    QCoreApplication::setOrganizationName("SVD");
+    QCoreApplication::setOrganizationDomain("svd.boku.ac.at");
+    QCoreApplication::setApplicationName("SVD");
+    QSettings settings;
+    qDebug() << "reading settings from" << settings.fileName();
+
+    // window state and
+    restoreGeometry(settings.value("MainWindow/geometry").toByteArray());
+    restoreState(settings.value("MainWindow/windowState").toByteArray());
+
+    // read javascript commands
+//    int size = settings.beginReadArray("javascriptCommands");
+//    for (int i=0;i<size; ++i) {
+//        settings.setArrayIndex(i);
+//        ui->scriptCommandHistory->addItem(settings.value("item").toString());
+//    }
+//    settings.endArray();
+    //recent files menu qsettings registry load
+    settings.beginGroup("recent_files");
+    for(int i = 0;i < settings.childKeys().size();i++){
+        mRecentFileList.append(settings.value(QString("file-%1").arg(i)).toString());
+    }
+    recentFileMenu();
+
+    settings.endGroup();
+    //ui->scriptCode->setPlainText(settings.value("javascript").toString());
+
+}
+
+void MainWindow::writeSettings()
+{
+    QSettings settings;
+    settings.beginGroup("MainWindow");
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("windowState", saveState());
+    settings.endGroup();
+    // javascript commands
+//    settings.beginWriteArray("javascriptCommands");
+//    int size = qMin(ui->scriptCommandHistory->count(), 15); // max 15 entries in the history
+//    for (int i=0;i<size; ++i) {
+//        settings.setArrayIndex(i);
+//        settings.setValue("item", ui->scriptCommandHistory->itemText(i));
+//    }
+//    settings.endArray();
+    settings.beginGroup("project");
+    settings.setValue("lastprojectfile", ui->lConfigFile->text());
+    settings.endGroup();
+    //recent files menu qsettings registry save
+    settings.beginGroup("recent_files");
+    for(int i = 0;i < mRecentFileList.size();i++){
+        settings.setValue(QString("file-%1").arg(i),mRecentFileList[i]);
+    }
+    settings.endGroup();
+    //settings.setValue("javascript", ui->scriptCode->toPlainText());
+
+}
+
+void MainWindow::recentFileMenu()
+{
+    if(mRecentFileList.size() > 9){
+        mRecentFileList.removeAt(9);
+    }
+    if(mRecentFileList.contains(ui->lConfigFile->text())){
+        mRecentFileList.removeAt(mRecentFileList.indexOf(ui->lConfigFile->text()));
+     }
+
+    if (!ui->lConfigFile->text().isEmpty())
+        mRecentFileList.prepend(ui->lConfigFile->text());
+
+    for(int i = 0;i < ui->menuRecent_files->actions().size();i++){
+        if(i < mRecentFileList.size()){
+            ui->menuRecent_files->actions()[i]->setText(mRecentFileList[i]);
+            connect(ui->menuRecent_files->actions()[i],SIGNAL(triggered()),this,SLOT(menuRecent_files()));
+            ui->menuRecent_files->actions()[i]->setVisible(true);
+        }else{
+            ui->menuRecent_files->actions()[i]->setVisible(false);
+        }
+     }
+
+}
+
+void MainWindow::checkAvailableActions()
+{
+    if (!mMC)
+        return;
+    mMC->state()->isModelValid();
+    ui->actionRunSim->setEnabled( mMC->state()->isModelPaused() );
+    ui->actionStopSim->setEnabled( mMC->state()->isModelRunning() );
+    ui->actiondelete_model->setEnabled( mMC->state()->isModelValid() );
+    ui->actionSetupProject->setEnabled( !mMC->state()->isModelRunning() && !ui->lConfigFile->text().isEmpty());
+    ui->actionOpenProject->setEnabled( !mMC->state()->isModelRunning() );
+    ui->openProject->setEnabled(!mMC->state()->isModelRunning());
+
+}
+

@@ -1,5 +1,9 @@
 <RCC>
     <qresource prefix="/">
         <file alias="mainicon">svd_icon1.png</file>
+        <file>document-open.png</file>
+        <file>Play.png</file>
+        <file>process-stop.png</file>
+        <file>www.png</file>
     </qresource>
 </RCC>
