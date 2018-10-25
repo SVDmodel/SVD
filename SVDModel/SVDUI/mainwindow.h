@@ -33,14 +33,6 @@ private slots:
 
     void on_actionTest_DNN_triggered();
 
-    void on_pbStart_clicked();
-
-    void on_pbStop_clicked();
-
-    void on_run_clicked();
-
-    void on_pushButton_clicked();
-
     void on_pbTest_clicked();
 
     void on_pushButton_2_clicked();
@@ -52,9 +44,6 @@ private slots:
 
     void on_pushButton_5_clicked();
 
-    void on_pbUpdateStats_clicked();
-
-    void on_pbCancel_clicked();
 
     void on_pbTestTF_clicked();
 
@@ -95,6 +84,7 @@ private:
     void writeSettings(); ///< save UI settings
     void recentFileMenu(); ///< update the list of recently used project files
     void checkAvailableActions(); ///< check status of the actions (run, cancel, ...)
+    void updateModelStats(); ///< refresh model stats
 
     Ui::MainWindow *ui;
     std::unique_ptr<ModelController> mMC;

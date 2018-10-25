@@ -7,29 +7,6 @@
 #include "modelrunstate.h"
 
 
-class ToyModelShell; // forward
-
-class ToyModelController : public QObject
-{
-    Q_OBJECT
-    QThread *modelThread;
-    QThread *dnnThread;
-public:
-    explicit ToyModelController(QObject *parent = nullptr);
-    ~ToyModelController();
-
-signals:
-    void log(const QString &s);
-
-public slots:
-    void run();
-    void abort();
-    void finishedRun();
-private:
-    ToyModelShell *mModel;
-
-};
-
 class DNNShell; // forward
 
 

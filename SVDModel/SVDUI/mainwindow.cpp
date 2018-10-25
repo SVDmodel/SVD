@@ -23,7 +23,6 @@
 // visualization
 #include "cameracontrol.h"
 
-static ToyModelController *mc=nullptr;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -49,7 +48,6 @@ MainWindow::MainWindow(QWidget *parent) :
     readSettings();
 
     QString lastconfigfile = QSettings().value("project/lastprojectfile").toString();
-    //QString lastXml = Helper::loadTextFile( QCoreApplication::applicationDirPath()+ "/lastxmlfile.txt" );
     if (!lastconfigfile.isEmpty() && QFile::exists(lastconfigfile))
         ui->lConfigFile->setText(lastconfigfile);
 
@@ -100,7 +98,7 @@ void MainWindow::modelUpdate()
     int stime = ui->lModelState->property("starttime").toTime().elapsed();
     //QTime().addMSecs(stime).toString(Qt::ISODateWithMs)
     ui->lModelState->setText(QString("%1 - %2").arg( QTime(0,0).addMSecs(stime).toString(Qt::ISODate) ).arg(QString::fromStdString(RunState::instance()->asString())));
-    on_pbUpdateStats_clicked();
+    updateModelStats();
     if (mMC->state()->isModelFinished() || mMC->state()->isModelPaused()) {
         mUpdateModelTimer.stop();
     }
@@ -134,35 +132,6 @@ void MainWindow::on_actionTest_DNN_triggered()
 
 }
 
-void MainWindow::on_pbStart_clicked()
-{
-    if (!mc) {
-        ui->lLog->appendPlainText("Starting ModelController...");
-        mc = new ToyModelController(this);
-        connect(mc, &ToyModelController::log, ui->lLog, &QPlainTextEdit::appendPlainText);
-    }
-}
-
-void MainWindow::on_pbStop_clicked()
-{
-    if (mc) {
-        ui->lLog->appendPlainText("Stopping ModelController...");
-        delete mc;
-        mc=nullptr;
-    }
-}
-
-void MainWindow::on_run_clicked()
-{
-    if (mc)
-        mc->run();
-}
-
-void MainWindow::on_pushButton_clicked()
-{
-    if (mc)
-        mc->abort();
-}
 
 void MainWindow::on_pbTest_clicked()
 {
@@ -278,28 +247,6 @@ void MainWindow::on_pushButton_5_clicked()
 }
 
 
-
-
-
-void MainWindow::on_pbUpdateStats_clicked()
-{
-    auto stats = mMC->systemStatus();
-    ui->listStatus->clear();
-    ui->listStatus->setHorizontalHeaderLabels({"Statistic", "Value"});
-    ui->listStatus->setRowCount(static_cast<int>(stats.size()));
-    ui->listStatus->setColumnCount(2);
-    int r=0;
-    for (std::pair<std::string, std::string> s : stats) {
-        ui->listStatus->setItem(r,0, new QTableWidgetItem(QString::fromStdString(s.first)));
-        ui->listStatus->setItem(r,1, new QTableWidgetItem(QString::fromStdString(s.second)));
-        ++r;
-    }
-}
-
-void MainWindow::on_pbCancel_clicked()
-{
-
-}
 
 void MainWindow::on_pbTestTF_clicked()
 {
@@ -518,6 +465,22 @@ void MainWindow::checkAvailableActions()
     ui->actionSetupProject->setEnabled( !mMC->state()->isModelRunning() && !ui->lConfigFile->text().isEmpty());
     ui->actionOpenProject->setEnabled( !mMC->state()->isModelRunning() );
     ui->openProject->setEnabled(!mMC->state()->isModelRunning());
+
+}
+
+void MainWindow::updateModelStats()
+{
+    auto stats = mMC->systemStatus();
+    ui->listStatus->clear();
+    ui->listStatus->setHorizontalHeaderLabels({"Statistic", "Value"});
+    ui->listStatus->setRowCount(static_cast<int>(stats.size()));
+    ui->listStatus->setColumnCount(2);
+    int r=0;
+    for (std::pair<std::string, std::string> s : stats) {
+        ui->listStatus->setItem(r,0, new QTableWidgetItem(QString::fromStdString(s.first)));
+        ui->listStatus->setItem(r,1, new QTableWidgetItem(QString::fromStdString(s.second)));
+        ++r;
+    }
 
 }
 

@@ -8,30 +8,6 @@
 
 #include "modelrunstate.h"
 #include "spdlog/spdlog.h"
-#include "toymodel.h"
-//#include "core/model.h"
-
-
-
-class ToyModelShell : public QObject
-{
-    Q_OBJECT
-public:
-    explicit ToyModelShell(QObject *parent = nullptr);
-    ToyModel &toyModel() { return toy; }
-    ~ToyModelShell();
-signals:
-    void log(const QString &s);
-public slots:
-    void run();
-    void runTest();
-    void process(int n);
-    void abort();
-private:
-    bool mAbort;
-    ToyModel toy;
-
-};
 
 
 class Model; // forward

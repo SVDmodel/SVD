@@ -1,72 +1,11 @@
 #include "modelcontroller.h"
 #include "modelshell.h"
-#include "toymodel.h"
 #include "model.h"
 #include "../Predictor/batchmanager.h"
 #include "../Predictor/batch.h"
 
 #include "../Predictor/dnnshell.h"
 
-ToyModelController::ToyModelController(QObject *parent) : QObject(parent)
-{
-    ToyModelShell *model_shell = new ToyModelShell;
-    modelThread = new QThread();
-    mModel = model_shell;
-    mModel->moveToThread(modelThread);
-
-    connect(modelThread, &QThread::finished, model_shell, &QObject::deleteLater);
-
-    //connect(this, &ModelController::operate, model_shell, &ModelShell::doWork);
-    //connect(model_shell, &ModelShell::resultReady, this, &ModelController::handleResults);
-
-    dnnThread = new QThread();
-    ToyInference *ti = new ToyInference;
-    ti->moveToThread(dnnThread);
-    connect(dnnThread, &QThread::finished, ti, &QObject::deleteLater);
-
-    // connection between main model and DNN:
-    connect(&mModel->toyModel(), &ToyModel::newPackage, ti, &ToyInference::doWork);
-    connect(ti, &ToyInference::workDone, &mModel->toyModel(), &ToyModel::processedPackage);
-    connect(&mModel->toyModel(), &ToyModel::finished, this, &ToyModelController::finishedRun);
-
-    // logging
-    connect(mModel, &ToyModelShell::log, this, &ToyModelController::log);
-    log("Modelcontroller: before thread.start()");
-    modelThread->setObjectName("SVDMain");
-    modelThread->start();
-
-    dnnThread->setObjectName("SVDDNN");
-    dnnThread->start();
-}
-
-ToyModelController::~ToyModelController()
-{
-    abort();
-    modelThread->quit();
-    dnnThread->quit();
-    modelThread->wait();
-    dnnThread->wait();
-    log("Destroyed Thread");
-
-}
-
-void ToyModelController::run()
-{
-    QMetaObject::invokeMethod(mModel, "run", Qt::QueuedConnection);
-    log("... ModelController: started");
-}
-
-void ToyModelController::abort()
-{
-    QMetaObject::invokeMethod(mModel, "abort");
-    log(".... stopping thread....");
-
-}
-
-void ToyModelController::finishedRun()
-{
-    log(" *** Finished ***");
-}
 
 
 //***************** Model Controller ******************

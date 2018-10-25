@@ -1,5 +1,4 @@
 #include "modelshell.h"
-#include "toymodel.h"
 #include "model.h"
 
 #include "../Predictor/inferencedata.h"
@@ -17,57 +16,6 @@
 
 Q_DECLARE_METATYPE(Batch*)
 
-ToyModelShell::ToyModelShell(QObject *parent) : QObject(parent)
-{
-    mAbort = false;
-    emit log("Model shell created.");
-}
-
-ToyModelShell::~ToyModelShell()
-{
-    emit log("Model shell destroyed");
-}
-
-void ToyModelShell::run()
-{
-    emit log(QString("Running thread %1").arg(QThread::currentThread()->objectName()));
-
-    toy.run();
-
-    emit log("... model running...");
-}
-
-void ToyModelShell::runTest()
-{
-    emit log("Running....");
-    emit log(QString("%1").arg(QThread::currentThread()->objectName()));
-    //QThread::sleep(3);
-
-    for (int i=0;i<10;++i) {
-
-        QCoreApplication::processEvents();
-        if (mAbort)
-            break;
-
-        QThread::sleep(1);
-        emit log(QString::number(i));
-    }
-
-    emit log("Finished run");
-
-}
-
-void ToyModelShell::process(int n)
-{
-    for (int i=0;i<n;++i)
-        emit log(QString("iteration %1").arg(i));
-}
-
-void ToyModelShell::abort()
-{
-    mAbort = true;
-    toy.abort();
-}
 
 // ***************** ModelShell ********************************
 
