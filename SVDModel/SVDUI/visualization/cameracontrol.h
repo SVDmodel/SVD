@@ -28,6 +28,8 @@ private slots:
     void on_zoomFactor_actionTriggered(int action);
 
     void on_zFactor_actionTriggered(int action);
+protected:
+     void closeEvent(QCloseEvent *event);
 
 private:
     void updateCamera();

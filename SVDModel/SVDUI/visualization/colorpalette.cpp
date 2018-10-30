@@ -24,6 +24,8 @@
 
 #include "spdlog/spdlog.h"
 
+Legend *Legend::mInstance = nullptr;
+
 QVector<QColor> ColorPalette::mBrewerDiv = QVector<QColor>() << QColor("#543005") << QColor("#8c510a") << QColor("#bf812d") << QColor("#dfc27d")
                                                        << QColor("#f6e8c3") << QColor("#f5f5f5") << QColor("#fdbf6f") << QColor("##c7eae5")
                                                        << QColor("#80cdc1") << QColor("#35978f") << QColor("#01665e") <<  QColor("#003c30");
@@ -199,7 +201,7 @@ void Palette::setupContinuousPalette(QString name, std::vector<std::pair<float, 
     mIsFactor = false;
     mName = name;
 
-    QLinearGradient gr(0,0,1000,1);
+    QLinearGradient gr(5,0, 5,1000);
     for (auto &def : gradient_def) {
         QColor col = QColor(def.second);
         if (!col.isValid()) {
@@ -211,23 +213,24 @@ void Palette::setupContinuousPalette(QString name, std::vector<std::pair<float, 
             spdlog::get("main")->warn("The value '{}' for palette '{}' is not a valid stop (0..1 allowed)!", p, mName.toStdString());
             p = 1.;
         }
-        gr.setColorAt(p, col);
+        gr.setColorAt(1. - p, col);
     }
 
     QBrush brush(gr);
-    QImage color_map(1000, 10, QImage::Format_ARGB32_Premultiplied);
+    QImage color_map(10, 1000, QImage::Format_ARGB32_Premultiplied);
 
     QPainter painter(&color_map);
     painter.setBrush(brush);
-    painter.drawRect(color_map.rect());
-    //painter.fillRect(color_map.rect(), brush);
+    painter.fillRect(color_map.rect(), brush);
     painter.end();
+
+    //color_map.save("e:/temp/color_map.png");
 
     mLegendImage = color_map;
 
     mColorLookup.clear();
     for (int i=0;i<1000;++i)
-        mColorLookup.push_back(color_map.pixel(i,1));
+        mColorLookup.push_back(color_map.pixel(1,999-i));
 
     mIsValid = true;
 
@@ -262,7 +265,7 @@ void Palette::setupFactorPalette(QString name, QVector<QString> color_names, QVe
             col = Qt::gray;
         }
         mFactorLabels.push_back(factor_labels[i]);
-        mFactorColors.push_back(col);
+        mFactorColors.push_back(color_names[i]);
         // the lookup has a different range (optimized for fast access)
         int factor = factor_values[i];
         mColorLookup[factor] = col.rgba();
@@ -270,23 +273,98 @@ void Palette::setupFactorPalette(QString name, QVector<QString> color_names, QVe
     mIsValid = true;
 }
 
-ColorPalettes::~ColorPalettes()
+Legend::~Legend()
 {
     for (int i=0;i<mPalettes.size();++i)
         delete mPalettes[i];
     mPalettes.clear();
 }
 
-void ColorPalettes::addPalette(QString name, Palette *palette)
+void Legend::addPalette(QString name, Palette *palette)
 {
-    mPaletteNames.push_back(name);
-    mPalettes.push_back(palette);
+    if (!palette->isFactor()) {
+        mPaletteNames.push_back(name);
+        mPalettes.push_back(palette);
+
+        // set the first added palette as the current
+        if (currentPalette() == &mEmptyPalette) {
+            mCurrent = palette;
+            mPaletteIndex = 0;
+            emit paletteChanged();
+        }
+
+        emit namesChanged();
+    }
 }
 
-Palette *ColorPalettes::palette(QString name)
+Palette *Legend::palette(QString name)
 {
     int idx = mPaletteNames.indexOf(name);
     if (idx>-1)
         return mPalettes[idx];
     return nullptr;
 }
+
+void Legend::setPalette(Palette *new_pal)
+{
+    if (mCurrent != new_pal) {
+        mCurrent = new_pal;
+        emit paletteChanged();
+        setCaption(new_pal->name());
+        setDescription(new_pal->description());
+    }
+}
+
+void Legend::setContinuous()
+{
+    if (mCurrent->isFactor()) {
+        // switch to a continuous palette
+        int cur_pal = mPaletteIndex;
+        mPaletteIndex++; // force setting a new palette by changing this
+        setPaletteIndex(cur_pal);
+    }
+}
+
+void Legend::setPaletteIndex(int new_index)
+{
+    if (new_index != mPaletteIndex) {
+        if (new_index>=0 && new_index<mPalettes.size())
+            mCurrent = palette(new_index);
+        else
+            mCurrent = &mEmptyPalette;
+
+        mPaletteIndex = new_index;
+        currentPalette()->setValueRange(mMinValue, mMaxValue);
+
+        emit paletteChanged();
+    }
+}
+
+void Legend::updateRangeLabels()
+{
+    mRangeLabels = QStringList() << QString::number(mMinValue)
+                            << QString::number((3.*mMinValue + mMaxValue)/4.)
+                            << QString::number((mMinValue+mMaxValue)/2.)
+                            << QString::number((mMinValue + 3.*mMaxValue)/4.)
+                            << QString::number(mMaxValue);
+    if (currentPalette())
+        currentPalette()->setValueRange(mMinValue, mMaxValue);
+
+}
+
+QImage ColorImageProvider::requestImage(const QString &id, QSize *size, const QSize &requestedSize)
+{
+    Q_UNUSED(requestedSize)
+
+    Palette *pal = Legend::instance()->palette(id);
+    if (pal) {
+        QImage img = pal->legendImage();
+        if (size && size->isValid())
+            return img.scaled(*size);
+        else
+            return img;
+    }
+    return QImage();
+}
+
+

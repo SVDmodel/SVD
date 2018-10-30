@@ -9,6 +9,9 @@
 #include "landscapevisualization.h"
 #include "colorpalette.h"
 
+class QQuickWidget; // forward
+
+
 namespace Ui {
 class MainWindow;
 }
@@ -78,6 +81,8 @@ private slots:
 
     void on_actionOpenProject_triggered();
 
+    void on_pbReloadQml_clicked();
+
 private:
     QList<QString> mRecentFileList;
 
@@ -90,7 +95,8 @@ private:
     Ui::MainWindow *ui;
     std::unique_ptr<ModelController> mMC;
     LandscapeVisualization *mLandscapeVis;
-    ColorPalette *mPalette;
+    QQuickWidget *mQmlView;
+    Legend *mLegend;
     QTimer mUpdateModelTimer;
 };
 

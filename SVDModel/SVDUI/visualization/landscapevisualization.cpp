@@ -16,21 +16,23 @@
 LandscapeVisualization::LandscapeVisualization(QObject *parent): QObject(parent)
 {
     mGraph = nullptr;
-    mPalette = nullptr;
+    mLegend = nullptr;
     mRenderCount = 0;
     mIsValid = false;
+    mIsRendering = false;
     mCurrentType = RenderNone;
+
 }
 
 LandscapeVisualization::~LandscapeVisualization()
 {
 }
 
-void LandscapeVisualization::setup(SurfaceGraph *graph, ColorPalette *palette)
+void LandscapeVisualization::setup(SurfaceGraph *graph, Legend *palette)
 {
     auto lg = spdlog::get("setup");
     mGraph = graph;
-    mPalette = palette;
+    mLegend = palette;
     if (!Model::hasInstance())
         return;
 
@@ -64,6 +66,8 @@ void LandscapeVisualization::setup(SurfaceGraph *graph, ColorPalette *palette)
         mIsValid = false;
     }
 
+    connect(palette, &Legend::paletteChanged, this, &LandscapeVisualization::update);
+    connect(palette, &Legend::manualValueRangeChanged, this, &LandscapeVisualization::update);
 
 
 }
@@ -87,11 +91,11 @@ bool LandscapeVisualization::renderExpression(QString expression)
 
     mCurrentType = RenderExpression;
 
-    //auto &ramp = mColorRamps[0]; // for the moment
     bool auto_scale = true; // scale colors automatically between min and maximum value
 
 
     checkTexture();
+
 
     try {
 
@@ -101,6 +105,8 @@ bool LandscapeVisualization::renderExpression(QString expression)
         if (mExpression.isEmpty())
             return false;
 
+        mLegend->setCaption(QString::fromStdString(mExpression.expression()));
+        mLegend->setDescription("user defined expression.");
         doRenderExpression(auto_scale);
 
         spdlog::get("main")->info("Rendered expression '{}' ({} ms)", expression.toStdString(), timer.elapsed());
@@ -118,8 +124,9 @@ bool LandscapeVisualization::renderExpression(QString expression)
 
 void LandscapeVisualization::update()
 {
-    if (!isValid())
+    if (!isValid() || isRendering())
         return;
+
 
     switch (mCurrentType) {
     case RenderNone: return;
@@ -134,7 +141,9 @@ void LandscapeVisualization::doRenderExpression(bool auto_scale)
     if (mExpression.isEmpty())
         return;
 
-    mPalette->setCaption(QString::fromStdString(mExpression.expression()));
+    mIsRendering = true;
+
+    //mPalette->setCaption(QString::fromStdString(mExpression.expression()));
     CellWrapper cw(nullptr);
     auto &grid = Model::instance()->landscape()->grid();
     double value;
@@ -155,7 +164,8 @@ void LandscapeVisualization::doRenderExpression(bool auto_scale)
         //if (min_value == max_value)
         //    max_value = min_value + 1.; // avoid div by 0 later
     }
-    mContinuousPalette->setAbsolutValueRange(min_value, max_value);
+    mLegend->setAbsoluteValueRange(min_value, max_value);
+    Palette *pal = (mLegend->currentPalette() == nullptr ? mContinuousPalette : mLegend->currentPalette() );
 
     //double value_rel;
     QRgb fill_color=QColor(127,127,127,127).rgba();
@@ -169,7 +179,7 @@ void LandscapeVisualization::doRenderExpression(bool auto_scale)
             if (!c.isNull()) {
                 cw.setData(&c);
                 value = mExpression.calculate(cw);
-                *line = mContinuousPalette->color(value);
+                *line = pal->color(value);
                 //value_rel = (value - min_value) / (max_value - min_value);
                 //*line = colorValue(value_rel);
             } else {
@@ -181,7 +191,7 @@ void LandscapeVisualization::doRenderExpression(bool auto_scale)
     ++mRenderCount;
 
     spdlog::get("main")->info("Rendered expression '{}', min-value: {}, max-value: {}, Render#: {}", mExpression.expression(), min_value, max_value, mRenderCount);
-
+    mIsRendering = false;
 }
 
 void LandscapeVisualization::doRenderState()
@@ -190,10 +200,11 @@ void LandscapeVisualization::doRenderState()
     //mPalette->setFactorColors(colors);
     //mPalette->setFactorLabels(speciesnames);
     //mRulerColors->setPalette(GridViewCustom, 0., 1.);
-
+    mIsRendering = true;
     checkTexture();
     auto &grid = Model::instance()->landscape()->grid();
 
+    mLegend->setPalette(mStatePalette);
 
     QRgb fill_color=QColor(127,127,127,127).rgba();
 
@@ -215,6 +226,7 @@ void LandscapeVisualization::doRenderState()
     ++mRenderCount;
 
     spdlog::get("main")->info("Rendered state, Render#: {}", mRenderCount);
+    mIsRendering = false;
 
 
 }
@@ -238,6 +250,23 @@ void LandscapeVisualization::setupColorRamps()
                                                        {1.0, "yellow"}};
 
     mContinuousPalette->setupContinuousPalette("black-yellow", stops);
+    mLegend->addPalette(mContinuousPalette->name(), mContinuousPalette);
+
+    Palette *pal = new Palette();
+
+    stops = {{0.0, "blue"},
+             {1.0, "red"}};
+
+    pal->setupContinuousPalette("blue-red", stops);
+    mLegend->addPalette(pal->name(), pal);
+
+    pal = new Palette();
+
+    stops = {{0.0, "grey"},
+             {1.0, "red"}};
+
+    pal->setupContinuousPalette("grey-red", stops);
+    mLegend->addPalette(pal->name(), pal);
 
 
 //    QLinearGradient gr(0,0,1000,1);
@@ -276,6 +305,8 @@ void LandscapeVisualization::setupStateColors()
     }
     pal->setupFactorPalette("States", color_names, factor_values, factor_labels);
     mStatePalette = pal;
+    mStatePalette->setDescription("state specific colors (defined in state meta data).");
+    mLegend->addPalette(pal->name(), pal);
 
 //    int max_state_id=0;
 //    for (const auto &s : states)

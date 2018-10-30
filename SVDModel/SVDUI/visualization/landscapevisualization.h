@@ -16,7 +16,7 @@ public:
     enum RenderType {RenderNone, RenderState, RenderExpression};
     LandscapeVisualization(QObject *parent=nullptr);
     ~LandscapeVisualization();
-    void setup(SurfaceGraph *graph, ColorPalette *palette);
+    void setup(SurfaceGraph *graph, Legend *palette);
 
     bool isValid() const {return mIsValid; }
     void invalidate() { mIsValid = false;  mCurrentType = RenderNone; }
@@ -34,6 +34,7 @@ public slots:
     void update();
 
 private:
+    bool isRendering() {return mIsRendering; }
     /// render based on the result of an expression (cell variables)
     void doRenderExpression(bool auto_scale);
     /// render state colors
@@ -58,9 +59,10 @@ private:
 
     int mRenderCount;
     bool mIsValid;
+    bool mIsRendering;
     RenderType mCurrentType;
 
-    ColorPalette *mPalette;
+    Legend *mLegend;
 
     Palette *mStatePalette;
     Palette *mContinuousPalette;

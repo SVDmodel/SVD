@@ -47,6 +47,7 @@ std::string &trimLeft(std::string &str)
 std::string &trimRight(std::string &str)
 {
   std::string::iterator i;
+  if (str.empty()) return str;
   for (i = str.end() - 1; ;i--) {
       if (!::isspace(*i)) {
           str.erase(i + 1, str.end());

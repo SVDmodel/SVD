@@ -7,7 +7,7 @@
 #include <QMessageBox>
 #include <QClipboard>
 #include <QFileDialog>
-#include <QQuickView>
+#include <QQuickWidget>
 #include <QQmlEngine>
 #include <QQmlContext>
 
@@ -26,6 +26,7 @@
 
 // visualization
 #include "cameracontrol.h"
+#include "colorpalette.h"
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -58,17 +59,22 @@ MainWindow::MainWindow(QWidget *parent) :
     checkAvailableActions();
 
     // setup the ruler (QML based)
-    QQuickView *view = new QQuickView();
-    // mRuler = view;
-    QWidget *container = QWidget::createWindowContainer(view, this);
-    mPalette = new ColorPalette();
-    view->engine()->rootContext()->setContextProperty("rulercolors", mPalette);
-    view->setResizeMode(QQuickView::SizeRootObjectToView);
-    view->setSource(QUrl("qrc:/qml/ruler.qml"));
-    //view->show();
-    ui->projectOptionsLayout->removeWidget(ui->legendContainer);
-    ui->projectOptionsLayout->addWidget(container);
 
+    mLegend = new Legend(); // global object
+
+    mQmlView = new QQuickWidget();
+
+    mQmlView->engine()->rootContext()->setContextProperty("legend", mLegend);
+    mQmlView->engine()->addImageProvider(QLatin1String("colors"), new ColorImageProvider);
+
+    // from resource (proper)
+    //mQmlView->setSource(QUrl("qrc:/qml/ruler.qml"));
+    // for develop/debug from file system
+    mQmlView->setResizeMode(QQuickWidget::SizeRootObjectToView);
+    mQmlView->setSource(QUrl::fromLocalFile("E:/dev/SVD/SVDModel/SVDUI/res/qml/legend.qml"));
+    mQmlView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    ui->legendLayout->replaceWidget(ui->legendContainer, mQmlView);
 
 
 }
@@ -86,11 +92,14 @@ MainWindow::~MainWindow()
     });
     //spdlog::drop_all();
     delete ui;
+    delete mLegend;
+    delete mLandscapeVis;
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     writeSettings();
+    QApplication::closeAllWindows();
     event->accept();
 }
 
@@ -98,7 +107,7 @@ void MainWindow::modelStateChanged(QString s)
 {
     if (mMC->state()->state() == ModelRunState::ReadyToRun && !mLandscapeVis->isValid()) {
         // setup of the visualization
-        mLandscapeVis->setup(ui->main3d, mPalette);
+        mLandscapeVis->setup(ui->main3d, mLegend);
     }
 
     // stop the update timer...
@@ -297,10 +306,6 @@ void MainWindow::on_pbTestVis_clicked()
     cntrl->setSurfaceGraph( ui->main3d);
     QObject::connect(ui->main3d, &SurfaceGraph::cameraChanged, cntrl, &CameraControl::cameraChanged);
     cntrl->show();
-
-    ui->main3d->setFilename("e:/Daten/SVD/projects/gye/gis/dem.asc");
-
-    ui->main3d->show();
 }
 
 void MainWindow::on_pbRenderExpression_clicked()
@@ -416,7 +421,6 @@ void MainWindow::readSettings()
     recentFileMenu();
 
     settings.endGroup();
-    //ui->scriptCode->setPlainText(settings.value("javascript").toString());
 
 }
 
@@ -502,3 +506,13 @@ void MainWindow::updateModelStats()
 
 }
 
+
+
+void MainWindow::on_pbReloadQml_clicked()
+{
+    if (!mQmlView)
+        return;
+    mQmlView->engine()->clearComponentCache();
+    qDebug() << mQmlView->source();
+    mQmlView->setSource(mQmlView->source());
+}

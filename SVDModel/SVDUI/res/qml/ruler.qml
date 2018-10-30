@@ -11,7 +11,7 @@ Rectangle {
     Image {
         id: splash_image
         source: "qrc:/iland_splash.png"
-        visible: rulercolors.caption == '';
+        visible: false; // palettes.caption == '';
         fillMode: Image.PreserveAspectFit
         anchors.fill: parent
     }
@@ -19,7 +19,7 @@ Rectangle {
         anchors.fill: parent
         anchors.margins: 10
         spacing: 10
-        visible: rulercolors.caption != '';
+        visible: palettes.caption !== '';
 
 
         ColumnLayout{
@@ -27,12 +27,12 @@ Rectangle {
 
             Text {
                 id: rulerCaption
-                text: rulercolors.caption
+                text: palettes.caption
                 font.pixelSize: 16
             }
             Text {
                 id: rulerDesc
-                text: rulercolors.description
+                text: palettes.description
                 wrapMode: Text.WordWrap
                 width: 100
                 anchors.top: rulerCaption.bottom
@@ -52,7 +52,7 @@ Rectangle {
 
 
             Rectangle {
-                visible: !rulercolors.hasFactors
+                visible: !palettes.hasFactors
                 anchors.margins: 5
                 anchors.leftMargin: 20
                 anchors.topMargin: 10
@@ -82,8 +82,8 @@ Rectangle {
                             minimumValue: -10000
                             maximumValue: 1000000
                             width: 80
-                            value: rulercolors.minValue
-                            onValueChanged: rulercolors.minValue = value
+                            value: palettes.minValue
+                            onValueChanged: palettes.minValue = value
                         }
                         SpinBox {
                             id: maxValueSpin
@@ -92,18 +92,18 @@ Rectangle {
                             width: 80
                             minimumValue: -10000
                             maximumValue: 1000000
-                            value: rulercolors.maxValue
+                            value: palettes.maxValue
                             anchors.left: minValueSpin.right
                             anchors.leftMargin: 10
-                            onValueChanged: rulercolors.maxValue = value
+                            onValueChanged: palettes.maxValue = value
                         }
                         CheckBox {
                             id: rangeAuto
                             anchors.left: maxValueSpin.right
                             anchors.leftMargin: 5
                             text: "Auto"
-                            checked: rulercolors.autoScale
-                            onClicked: rulercolors.autoScale=rangeAuto.checked
+                            checked: palettes.autoScale
+                            onClicked: palettes.autoScale=rangeAuto.checked
                         }
                     }
                     GroupBox {
@@ -117,16 +117,16 @@ Rectangle {
 
                             Repeater {
                                 //model: ["yellow", "red", "green", "darkgrey", "blue","yellow", "red", "green", "darkgrey", "blue", "darkgrey", "blue"]
-                                model: rulercolors.colors
+                                model: palettes.colors
                                 Rectangle {
-                                    width: 60; height: 150 / rulercolors.count
+                                    width: 60; height: 150 / palettes.count
                                     color: modelData
                                 }
                             }
                         }
                         Text {
                             id: maxValue
-                            text: rulercolors.labels[4]
+                            text: palettes.labels[4]
                             anchors.left: colorRamp.right
                             anchors.top: colorRamp.top
                             anchors.topMargin: -height/2
@@ -134,7 +134,7 @@ Rectangle {
                         }
                         Text {
                             id: upperQuartileValue
-                            text: rulercolors.labels[3]
+                            text: palettes.labels[3]
                             anchors.left: colorRamp.right
                             anchors.top:  colorRamp.top
                             anchors.topMargin: colorRamp.height/4 - height/2
@@ -143,7 +143,7 @@ Rectangle {
                         }
                         Text {
                             id: centerValue
-                            text: rulercolors.labels[2]
+                            text: palettes.labels[2]
                             anchors.left: colorRamp.right
                             anchors.verticalCenter:  colorRamp.verticalCenter
                             anchors.topMargin: height/2
@@ -151,7 +151,7 @@ Rectangle {
                         }
                         Text {
                             id: lowerQuartileValue
-                            text: rulercolors.labels[1]
+                            text: palettes.labels[1]
                             anchors.left: colorRamp.right
                             anchors.top:  colorRamp.top
                             anchors.topMargin: colorRamp.height*3/4 - height/2
@@ -160,7 +160,7 @@ Rectangle {
                         }
                         Text {
                             id: minValue
-                            text: rulercolors.labels[0]
+                            text: palettes.labels[0]
                             anchors.left: colorRamp.right
                             anchors.bottom: colorRamp.bottom
                             anchors.topMargin: height/2
@@ -171,7 +171,7 @@ Rectangle {
 
             }
             ScrollView {
-                visible: rulercolors.hasFactors
+                visible: palettes.hasFactors
                 id: palFactorsList
 
                 anchors.fill: parent
@@ -179,14 +179,14 @@ Rectangle {
 
                 ListView {
                     anchors.fill: parent
-                    model: rulercolors.factorLabels
+                    model: palettes.factorLabels
                     delegate: Rectangle {
                         height: 25
                         width: 200
                         Rectangle {
                             id: delColorRect
                             height: 20; width: 50
-                            color: rulercolors.colors[index]
+                            color: palettes.colors[index]
                         }
 
                         Text { text: modelData
@@ -208,7 +208,7 @@ Rectangle {
             //color: "grey"
             width: parent.width
             Text {
-                //text: "Meter/px:" + rulercolors.meterPerPixel
+                //text: "Meter/px:" + palettes.meterPerPixel
                 text: "0m"
                 height: 20
                 anchors.top: scale.top
@@ -227,12 +227,12 @@ Rectangle {
                     width: parent.width
                     model: 4
                     property real cellWidth
-                    cellWidth: { var n = rulercolors.meterPerPixel*main.width/5;
+                    cellWidth: { var n = palettes.meterPerPixel*main.width/5;
                         var sig=1;
                         var mult = Math.pow(10, sig - Math.floor(Math.log(n) / Math.LN10) - 1);
                         var s= Math.round(n * mult) / mult;
                         //console.log("n: " + n + " s: " + s);
-                        return s / rulercolors.meterPerPixel;
+                        return s / palettes.meterPerPixel;
                     }
                     Item {
                         width: scaleRep.cellWidth
@@ -245,7 +245,7 @@ Rectangle {
                             color: index % 2==1?"#808080":"#a0a0a0"
                         }
                         Text {
-                            text: Math.round(parent.width * (modelData+1) * rulercolors.meterPerPixel)
+                            text: Math.round(parent.width * (modelData+1) * palettes.meterPerPixel)
                             anchors.top: parent.top
                             anchors.left: parent.left
                             anchors.topMargin: 20

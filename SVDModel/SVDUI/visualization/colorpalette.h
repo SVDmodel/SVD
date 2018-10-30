@@ -21,6 +21,7 @@
 #include <QObject>
 #include <QColor>
 #include <QImage>
+#include <QQuickImageProvider>
 #include "grid.h"
 /** Colors: helper class for managing/selecting colors
  *
@@ -28,17 +29,29 @@
 class DEM; // forward
 
 
+class ColorImageProvider : public QQuickImageProvider
+  {
+  public:
+      ColorImageProvider()
+          : QQuickImageProvider(QQuickImageProvider::Image)
+      {
+      }
+
+      QImage requestImage(const QString &id, QSize *size, const QSize &requestedSize);
+  };
+
 class Palette: public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(QString name READ name)
-    Q_PROPERTY(QImage legendImage READ legendImage)
-    Q_PROPERTY(QStringList factorLabels READ factorLabels)
-    Q_PROPERTY(QVector<QColor> factorColors READ factorColors)
-    Q_PROPERTY(bool valid READ isValid)
+    Q_PROPERTY(QString name READ name NOTIFY paletteChanged)
+    Q_PROPERTY(QImage legendImage READ legendImage NOTIFY paletteChanged)
+    Q_PROPERTY(QStringList factorLabels READ factorLabels NOTIFY paletteChanged)
+    Q_PROPERTY(QStringList factorColors READ factorColors NOTIFY paletteChanged)
+    Q_PROPERTY(bool valid READ isValid NOTIFY paletteChanged)
+    Q_PROPERTY(bool isFactor READ isFactor NOTIFY paletteChanged)
 
 public:
-    Palette(QObject *parent=nullptr) : QObject(parent), mIsFactor(false), mIsValid(false), mMinValue(0.), mMaxValue(1.), mAbsMinValue(0.), mAbsMaxValue(1.) {}
+    Palette(QObject *parent=nullptr) : QObject(parent), mName("empty"), mIsFactor(false), mIsValid(false), mMinValue(0.), mMaxValue(1.) {}
 
     /// setup for continuous palette
     /// the gradient definition comes as pairs of position (0..1) and color name
@@ -51,6 +64,8 @@ public:
     // properties
     /// the name of the color palette
     QString name() { return mName; }
+    QString description() {return mDescription; }
+    void setDescription(QString desc) { mDescription = desc; }
     /// returns true if the palette has factor levels, false if it continuous
     bool isFactor() { return mIsFactor; }
     /// returns true if the palette is properly set up
@@ -59,12 +74,10 @@ public:
     QImage legendImage() { return mLegendImage; }
 
     QStringList factorLabels() { return mFactorLabels; }
-    QVector<QColor> factorColors() {return mFactorColors; }
+    QStringList factorColors() {return mFactorColors; }
 
     // actions
 
-    /// set the absolute range of the data (global min/max)
-    void setAbsolutValueRange(double min_value, double max_value) { mAbsMinValue = min_value; mMinValue = min_value; mAbsMaxValue = max_value; mMaxValue = max_value; if(min_value==max_value) mMaxValue+=1.; }
     /// set value range (min/max) for a user-defined range
     void setValueRange(double min_value, double max_value) { mMinValue = min_value; mMaxValue = max_value; if(min_value==max_value) mMaxValue+=1.; }
 
@@ -72,8 +85,11 @@ public:
     QRgb color(double value) { assert(isValid()); double value_rel = (value - mMinValue) / (mMaxValue - mMinValue);
                                return mColorLookup[ std::min(std::max(static_cast<int>(value_rel*1000), 0), 999)]; }
     QRgb color(int factor_value) { assert(isValid() && factor_value>=0 && factor_value<mColorLookup.size()); return mColorLookup[factor_value];  }
+signals:
+    void paletteChanged();
 private:
     QString mName;
+    QString mDescription;
     bool mIsFactor;
     bool mIsValid;
     QImage mLegendImage;
@@ -82,36 +98,101 @@ private:
     QVector<QRgb> mColorLookup;
 
     QStringList mFactorLabels;
-    QVector<QColor> mFactorColors;
+    QStringList mFactorColors;
 
 
+    double mMinValue;
+    double mMaxValue;
+
+
+
+};
+
+
+class Legend: public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(bool valid READ isValid)
+    Q_PROPERTY(QString caption READ caption NOTIFY captionChanged)
+    Q_PROPERTY(QString description READ description NOTIFY captionChanged)
+
+    Q_PROPERTY(QStringList names READ names NOTIFY namesChanged)
+    Q_PROPERTY(Palette *currentPalette READ currentPalette NOTIFY paletteChanged)
+    Q_PROPERTY(int paletteIndex READ paletteIndex WRITE setPaletteIndex NOTIFY paletteChanged)
+
+    Q_PROPERTY(double minValue READ minValue WRITE setMinValue NOTIFY valueRangeChanged)
+    Q_PROPERTY(double maxValue READ maxValue WRITE setMaxValue NOTIFY valueRangeChanged)
+    Q_PROPERTY(QStringList rangeLabels READ rangeLabels NOTIFY valueRangeChanged)
+    Q_PROPERTY(bool autoScale READ autoScale WRITE setAutoScale NOTIFY valueRangeChanged)
+
+public:
+    static Legend *instance() { assert(mInstance!=nullptr); return mInstance; }
+    Legend(QObject *parent=nullptr): QObject(parent), mCurrent(&mEmptyPalette), mPaletteIndex(-1) { assert(mInstance==nullptr); mInstance=this; setAbsoluteValueRange(0., 1.); }
+    ~Legend();
+    void addPalette(QString name, Palette *palette);
+    Palette *palette(QString name);
+    Palette *palette(int index) { assert(index>=0 && index<mPalettes.count()); return mPalettes[index];}
+
+    Palette *currentPalette() { return mCurrent; }
+    void setPalette(Palette *new_pal);
+    void setContinuous();
+
+    int paletteIndex() { return mPaletteIndex; }
+    void setPaletteIndex(int new_index);
+
+    bool isValid() {return mCurrent != nullptr; }
+
+    QString caption() { return mCaption; }
+    void setCaption(QString caption) {if (caption!=mCaption) {mCaption=caption; emit captionChanged(); }}
+    QString description() {return mDescription; }
+    void setDescription(QString desc) {if (desc!=mDescription) {mDescription=desc; emit captionChanged(); }}
+
+    double minValue() { return mMinValue; }
+    void setMinValue(double val) { if (mMinValue!=val) {mMinValue=val; updateRangeLabels(); emit valueRangeChanged(); emit manualValueRangeChanged(); }}
+    double maxValue() { return mMaxValue; }
+    void setMaxValue(double val) { if (mMaxValue!=val) {mMaxValue=val; updateRangeLabels(); emit valueRangeChanged(); emit manualValueRangeChanged(); }}
+    QStringList rangeLabels() { return mRangeLabels; }
+
+    bool autoScale() {return mAutoScale; }
+    void setAutoScale(bool value) { if (value!=mAutoScale) {mAutoScale=value; emit valueRangeChanged(); } if(value) {setMinValue(mAbsMinValue); setMaxValue(mAbsMaxValue);}  }
+
+    // access
+    QStringList names() { return mPaletteNames; }
+
+    // functions
+    /// set the absolute range of the data (global min/max), reset current min/max range
+    void setAbsoluteValueRange(double min_value, double max_value) { mAbsMinValue = min_value; mAbsMaxValue = max_value;  setContinuous(); if (mAutoScale) setValueRange(min_value, max_value); }
+    /// set value range (min/max) for a user-defined range
+    void setValueRange(double min_value, double max_value) { mMinValue = min_value; mMaxValue = max_value; if(min_value==max_value) mMaxValue+=1.; updateRangeLabels(); emit valueRangeChanged(); }
+
+
+signals:
+    void namesChanged();
+    void paletteChanged();
+    void captionChanged();
+    void valueRangeChanged();
+    void manualValueRangeChanged();
+private:
+    void updateRangeLabels();
+    static Legend *mInstance;
+    QVector<Palette*> mPalettes;
+    QStringList mPaletteNames;
+    Palette *mCurrent;
+    Palette mEmptyPalette;
+    int mPaletteIndex; // can be -1 (for empty palette)
+    // current name, description
+
+    QString mCaption;
+    QString mDescription;
+
+    QStringList mRangeLabels;
+    bool mAutoScale;
     double mMinValue;
     double mMaxValue;
 
     double mAbsMinValue;
     double mAbsMaxValue;
 
-
-};
-
-
-class ColorPalettes: public QObject
-{
-    Q_OBJECT
-    Q_PROPERTY(bool valid READ isValid)
-public:
-    ColorPalettes(QObject *parent=nullptr): QObject(parent), mCurrent(nullptr) {}
-    ~ColorPalettes();
-    void addPalette(QString name, Palette *palette);
-    Palette *palette(QString name);
-    Palette *palette(int index) { assert(index>=0 && index<mPalettes.count()); return mPalettes[index];}
-
-    Palette *currentPalette() { return mCurrent; }
-    bool isValid() {return mCurrent != nullptr; }
-private:
-    QVector<Palette*> mPalettes;
-    QStringList mPaletteNames;
-    Palette *mCurrent;
 
 };
 

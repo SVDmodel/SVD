@@ -6,6 +6,7 @@ CameraControl::CameraControl(QWidget *parent) :
     ui(new Ui::CameraControl)
 {
     ui->setupUi(this);
+    setAttribute(Qt::WA_DeleteOnClose); // delete automatically on close
 }
 
 CameraControl::~CameraControl()
@@ -71,4 +72,9 @@ void CameraControl::on_zFactor_actionTriggered(int action)
     Q_UNUSED(action)
     mSurface->graph()->setAspectRatio( ui->zFactor->value() / 100.);
     updateCamera();
+}
+
+void CameraControl::closeEvent(QCloseEvent *event)
+{
+    event->accept();
 }
