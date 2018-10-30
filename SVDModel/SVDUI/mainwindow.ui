@@ -372,13 +372,6 @@
           </widget>
          </item>
          <item>
-          <widget class="QToolButton" name="pbReloadQml">
-           <property name="text">
-            <string>...</string>
-           </property>
-          </widget>
-         </item>
-         <item>
           <layout class="QHBoxLayout" name="projectOptionsLayout">
            <item>
             <widget class="QLineEdit" name="lConfigFile">
@@ -401,6 +394,13 @@
              <property name="icon">
               <iconset resource="res/resource.qrc">
                <normaloff>:/document-open.png</normaloff>:/document-open.png</iconset>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QToolButton" name="pbReloadQml">
+             <property name="text">
+              <string>...</string>
              </property>
             </widget>
            </item>

@@ -6,7 +6,7 @@
         <file>process-stop.png</file>
         <file>www.png</file>
         <file>qml/ruler.qml</file>
-        <file>iland_splash.png</file>
         <file>camera.png</file>
+        <file>SVD_splash.jpg</file>
     </qresource>
 </RCC>
