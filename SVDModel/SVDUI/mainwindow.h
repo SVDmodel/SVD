@@ -55,7 +55,6 @@ private slots:
 
     void on_actioncreate_output_docs_triggered();
 
-    void on_pbTestVis_clicked();
 
     void on_pbRenderExpression_clicked();
 
@@ -82,6 +81,12 @@ private slots:
     void on_actionOpenProject_triggered();
 
     void on_pbReloadQml_clicked();
+
+    void on_action3D_Camera_settings_triggered();
+
+    void on_actionAbout_SVD_triggered();
+
+    void on_actionOnline_resources_triggered();
 
 private:
     QList<QString> mRecentFileList;

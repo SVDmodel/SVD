@@ -61,8 +61,10 @@ void Climate::setup()
         for (size_t i=0;i<mNColumns;++i)
             if (transformations[i].expression().empty())
                 transformations[i].setExpression("x"); // default: just pass-through
-        lg->debug("Using '{}' expressions for {} column.", n_setup, mNColumns);
+        lg->debug("Using '{}' expressions for {} columns.", n_setup, mNColumns);
 
+    } else {
+        lg->debug("No climate transformations specified. Using climate data as is.");
     }
 
     int n=0;

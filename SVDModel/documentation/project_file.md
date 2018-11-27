@@ -73,8 +73,8 @@ See [here](configuring_the_landscape.md) for details.
 #### `initialState.mode` (string)
 The setting define how the initial state of the vegetation is set up.
 Possible values are:
-* `file`: initial states are extracted from the table in `landscape.file`. The expected column names are `stateId` for the initial state, 
-and `residenceTime` for the initial value of residence time.
+* `file`: initial states are extracted from the table in `landscape.file`. The expected column names are `initialStateId` for the initial state, 
+and `initialResidenceTime` for the initial value of residence time.
 * `grid`: the initial state of the landscape is retrieved from raster file (settings `initialState.stateGrid`, `initialState.residenceTimeGrid`) 
 * `random`: creates a random landscape (state: 1 - max-state, residence time: 0-10)
 

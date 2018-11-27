@@ -49,7 +49,7 @@ void OutputManager::setup()
     }
     for (auto o : mOutputs) {
         // check if enabled:
-        if (Model::instance()->settings().valueBool("output." + o->name() + ".enabled")) {
+        if (Model::instance()->settings().valueBool("output." + o->name() + ".enabled", "false")) {
             o->setEnabled(true);
             o->setup();
         } else {

@@ -196,10 +196,6 @@ void LandscapeVisualization::doRenderExpression(bool auto_scale)
 
 void LandscapeVisualization::doRenderState()
 {
-    //mPalette->setCaption("State", "show states with state-specific colors.");
-    //mPalette->setFactorColors(colors);
-    //mPalette->setFactorLabels(speciesnames);
-    //mRulerColors->setPalette(GridViewCustom, 0., 1.);
     mIsRendering = true;
     checkTexture();
     auto &grid = Model::instance()->landscape()->grid();
@@ -216,7 +212,6 @@ void LandscapeVisualization::doRenderState()
             const Cell &c = grid(x,y);
             if (!c.isNull()) {
                 *line = mStatePalette->color(c.state()->id());
-                //*line = mStateColorLookup[c.state()->id()];
             } else {
                 *line = fill_color;
             }

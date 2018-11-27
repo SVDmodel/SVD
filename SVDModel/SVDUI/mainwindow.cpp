@@ -10,6 +10,7 @@
 #include <QQuickWidget>
 #include <QQmlEngine>
 #include <QQmlContext>
+#include <QDesktopServices>
 
 
 #include "testdnn.h"
@@ -23,6 +24,8 @@
 
 #include "spdlog/spdlog.h"
 #include "strtools.h"
+
+#include "aboutdialog.h"
 
 // visualization
 #include "cameracontrol.h"
@@ -75,6 +78,9 @@ MainWindow::MainWindow(QWidget *parent) :
     mQmlView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     ui->legendLayout->replaceWidget(ui->legendContainer, mQmlView);
+
+    ui->tabWidget->setTabEnabled(1,false); // the other tab next to "main" visualization
+    ui->pbReloadQml->setVisible(false); // hide the reload qml button
 
 
 }
@@ -299,14 +305,6 @@ void MainWindow::on_actioncreate_output_docs_triggered()
 
 }
 
-void MainWindow::on_pbTestVis_clicked()
-{
-    // open form for camera control
-    CameraControl *cntrl = new CameraControl(this);
-    cntrl->setSurfaceGraph( ui->main3d);
-    QObject::connect(ui->main3d, &SurfaceGraph::cameraChanged, cntrl, &CameraControl::cameraChanged);
-    cntrl->show();
-}
 
 void MainWindow::on_pbRenderExpression_clicked()
 {
@@ -515,4 +513,26 @@ void MainWindow::on_pbReloadQml_clicked()
     mQmlView->engine()->clearComponentCache();
     qDebug() << mQmlView->source();
     mQmlView->setSource(mQmlView->source());
+}
+
+void MainWindow::on_action3D_Camera_settings_triggered()
+{
+    // open form for camera control
+    CameraControl *cntrl = new CameraControl(this);
+    cntrl->setSurfaceGraph( ui->main3d);
+    QObject::connect(ui->main3d, &SurfaceGraph::cameraChanged, cntrl, &CameraControl::cameraChanged);
+    cntrl->show();
+}
+
+void MainWindow::on_actionAbout_SVD_triggered()
+{
+    AboutDialog adlg(nullptr);
+    adlg.exec();
+}
+
+void MainWindow::on_actionOnline_resources_triggered()
+{
+    //https://github.com/SVDmodel/SVD/blob/master/README.md
+    QDesktopServices::openUrl(QUrl("https://github.com/SVDmodel/SVD/blob/master/README.md"));
+
 }

@@ -140,18 +140,18 @@ void Landscape::setupInitialState()
 
     if (mode=="file") {
         // check if keys are available:
-        auto i_state = indexOf(EnvironmentCell::variables(), "stateId");
-        auto i_restime = indexOf(EnvironmentCell::variables(), "residenceTime");
+        auto i_state = indexOf(EnvironmentCell::variables(), "initialStateId");
+        auto i_restime = indexOf(EnvironmentCell::variables(), "initialResidenceTime");
         if (i_state<0 || i_restime<0)
-            throw std::logic_error("Initialize landscape state: mode is 'file' and the 'landscape.file' does not contain the columns 'stateId' and/or 'residenceTime'.");
+            throw std::logic_error("Initialize landscape state: mode is 'file' and the 'landscape.file' does not contain the columns 'initialStateId' and/or 'initialResidenceTime'.");
 
         Cell *cell = grid().begin();
         bool error = false;
         int n_affected=0;
         for (EnvironmentCell **ec=mEnvironmentGrid.begin(); ec!=mEnvironmentGrid.end(); ++ec, ++cell)
             if (*ec) {
-                state_t t= state_t( (*ec)->value("stateId") );
-                short int res_time = static_cast<short int> ( (*ec)->value("residenceTime") );
+                state_t t= state_t( (*ec)->value(static_cast<size_t>(i_state)) );
+                short int res_time = static_cast<short int> ( (*ec)->value(static_cast<size_t>(i_restime)) );
                 if (!Model::instance()->states()->isValid(t)) {
                     if (!error) lg->error("Initalize states from landscape file '{}': Errors detected:", settings.valueString("landscape.file"));
                     error = true;

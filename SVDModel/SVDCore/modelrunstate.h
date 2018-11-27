@@ -18,6 +18,7 @@ public:
     // operations
     ModelRunState &operator=(const State &s) { if (this->mState!=s) {this->mState = s; update(); } return *this; }
     bool operator==(const State &s) const { return this->mState == s; }
+    bool operator!=(const State &s) const { return this->mState != s; }
     // return true if the current state is in the list of 'states' (e.g., state.in({Creating, Running})
     bool in(const std::vector<State> &states) const {  for (auto &s : states) if (mState==s) return true; return false; }
 

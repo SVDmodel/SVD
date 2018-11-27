@@ -139,7 +139,14 @@ State::State(state_t id, std::string composition, int structure, int function, s
     mStructure = structure;
     mFunction = function;
     mHandlingModule = handling_module;
-    mType = None;
+    // this is not ideal:
+    // if module is empty, than we assume it is a forest state
+    // if not we say it is "None"???? (see setModule())
+    if (handling_module.empty())
+        mType = Forest;
+    else
+        mType = None;
+
     mModule = nullptr;
 
     if (mType != State::Forest) {
@@ -169,7 +176,7 @@ State::State(state_t id, std::string composition, int structure, int function, s
 
        if (s == lowercase(s)) {
            // save the index of the admixed species
-           admixed_species_index[adm_index++] = static_cast<int>(it-species.begin());;
+           admixed_species_index[adm_index++] = static_cast<int>(it-species.begin());
            if (adm_index>5)
                throw std::logic_error("Invalid state: too many admixed species. id: " + to_string(id) + ", " + mComposition);
        } else {

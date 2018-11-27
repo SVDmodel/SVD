@@ -19,8 +19,11 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
-    <property name="leftMargin">
+    <property name="spacing">
      <number>3</number>
+    </property>
+    <property name="leftMargin">
+     <number>0</number>
     </property>
     <property name="topMargin">
      <number>3</number>
@@ -278,6 +281,7 @@
      <string>Visualization</string>
     </property>
     <addaction name="actionRender_to_file"/>
+    <addaction name="action3D_Camera_settings"/>
    </widget>
    <widget class="QMenu" name="menuOther">
     <property name="title">
@@ -290,6 +294,8 @@
     <property name="title">
      <string>Help</string>
     </property>
+    <addaction name="actionOnline_resources"/>
+    <addaction name="actionAbout_SVD"/>
    </widget>
    <addaction name="menuFunctions"/>
    <addaction name="menuVisualization"/>
@@ -330,6 +336,9 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents">
     <layout class="QVBoxLayout" name="verticalLayout_3">
+     <property name="spacing">
+      <number>3</number>
+     </property>
      <property name="leftMargin">
       <number>3</number>
      </property>
@@ -337,7 +346,7 @@
       <number>0</number>
      </property>
      <property name="rightMargin">
-      <number>3</number>
+      <number>0</number>
      </property>
      <property name="bottomMargin">
       <number>0</number>
@@ -352,6 +361,9 @@
          <string>Project</string>
         </attribute>
         <layout class="QVBoxLayout" name="legendLayout">
+         <property name="spacing">
+          <number>6</number>
+         </property>
          <property name="leftMargin">
           <number>3</number>
          </property>
@@ -465,32 +477,12 @@
     <number>2</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_2">
-    <widget class="QPushButton" name="pbTestVis">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>0</y>
-       <width>21</width>
-       <height>23</height>
-      </rect>
-     </property>
-     <property name="toolTip">
-      <string>Edit camera settings</string>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-     <property name="icon">
-      <iconset resource="res/resource.qrc">
-       <normaloff>:/camera.png</normaloff>:/camera.png</iconset>
-     </property>
-    </widget>
     <widget class="QLineEdit" name="lExpression">
      <property name="geometry">
       <rect>
        <x>0</x>
        <y>90</y>
-       <width>111</width>
+       <width>131</width>
        <height>20</height>
       </rect>
      </property>
@@ -498,14 +490,18 @@
     <widget class="QPushButton" name="pbRenderExpression">
      <property name="geometry">
       <rect>
-       <x>110</x>
+       <x>130</x>
        <y>90</y>
-       <width>41</width>
+       <width>21</width>
        <height>23</height>
       </rect>
      </property>
      <property name="text">
-      <string>show</string>
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset resource="res/resource.qrc">
+       <normaloff>:/camera.png</normaloff>:/camera.png</iconset>
      </property>
     </widget>
     <widget class="QRadioButton" name="visExpression">
@@ -653,6 +649,21 @@
   <action name="actionFileSlot10">
    <property name="text">
     <string>FileSlot10</string>
+   </property>
+  </action>
+  <action name="action3D_Camera_settings">
+   <property name="text">
+    <string>3D Camera settings</string>
+   </property>
+  </action>
+  <action name="actionOnline_resources">
+   <property name="text">
+    <string>Online resources</string>
+   </property>
+  </action>
+  <action name="actionAbout_SVD">
+   <property name="text">
+    <string>About SVD</string>
    </property>
   </action>
  </widget>

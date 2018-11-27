@@ -38,7 +38,9 @@ SOURCES += \
     visualization/topographicseries.cpp \
     visualization/cameracontrol.cpp \
     visualization/landscapevisualization.cpp \
-    visualization/colorpalette.cpp
+    visualization/colorpalette.cpp \
+    aboutdialog.cpp \
+    version.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -49,12 +51,15 @@ HEADERS += \
     visualization/topographicseries.h \
     visualization/cameracontrol.h \
     visualization/landscapevisualization.h \
-    visualization/colorpalette.h
+    visualization/colorpalette.h \
+    aboutdialog.h \
+    version.h
 
 FORMS += \
         mainwindow.ui \
     testdnn.ui \
-    visualization/cameracontrol.ui
+    visualization/cameracontrol.ui \
+    aboutdialog.ui
 
 win32:CONFIG (release, debug|release): LIBS += -L../Predictor/release -lPredictor
 else:win32:CONFIG (debug, debug|release): LIBS += -L../Predictor/debug -lPredictor

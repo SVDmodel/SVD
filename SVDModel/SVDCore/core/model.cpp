@@ -185,6 +185,8 @@ void Model::shutdownLogging()
 {
     if (lg_main)
         lg_main->info("Shutdown logging");
+    else
+        return; // no logging is set up, no need to destroy loggers
 
     spdlog::apply_all([&](std::shared_ptr<spdlog::logger> l)
     {
