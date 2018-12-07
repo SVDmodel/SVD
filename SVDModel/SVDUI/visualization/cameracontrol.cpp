@@ -1,3 +1,22 @@
+/********************************************************************************************
+**    SVD - the scalable vegetation dynamics model
+**    https://github.com/SVDmodel/SVD
+**    Copyright (C) 2018-  Werner Rammer, Rupert Seidl
+**
+**    This program is free software: you can redistribute it and/or modify
+**    it under the terms of the GNU General Public License as published by
+**    the Free Software Foundation, either version 3 of the License, or
+**    (at your option) any later version.
+**
+**    This program is distributed in the hope that it will be useful,
+**    but WITHOUT ANY WARRANTY; without even the implied warranty of
+**    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**    GNU General Public License for more details.
+**
+**    You should have received a copy of the GNU General Public License
+**    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+********************************************************************************************/
+
 #include "cameracontrol.h"
 #include "ui_cameracontrol.h"
 
@@ -25,6 +44,10 @@ void CameraControl::cameraChanged()
     ui->zoomFactor->setValue(static_cast<int>(camera->zoomLevel()));
     ui->rotationX->setText(QString::number(camera->xRotation()));
     ui->rotationY->setText(QString::number(camera->yRotation()));
+
+    QString cam_string = QString("%1,%2,%3,%4,%5,%6").arg(camera->target().x()).arg(camera->target().y()).arg(camera->target().z())
+            .arg(camera->zoomLevel()).arg(camera->xRotation()).arg(camera->yRotation());
+    ui->lCamPos->setText(cam_string);
 }
 
 void CameraControl::on_targetX_actionTriggered(int action)
@@ -77,4 +100,20 @@ void CameraControl::on_zFactor_actionTriggered(int action)
 void CameraControl::closeEvent(QCloseEvent *event)
 {
     event->accept();
+}
+
+void CameraControl::on_pbSetFromString_clicked()
+{
+    QStringList elem = ui->lCamPos->text().split(",");
+    if (elem.size()!=6)
+        return;
+    QtDataVisualization::Q3DCamera *camera = mSurface->graph()->scene()->activeCamera();
+
+    QVector3D new_pos = QVector3D(elem[0].toDouble(),
+            elem[1].toDouble(),
+            elem[2].toDouble());
+    camera->setTarget(new_pos);
+    camera->setZoomLevel(elem[3].toDouble());
+    camera->setXRotation(elem[4].toDouble());
+    camera->setYRotation(elem[5].toDouble());
 }

@@ -202,7 +202,7 @@ void LandscapeVisualization::doRenderState()
 
     mLegend->setPalette(mStatePalette);
 
-    QRgb fill_color=QColor(127,127,127,127).rgba();
+    QRgb fill_color=QColor(255,255,255,255).rgba();
 
     const uchar *cline = mRenderTexture.scanLine(0);
     QRgb* line = reinterpret_cast<QRgb*>(const_cast<uchar*>(cline)); // write directly to the buffer (without a potential detach)
@@ -217,7 +217,12 @@ void LandscapeVisualization::doRenderState()
             }
         }
     }
-    mGraph->topoSeries()->setTexture(mRenderTexture);
+    if (mUpscaleFactor == 1) {
+        mGraph->topoSeries()->setTexture(mRenderTexture);
+    } else {
+        mUpscaleRenderTexture = mRenderTexture.scaled(mUpscaleRenderTexture.size());
+        mGraph->topoSeries()->setTexture(mRenderTexture);
+    }
     ++mRenderCount;
 
     spdlog::get("main")->info("Rendered state, Render#: {}", mRenderCount);
@@ -230,7 +235,13 @@ void LandscapeVisualization::checkTexture()
 {
     mRenderTexture = mGraph->topoSeries()->texture();
     if (mRenderTexture.isNull() || mRenderTexture.width() != mDem.sizeX() || mRenderTexture.height() != mDem.sizeX()) {
-        mRenderTexture = QImage(mDem.sizeX(), mDem.sizeY(), QImage::Format_ARGB32_Premultiplied);
+        mRenderTexture = QImage(Model::instance()->landscape()->grid().sizeX(), Model::instance()->landscape()->grid().sizeY(),QImage::Format_ARGB32_Premultiplied);
+        mUpscaleFactor = 1;
+        if (Model::instance()->landscape()->grid().sizeX() != mDem.sizeX()) {
+            // for upscaling to DEM size
+            mUpscaleRenderTexture = QImage(mDem.sizeX(), mDem.sizeY(), QImage::Format_ARGB32_Premultiplied);
+            mUpscaleFactor = mDem.sizeX() / Model::instance()->landscape()->grid().sizeX();
+        }
     }
 
 }

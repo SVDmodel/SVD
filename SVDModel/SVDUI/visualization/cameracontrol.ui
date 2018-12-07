@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>348</width>
-    <height>221</height>
+    <height>243</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -125,7 +125,7 @@
    <property name="geometry">
     <rect>
      <x>50</x>
-     <y>160</y>
+     <y>150</y>
      <width>47</width>
      <height>13</height>
     </rect>
@@ -203,7 +203,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>160</y>
+     <y>150</y>
      <width>47</width>
      <height>13</height>
     </rect>
@@ -236,6 +236,29 @@
    </property>
    <property name="text">
     <string>z-Factor</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="lCamPos">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>220</y>
+     <width>291</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pbSetFromString">
+   <property name="geometry">
+    <rect>
+     <x>294</x>
+     <y>220</y>
+     <width>51</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>set</string>
    </property>
   </widget>
  </widget>

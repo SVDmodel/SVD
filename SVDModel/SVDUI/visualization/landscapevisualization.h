@@ -49,6 +49,8 @@ private:
     QVector<QRgb> mStateColorLookup;
 
     QImage mRenderTexture;
+    QImage mUpscaleRenderTexture;
+    int mUpscaleFactor;
 
     SurfaceGraph *mGraph;
     Grid<float> mDem;
