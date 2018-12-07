@@ -1,7 +1,7 @@
 /********************************************************************************************
-**    iLand - an individual based forest landscape and disturbance model
-**    http://iland.boku.ac.at
-**    Copyright (C) 2009-  Werner Rammer, Rupert Seidl
+**    SVD - the scalable vegetation dynamics model
+**    https://github.com/SVDmodel/SVD
+**    Copyright (C) 2018-  Werner Rammer, Rupert Seidl
 **
 **    This program is free software: you can redistribute it and/or modify
 **    it under the terms of the GNU General Public License as published by
