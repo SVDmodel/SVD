@@ -1,25 +1,27 @@
 import QtQuick 2.0
-import QtQuick.Controls 1.1
-import QtQuick.Layouts 1.1
+import QtQuick.Controls 1.4
+import QtQuick.Layouts 1.3
 
 Rectangle {
-    width: 250
-    height: 400
+    //width: 250
+    //height: 500
+    //anchors.fill: parent
     id: main
     //anchors.fill: parent
     //color:  "gray"
     Image {
         id: splash_image
-        source: "qrc:/iland_splash.png"
-        visible: false; // palettes.caption == '';
+        source: "qrc:/SVD_splash.jpg"
+        visible: legend.caption == '';
         fillMode: Image.PreserveAspectFit
         anchors.fill: parent
+        verticalAlignment: Image.Top
     }
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 10
         spacing: 10
-        visible: palettes.caption !== '';
+        visible: legend.caption !== '';
 
 
         ColumnLayout{
@@ -27,12 +29,12 @@ Rectangle {
 
             Text {
                 id: rulerCaption
-                text: palettes.caption
+                text: legend.caption
                 font.pixelSize: 16
             }
             Text {
                 id: rulerDesc
-                text: palettes.description
+                text: legend.description
                 wrapMode: Text.WordWrap
                 width: 100
                 anchors.top: rulerCaption.bottom
@@ -41,7 +43,9 @@ Rectangle {
                 anchors.rightMargin: 10
 
             }
-            Rectangle { height: 10}
+
+            //Rectangle { height: 10}
+
 
         }
         Rectangle {
@@ -52,9 +56,9 @@ Rectangle {
 
 
             Rectangle {
-                visible: !palettes.hasFactors
+                visible:  !legend.currentPalette.isFactor
                 anchors.margins: 5
-                anchors.leftMargin: 20
+                anchors.leftMargin: 5
                 anchors.topMargin: 10
                 anchors.fill: parent
 
@@ -64,12 +68,13 @@ Rectangle {
 
                     CheckBox {
                         id: showRulerDetails
-                        text: "Show details"
+                        text: "Edit range"
                     }
 
                     GroupBox {
                         id: details
-                        flat: true
+                        flat: false
+                        anchors.leftMargin: 0
                         visible: showRulerDetails.checked
                         anchors.top: showRulerDetails.bottom
                         height: visible?50:0
@@ -82,8 +87,8 @@ Rectangle {
                             minimumValue: -10000
                             maximumValue: 1000000
                             width: 80
-                            value: palettes.minValue
-                            onValueChanged: palettes.minValue = value
+                            value: legend.minValue
+                            onEditingFinished: legend.minValue = value
                         }
                         SpinBox {
                             id: maxValueSpin
@@ -92,41 +97,51 @@ Rectangle {
                             width: 80
                             minimumValue: -10000
                             maximumValue: 1000000
-                            value: palettes.maxValue
+                            value: legend.maxValue
                             anchors.left: minValueSpin.right
                             anchors.leftMargin: 10
-                            onValueChanged: palettes.maxValue = value
+                            onEditingFinished: legend.maxValue = value
                         }
                         CheckBox {
                             id: rangeAuto
                             anchors.left: maxValueSpin.right
                             anchors.leftMargin: 5
                             text: "Auto"
-                            checked: palettes.autoScale
-                            onClicked: palettes.autoScale=rangeAuto.checked
+                            checked: legend.autoScale
+                            onClicked: legend.autoScale=rangeAuto.checked
                         }
                     }
                     GroupBox {
                         anchors.top: details.bottom
-                        anchors.topMargin: 10
+                        anchors.topMargin: 5
+                        anchors.leftMargin: 10
                         flat: true
                         Column {
                             id: colorRamp
                             anchors.topMargin: 10
-
-
-                            Repeater {
-                                //model: ["yellow", "red", "green", "darkgrey", "blue","yellow", "red", "green", "darkgrey", "blue", "darkgrey", "blue"]
-                                model: palettes.colors
-                                Rectangle {
-                                    width: 60; height: 150 / palettes.count
-                                    color: modelData
+                            height: 202
+                            width: 82
+                            Rectangle {
+                                border.width: 1
+                                border.color: "#888888"
+                                width: legendImage.width+2
+                                height: legendImage.height+2
+                                Image {
+                                    id: legendImage
+                                    anchors.centerIn: parent
+                                    source: "image://colors/" + legend.currentPalette.name
+                                    fillMode: Image.Stretch
+                                    width: 80
+                                    height: 200
                                 }
                             }
+
+
+
                         }
                         Text {
                             id: maxValue
-                            text: palettes.labels[4]
+                            text: legend.rangeLabels[4]
                             anchors.left: colorRamp.right
                             anchors.top: colorRamp.top
                             anchors.topMargin: -height/2
@@ -134,7 +149,7 @@ Rectangle {
                         }
                         Text {
                             id: upperQuartileValue
-                            text: palettes.labels[3]
+                            text: legend.rangeLabels[3]
                             anchors.left: colorRamp.right
                             anchors.top:  colorRamp.top
                             anchors.topMargin: colorRamp.height/4 - height/2
@@ -143,7 +158,7 @@ Rectangle {
                         }
                         Text {
                             id: centerValue
-                            text: palettes.labels[2]
+                            text: legend.rangeLabels[2]
                             anchors.left: colorRamp.right
                             anchors.verticalCenter:  colorRamp.verticalCenter
                             anchors.topMargin: height/2
@@ -151,7 +166,7 @@ Rectangle {
                         }
                         Text {
                             id: lowerQuartileValue
-                            text: palettes.labels[1]
+                            text: legend.rangeLabels[1]
                             anchors.left: colorRamp.right
                             anchors.top:  colorRamp.top
                             anchors.topMargin: colorRamp.height*3/4 - height/2
@@ -160,18 +175,31 @@ Rectangle {
                         }
                         Text {
                             id: minValue
-                            text: palettes.labels[0]
+                            text: legend.rangeLabels[0]
                             anchors.left: colorRamp.right
                             anchors.bottom: colorRamp.bottom
                             anchors.topMargin: height/2
                             anchors.leftMargin: 5
                         }
-                    }                }
+                    }
+                    RowLayout {
+
+                        Text { text: "color ramp: " }
+                        /* get the list of available color palettes and populate the ComboBox */
+                        ComboBox {
+                            id: paletteSelector
+                            //visible: !legend.currentPalette.isFactor
+                            model: legend.names
+                            onCurrentIndexChanged: legend.paletteIndex = paletteSelector.currentIndex
+                        }
+                    }
+                }
+
 
 
             }
             ScrollView {
-                visible: palettes.hasFactors
+                visible: legend.currentPalette.isFactor
                 id: palFactorsList
 
                 anchors.fill: parent
@@ -179,14 +207,14 @@ Rectangle {
 
                 ListView {
                     anchors.fill: parent
-                    model: palettes.factorLabels
+                    model: legend.currentPalette.factorLabels
                     delegate: Rectangle {
-                        height: 25
+                        height: 20
                         width: 200
                         Rectangle {
                             id: delColorRect
-                            height: 20; width: 50
-                            color: palettes.colors[index]
+                            height: 18; width: 50
+                            color: legend.currentPalette.factorColors[index]
                         }
 
                         Text { text: modelData
@@ -200,7 +228,7 @@ Rectangle {
             }
         }
 
-        Rectangle {
+       /* Rectangle {
 
             id: scale
             height: 40
@@ -208,7 +236,7 @@ Rectangle {
             //color: "grey"
             width: parent.width
             Text {
-                //text: "Meter/px:" + palettes.meterPerPixel
+                //text: "Meter/px:" + legend.meterPerPixel
                 text: "0m"
                 height: 20
                 anchors.top: scale.top
@@ -227,12 +255,12 @@ Rectangle {
                     width: parent.width
                     model: 4
                     property real cellWidth
-                    cellWidth: { var n = palettes.meterPerPixel*main.width/5;
+                    cellWidth: { var n = legend.meterPerPixel*main.width/5;
                         var sig=1;
                         var mult = Math.pow(10, sig - Math.floor(Math.log(n) / Math.LN10) - 1);
                         var s= Math.round(n * mult) / mult;
                         //console.log("n: " + n + " s: " + s);
-                        return s / palettes.meterPerPixel;
+                        return s / legend.meterPerPixel;
                     }
                     Item {
                         width: scaleRep.cellWidth
@@ -245,7 +273,7 @@ Rectangle {
                             color: index % 2==1?"#808080":"#a0a0a0"
                         }
                         Text {
-                            text: Math.round(parent.width * (modelData+1) * palettes.meterPerPixel)
+                            text: Math.round(parent.width * (modelData+1) * legend.meterPerPixel)
                             anchors.top: parent.top
                             anchors.left: parent.left
                             anchors.topMargin: 20
@@ -257,6 +285,6 @@ Rectangle {
             }
 
         }
-    }
-
+    } */
+}
 }

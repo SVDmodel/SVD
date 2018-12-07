@@ -5,8 +5,8 @@
         <file>Play.png</file>
         <file>process-stop.png</file>
         <file>www.png</file>
-        <file>qml/ruler.qml</file>
         <file>camera.png</file>
         <file>SVD_splash.jpg</file>
+        <file>qml/legend.qml</file>
     </qresource>
 </RCC>
