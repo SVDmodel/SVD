@@ -1,3 +1,21 @@
+/********************************************************************************************
+**    SVD - the scalable vegetation dynamics model
+**    https://github.com/SVDmodel/SVD
+**    Copyright (C) 2018-  Werner Rammer, Rupert Seidl
+**
+**    This program is free software: you can redistribute it and/or modify
+**    it under the terms of the GNU General Public License as published by
+**    the Free Software Foundation, either version 3 of the License, or
+**    (at your option) any later version.
+**
+**    This program is distributed in the hope that it will be useful,
+**    but WITHOUT ANY WARRANTY; without even the implied warranty of
+**    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**    GNU General Public License for more details.
+**
+**    You should have received a copy of the GNU General Public License
+**    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+********************************************************************************************/
 #ifndef STATES_H
 #define STATES_H
 
@@ -18,11 +36,14 @@ public:
     enum StateType { Forest=0, Matrix=1, None=99 };
     State(state_t id, std::string composition, int structure, int function, std::string handling_module);
     void setName(const std::string &name) { mName = name; }
+    void setColorName(const std::string &color) {mColorName = color; }
+
     StateType type() const { return mType; }
     state_t id() const { return mId; }
     const std::string &compositionString() const { return mComposition; }
     int function() const { return mFunction; }
     int structure() const {return mStructure; }
+    const std::string &colorName() const { return mColorName; }
     std::string asString() const;
 
     const std::string &moduleString() const { return mHandlingModule; }
@@ -49,6 +70,7 @@ private:
     StateType mType;
     std::string mName;
     std::string mHandlingModule; ///< string as provided in the input; mapping to actual modules via setModule()
+    std::string mColorName; ///< color for visualization
     std::vector<double> mSpeciesShare;
 
     Module *mModule;

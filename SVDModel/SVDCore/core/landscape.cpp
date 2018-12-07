@@ -1,3 +1,21 @@
+/********************************************************************************************
+**    SVD - the scalable vegetation dynamics model
+**    https://github.com/SVDmodel/SVD
+**    Copyright (C) 2018-  Werner Rammer, Rupert Seidl
+**
+**    This program is free software: you can redistribute it and/or modify
+**    it under the terms of the GNU General Public License as published by
+**    the Free Software Foundation, either version 3 of the License, or
+**    (at your option) any later version.
+**
+**    This program is distributed in the hope that it will be useful,
+**    but WITHOUT ANY WARRANTY; without even the implied warranty of
+**    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**    GNU General Public License for more details.
+**
+**    You should have received a copy of the GNU General Public License
+**    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+********************************************************************************************/
 #include "landscape.h"
 
 #include "model.h"
@@ -140,18 +158,18 @@ void Landscape::setupInitialState()
 
     if (mode=="file") {
         // check if keys are available:
-        auto i_state = indexOf(EnvironmentCell::variables(), "stateId");
-        auto i_restime = indexOf(EnvironmentCell::variables(), "residenceTime");
+        auto i_state = indexOf(EnvironmentCell::variables(), "initialStateId");
+        auto i_restime = indexOf(EnvironmentCell::variables(), "initialResidenceTime");
         if (i_state<0 || i_restime<0)
-            throw std::logic_error("Initialize landscape state: mode is 'file' and the 'landscape.file' does not contain the columns 'stateId' and/or 'residenceTime'.");
+            throw std::logic_error("Initialize landscape state: mode is 'file' and the 'landscape.file' does not contain the columns 'initialStateId' and/or 'initialResidenceTime'.");
 
         Cell *cell = grid().begin();
         bool error = false;
         int n_affected=0;
         for (EnvironmentCell **ec=mEnvironmentGrid.begin(); ec!=mEnvironmentGrid.end(); ++ec, ++cell)
             if (*ec) {
-                state_t t= state_t( (*ec)->value("stateId") );
-                short int res_time = static_cast<short int> ( (*ec)->value("residenceTime") );
+                state_t t= state_t( (*ec)->value(static_cast<size_t>(i_state)) );
+                short int res_time = static_cast<short int> ( (*ec)->value(static_cast<size_t>(i_restime)) );
                 if (!Model::instance()->states()->isValid(t)) {
                     if (!error) lg->error("Initalize states from landscape file '{}': Errors detected:", settings.valueString("landscape.file"));
                     error = true;

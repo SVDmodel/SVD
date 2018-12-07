@@ -1,3 +1,22 @@
+/********************************************************************************************
+**    SVD - the scalable vegetation dynamics model
+**    https://github.com/SVDmodel/SVD
+**    Copyright (C) 2018-  Werner Rammer, Rupert Seidl
+**
+**    This program is free software: you can redistribute it and/or modify
+**    it under the terms of the GNU General Public License as published by
+**    the Free Software Foundation, either version 3 of the License, or
+**    (at your option) any later version.
+**
+**    This program is distributed in the hope that it will be useful,
+**    but WITHOUT ANY WARRANTY; without even the implied warranty of
+**    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**    GNU General Public License for more details.
+**
+**    You should have received a copy of the GNU General Public License
+**    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+********************************************************************************************/
+
 /** @class ExpressionWrapper
   The base class for objects that can be used within Expressions.
   Derived from ExpressionWrapper are wrappers for e.g. Trees or ResourceUnits.
@@ -147,12 +166,12 @@ double InferenceDataWrapper::value(const size_t variableIndex)
  * Wrapper for cells
 */
 
-std::vector<std::string> CellWrapper::mVariableList = { "id", "climateId", "stateId", "residenceTime" };
+std::vector<std::string> CellWrapper::mVariableList = { "index", "environmentId" "climateId", "stateId", "residenceTime", "function", "structure" };
 size_t CellWrapper::mMaxStateVar = 0;
 
 void CellWrapper::setupVariables(EnvironmentCell *ecell, const State *astate)
 {
-    mVariableList = { "id", "climateId", "stateId", "residenceTime" }; // reset
+    mVariableList = {  "index", "environmentId", "climateId", "stateId", "residenceTime", "function", "structure" }; // reset
 
     // add variables from states
     const auto &names = astate->valueNames();
@@ -184,21 +203,26 @@ void CellWrapper::setupVariables(EnvironmentCell *ecell, const State *astate)
 double CellWrapper::value(const size_t variableIndex)
 {
 
-    if (variableIndex < 4) {
+    if (variableIndex < 7) {
         // fixed variables: id, climateId
 
         switch (variableIndex) {
-        case 0: return static_cast<double>(mData->environment()->id());
-        case 1: return static_cast<double>(mData->environment()->climateId());
-        case 2: return static_cast<double>(mData->stateId());
-        case 3: return static_cast<double>(mData->residenceTime());
+        case 0: return 0.; // TODO: cell index
+        case 1: return static_cast<double>(mData->environment()->id());
+        case 2: return static_cast<double>(mData->environment()->climateId());
+        case 3: return static_cast<double>(mData->stateId());
+        case 4: return static_cast<double>(mData->residenceTime());
+        case 5: return static_cast<double>( mData->state() ? mData->state()->function() : 0); // function
+        case 6: return static_cast<double>( mData->state() ? mData->state()->structure() : 0); // structure
+
+
         }
 
 
     } else if (variableIndex < mMaxStateVar) {
         // state variable
         const State *s = mData->state();
-        return s->value(variableIndex - 4);
+        return s->value(variableIndex - 5);
     } else {
         const EnvironmentCell *ec = mData->environment();
         return ec->value(variableIndex - mMaxStateVar);

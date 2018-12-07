@@ -1,5 +1,22 @@
+/********************************************************************************************
+**    SVD - the scalable vegetation dynamics model
+**    https://github.com/SVDmodel/SVD
+**    Copyright (C) 2018-  Werner Rammer, Rupert Seidl
+**
+**    This program is free software: you can redistribute it and/or modify
+**    it under the terms of the GNU General Public License as published by
+**    the Free Software Foundation, either version 3 of the License, or
+**    (at your option) any later version.
+**
+**    This program is distributed in the hope that it will be useful,
+**    but WITHOUT ANY WARRANTY; without even the implied warranty of
+**    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**    GNU General Public License for more details.
+**
+**    You should have received a copy of the GNU General Public License
+**    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+********************************************************************************************/
 #include "modelshell.h"
-#include "toymodel.h"
 #include "model.h"
 
 #include "../Predictor/inferencedata.h"
@@ -17,57 +34,6 @@
 
 Q_DECLARE_METATYPE(Batch*)
 
-ToyModelShell::ToyModelShell(QObject *parent) : QObject(parent)
-{
-    mAbort = false;
-    emit log("Model shell created.");
-}
-
-ToyModelShell::~ToyModelShell()
-{
-    emit log("Model shell destroyed");
-}
-
-void ToyModelShell::run()
-{
-    emit log(QString("Running thread %1").arg(QThread::currentThread()->objectName()));
-
-    toy.run();
-
-    emit log("... model running...");
-}
-
-void ToyModelShell::runTest()
-{
-    emit log("Running....");
-    emit log(QString("%1").arg(QThread::currentThread()->objectName()));
-    //QThread::sleep(3);
-
-    for (int i=0;i<10;++i) {
-
-        QCoreApplication::processEvents();
-        if (mAbort)
-            break;
-
-        QThread::sleep(1);
-        emit log(QString::number(i));
-    }
-
-    emit log("Finished run");
-
-}
-
-void ToyModelShell::process(int n)
-{
-    for (int i=0;i<n;++i)
-        emit log(QString("iteration %1").arg(i));
-}
-
-void ToyModelShell::abort()
-{
-    mAbort = true;
-    toy.abort();
-}
 
 // ***************** ModelShell ********************************
 

@@ -6,20 +6,79 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>964</width>
+    <width>1121</width>
     <height>719</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>SVD</string>
+   <string>SVD - Scaling Vegetation dynamics</string>
   </property>
   <property name="windowIcon">
    <iconset resource="res/resource.qrc">
     <normaloff>:/mainicon</normaloff>:/mainicon</iconset>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="spacing">
+     <number>3</number>
+    </property>
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>3</number>
+    </property>
+    <property name="rightMargin">
+     <number>3</number>
+    </property>
+    <property name="bottomMargin">
+     <number>3</number>
+    </property>
+    <item>
+     <widget class="QWidget" name="progressBarContainer" native="true">
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QSpinBox" name="sYears">
+         <property name="toolTip">
+          <string>number of years to simulate</string>
+         </property>
+         <property name="maximum">
+          <number>10000</number>
+         </property>
+         <property name="value">
+          <number>10</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QProgressBar" name="progressBar">
+         <property name="value">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="lModelState">
+         <property name="minimumSize">
+          <size>
+           <width>400</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>12</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
        <number>0</number>
@@ -28,239 +87,33 @@
        <attribute name="title">
         <string>main</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout_2">
-        <item row="1" column="0">
-         <widget class="QPlainTextEdit" name="lLog"/>
-        </item>
-        <item row="0" column="0" colspan="2">
-         <widget class="QGroupBox" name="groupBox_3">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>200</height>
-           </size>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="SurfaceGraph" name="main3d" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
           </property>
-          <property name="title">
-           <string>GroupBox</string>
+          <property name="cursor">
+           <cursorShape>CrossCursor</cursorShape>
           </property>
-          <widget class="QPushButton" name="pbLoad">
-           <property name="geometry">
-            <rect>
-             <x>410</x>
-             <y>40</y>
-             <width>75</width>
-             <height>23</height>
-            </rect>
-           </property>
-           <property name="text">
-            <string>Setup</string>
-           </property>
-          </widget>
-          <widget class="QPushButton" name="pbDeleteModel">
-           <property name="geometry">
-            <rect>
-             <x>490</x>
-             <y>40</y>
-             <width>75</width>
-             <height>23</height>
-            </rect>
-           </property>
-           <property name="text">
-            <string>Shutdown</string>
-           </property>
-          </widget>
-          <widget class="QLineEdit" name="lConfigFile">
-           <property name="geometry">
-            <rect>
-             <x>30</x>
-             <y>40</y>
-             <width>371</width>
-             <height>20</height>
-            </rect>
-           </property>
-           <property name="text">
-            <string>E:\Daten\SVD\projects\npka\config.conf</string>
-           </property>
-          </widget>
-          <widget class="QLabel" name="label">
-           <property name="geometry">
-            <rect>
-             <x>30</x>
-             <y>20</y>
-             <width>111</width>
-             <height>16</height>
-            </rect>
-           </property>
-           <property name="text">
-            <string>Project config file</string>
-           </property>
-          </widget>
-          <widget class="QPushButton" name="pbRunModel">
-           <property name="geometry">
-            <rect>
-             <x>90</x>
-             <y>70</y>
-             <width>75</width>
-             <height>23</height>
-            </rect>
-           </property>
-           <property name="text">
-            <string>Run</string>
-           </property>
-          </widget>
-          <widget class="QSpinBox" name="sYears">
-           <property name="geometry">
-            <rect>
-             <x>31</x>
-             <y>70</y>
-             <width>61</width>
-             <height>22</height>
-            </rect>
-           </property>
-           <property name="maximum">
-            <number>10000</number>
-           </property>
-           <property name="value">
-            <number>10</number>
-           </property>
-          </widget>
-          <widget class="QComboBox" name="cbOption">
-           <property name="geometry">
-            <rect>
-             <x>270</x>
-             <y>70</y>
-             <width>141</width>
-             <height>22</height>
-            </rect>
-           </property>
-           <item>
-            <property name="text">
-             <string>grid_state</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>grid_restime</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>grid_next</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>grid_N</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>ext_seed</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>fire_n</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>fire_year</string>
-            </property>
-           </item>
-          </widget>
-          <widget class="QLineEdit" name="lParam">
-           <property name="geometry">
-            <rect>
-             <x>422</x>
-             <y>70</y>
-             <width>201</width>
-             <height>20</height>
-            </rect>
-           </property>
-           <property name="text">
-            <string>E:\temp\test.txt</string>
-           </property>
-          </widget>
-          <widget class="QPushButton" name="pbRun">
-           <property name="geometry">
-            <rect>
-             <x>630</x>
-             <y>70</y>
-             <width>75</width>
-             <height>23</height>
-            </rect>
-           </property>
-           <property name="text">
-            <string>Run Cmd</string>
-           </property>
-          </widget>
-          <widget class="QLabel" name="lModelState">
-           <property name="geometry">
-            <rect>
-             <x>20</x>
-             <y>155</y>
-             <width>861</width>
-             <height>31</height>
-            </rect>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>12</pointsize>
-            </font>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-          <widget class="QProgressBar" name="progressBar">
-           <property name="geometry">
-            <rect>
-             <x>30</x>
-             <y>100</y>
-             <width>601</width>
-             <height>23</height>
-            </rect>
-           </property>
-           <property name="value">
-            <number>0</number>
-           </property>
-          </widget>
-          <widget class="QPushButton" name="pbUpdateStats">
-           <property name="geometry">
-            <rect>
-             <x>710</x>
-             <y>70</y>
-             <width>75</width>
-             <height>23</height>
-            </rect>
-           </property>
-           <property name="text">
-            <string>Update stats</string>
-           </property>
-          </widget>
-          <widget class="QPushButton" name="pbCancel">
-           <property name="geometry">
-            <rect>
-             <x>170</x>
-             <y>70</y>
-             <width>75</width>
-             <height>23</height>
-            </rect>
-           </property>
-           <property name="text">
-            <string>Stop</string>
-           </property>
-          </widget>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QTableWidget" name="listStatus">
-          <property name="columnCount">
-           <number>2</number>
-          </property>
-          <column/>
-          <column/>
          </widget>
         </item>
        </layout>
@@ -360,71 +213,6 @@
          </property>
         </widget>
        </widget>
-       <widget class="QGroupBox" name="groupBox">
-        <property name="geometry">
-         <rect>
-          <x>130</x>
-          <y>270</y>
-          <width>381</width>
-          <height>61</height>
-         </rect>
-        </property>
-        <property name="title">
-         <string>ToyModel</string>
-        </property>
-        <widget class="QPushButton" name="pbStart">
-         <property name="geometry">
-          <rect>
-           <x>30</x>
-           <y>20</y>
-           <width>75</width>
-           <height>23</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Start</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="pbStop">
-         <property name="geometry">
-          <rect>
-           <x>110</x>
-           <y>20</y>
-           <width>75</width>
-           <height>23</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Destroy</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="pushButton">
-         <property name="geometry">
-          <rect>
-           <x>270</x>
-           <y>20</y>
-           <width>75</width>
-           <height>23</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Stop</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="run">
-         <property name="geometry">
-          <rect>
-           <x>190</x>
-           <y>20</y>
-           <width>75</width>
-           <height>23</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>run</string>
-         </property>
-        </widget>
-       </widget>
        <widget class="QPushButton" name="pbTestTF">
         <property name="geometry">
          <rect>
@@ -438,6 +226,16 @@
          <string>test tf</string>
         </property>
        </widget>
+       <widget class="QPlainTextEdit" name="lLog">
+        <property name="geometry">
+         <rect>
+          <x>50</x>
+          <y>50</y>
+          <width>541</width>
+          <height>121</height>
+         </rect>
+        </property>
+       </widget>
       </widget>
      </widget>
     </item>
@@ -448,28 +246,305 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>964</width>
+     <width>1121</width>
      <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFunctions">
     <property name="title">
-     <string>Functions</string>
+     <string>Model</string>
+    </property>
+    <widget class="QMenu" name="menuRecent_files">
+     <property name="title">
+      <string>Recent files</string>
+     </property>
+     <addaction name="actionFileSlot1"/>
+     <addaction name="actionFileSlot2"/>
+     <addaction name="actionFileSlot3"/>
+     <addaction name="actionFileSlot4"/>
+     <addaction name="actionFileSlot5"/>
+     <addaction name="actionFileSlot6"/>
+     <addaction name="actionFileSlot7"/>
+     <addaction name="actionFileSlot8"/>
+     <addaction name="actionFileSlot9"/>
+     <addaction name="actionFileSlot10"/>
+    </widget>
+    <addaction name="actionOpenProject"/>
+    <addaction name="menuRecent_files"/>
+    <addaction name="actionSetupProject"/>
+    <addaction name="actionRunSim"/>
+    <addaction name="actionStopSim"/>
+    <addaction name="actiondelete_model"/>
+   </widget>
+   <widget class="QMenu" name="menuVisualization">
+    <property name="title">
+     <string>Visualization</string>
+    </property>
+    <addaction name="actionRender_to_file"/>
+    <addaction name="action3D_Camera_settings"/>
+   </widget>
+   <widget class="QMenu" name="menuOther">
+    <property name="title">
+     <string>Other</string>
     </property>
     <addaction name="actionTest_DNN"/>
     <addaction name="actioncreate_output_docs"/>
    </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionOnline_resources"/>
+    <addaction name="actionAbout_SVD"/>
+   </widget>
    <addaction name="menuFunctions"/>
+   <addaction name="menuVisualization"/>
+   <addaction name="menuOther"/>
+   <addaction name="menuHelp"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
+   <property name="toolButtonStyle">
+    <enum>Qt::ToolButtonTextBesideIcon</enum>
+   </property>
+   <property name="floatable">
+    <bool>true</bool>
+   </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
    </attribute>
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="separator"/>
+   <addaction name="actionSetupProject"/>
+   <addaction name="actionStopSim"/>
+   <addaction name="actionRunSim"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QDockWidget" name="dockRunning">
+   <property name="minimumSize">
+    <size>
+     <width>250</width>
+     <height>156</height>
+    </size>
+   </property>
+   <property name="windowTitle">
+    <string>Options</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents">
+    <layout class="QVBoxLayout" name="verticalLayout_3">
+     <property name="spacing">
+      <number>3</number>
+     </property>
+     <property name="leftMargin">
+      <number>3</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QTabWidget" name="tabLeft">
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <widget class="QWidget" name="tab">
+        <attribute name="title">
+         <string>Project</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="legendLayout">
+         <property name="spacing">
+          <number>6</number>
+         </property>
+         <property name="leftMargin">
+          <number>3</number>
+         </property>
+         <property name="topMargin">
+          <number>3</number>
+         </property>
+         <property name="rightMargin">
+          <number>3</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>Project config file</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="projectOptionsLayout">
+           <item>
+            <widget class="QLineEdit" name="lConfigFile">
+             <property name="minimumSize">
+              <size>
+               <width>50</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QToolButton" name="openProject">
+             <property name="text">
+              <string>...</string>
+             </property>
+             <property name="icon">
+              <iconset resource="res/resource.qrc">
+               <normaloff>:/document-open.png</normaloff>:/document-open.png</iconset>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QToolButton" name="pbReloadQml">
+             <property name="text">
+              <string>...</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QWidget" name="legendContainer" native="true">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="tab_2">
+        <attribute name="title">
+         <string>Run stats</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_4">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QTableWidget" name="listStatus">
+           <property name="columnCount">
+            <number>2</number>
+           </property>
+           <column/>
+           <column/>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget">
+   <property name="minimumSize">
+    <size>
+     <width>150</width>
+     <height>38</height>
+    </size>
+   </property>
+   <property name="windowTitle">
+    <string>Visualization</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_2">
+    <widget class="QLineEdit" name="lExpression">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>90</y>
+       <width>131</width>
+       <height>20</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pbRenderExpression">
+     <property name="geometry">
+      <rect>
+       <x>130</x>
+       <y>90</y>
+       <width>21</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset resource="res/resource.qrc">
+       <normaloff>:/camera.png</normaloff>:/camera.png</iconset>
+     </property>
+    </widget>
+    <widget class="QRadioButton" name="visExpression">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>70</y>
+       <width>82</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Expression</string>
+     </property>
+    </widget>
+    <widget class="QRadioButton" name="visState">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>50</y>
+       <width>82</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>State</string>
+     </property>
+    </widget>
+    <widget class="QRadioButton" name="visNone">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>30</y>
+       <width>82</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Nothing</string>
+     </property>
+    </widget>
+   </widget>
+  </widget>
   <action name="actionTest_DNN">
    <property name="text">
     <string>Test DNN</string>
@@ -480,10 +555,146 @@
     <string>create output docs</string>
    </property>
   </action>
+  <action name="actionSetupProject">
+   <property name="icon">
+    <iconset resource="res/resource.qrc">
+     <normaloff>:/www.png</normaloff>:/www.png</iconset>
+   </property>
+   <property name="text">
+    <string>Setup</string>
+   </property>
+  </action>
+  <action name="actionStopSim">
+   <property name="icon">
+    <iconset resource="res/resource.qrc">
+     <normaloff>:/process-stop.png</normaloff>:/process-stop.png</iconset>
+   </property>
+   <property name="text">
+    <string>Stop</string>
+   </property>
+  </action>
+  <action name="actionRunSim">
+   <property name="icon">
+    <iconset resource="res/resource.qrc">
+     <normaloff>:/Play.png</normaloff>:/Play.png</iconset>
+   </property>
+   <property name="text">
+    <string>Run</string>
+   </property>
+  </action>
+  <action name="actionRender_to_file">
+   <property name="text">
+    <string>Render to file</string>
+   </property>
+  </action>
+  <action name="actiondelete_model">
+   <property name="text">
+    <string>delete model</string>
+   </property>
+  </action>
+  <action name="actionOpenProject">
+   <property name="icon">
+    <iconset resource="res/resource.qrc">
+     <normaloff>:/document-open.png</normaloff>:/document-open.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open project</string>
+   </property>
+  </action>
+  <action name="actionFileSlot1">
+   <property name="text">
+    <string>FileSlot1</string>
+   </property>
+  </action>
+  <action name="actionFileSlot2">
+   <property name="text">
+    <string>FileSlot2</string>
+   </property>
+  </action>
+  <action name="actionFileSlot3">
+   <property name="text">
+    <string>FileSlot3</string>
+   </property>
+  </action>
+  <action name="actionFileSlot4">
+   <property name="text">
+    <string>FileSlot4</string>
+   </property>
+  </action>
+  <action name="actionFileSlot5">
+   <property name="text">
+    <string>FileSlot5</string>
+   </property>
+  </action>
+  <action name="actionFileSlot6">
+   <property name="text">
+    <string>FileSlot6</string>
+   </property>
+  </action>
+  <action name="actionFileSlot7">
+   <property name="text">
+    <string>FileSlot7</string>
+   </property>
+  </action>
+  <action name="actionFileSlot8">
+   <property name="text">
+    <string>FileSlot8</string>
+   </property>
+  </action>
+  <action name="actionFileSlot9">
+   <property name="text">
+    <string>FileSlot9</string>
+   </property>
+  </action>
+  <action name="actionFileSlot10">
+   <property name="text">
+    <string>FileSlot10</string>
+   </property>
+  </action>
+  <action name="action3D_Camera_settings">
+   <property name="text">
+    <string>3D Camera settings</string>
+   </property>
+  </action>
+  <action name="actionOnline_resources">
+   <property name="text">
+    <string>Online resources</string>
+   </property>
+  </action>
+  <action name="actionAbout_SVD">
+   <property name="text">
+    <string>About SVD</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>SurfaceGraph</class>
+   <extends>QWidget</extends>
+   <header>visualization/surfacegraph.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="res/resource.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>lExpression</sender>
+   <signal>returnPressed()</signal>
+   <receiver>pbRenderExpression</receiver>
+   <slot>click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1036</x>
+     <y>326</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1094</x>
+     <y>330</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

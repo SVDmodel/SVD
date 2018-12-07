@@ -1,3 +1,21 @@
+/********************************************************************************************
+**    SVD - the scalable vegetation dynamics model
+**    https://github.com/SVDmodel/SVD
+**    Copyright (C) 2018-  Werner Rammer, Rupert Seidl
+**
+**    This program is free software: you can redistribute it and/or modify
+**    it under the terms of the GNU General Public License as published by
+**    the Free Software Foundation, either version 3 of the License, or
+**    (at your option) any later version.
+**
+**    This program is distributed in the hope that it will be useful,
+**    but WITHOUT ANY WARRANTY; without even the implied warranty of
+**    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**    GNU General Public License for more details.
+**
+**    You should have received a copy of the GNU General Public License
+**    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+********************************************************************************************/
 #include "states.h"
 
 #include "model.h"
@@ -22,6 +40,7 @@ void States::setup()
     rdr.requiredColumns({"stateId", "composition", "structure", "fct", "type"});
 
     size_t i_name = rdr.columnIndex("name");
+    size_t i_color = rdr.columnIndex("color");
 
     while (rdr.next()) {
         // read line
@@ -35,6 +54,8 @@ void States::setup()
         mStateSet.insert({id, mStates.size()-1}); // save id and index
         if (i_name != std::numeric_limits<std::size_t>::max())
             mStates.back().setName(rdr.valueString(i_name));
+        if (i_color != std::numeric_limits<std::size_t>::max())
+            mStates.back().setColorName(rdr.valueString(i_color));
 
     }
 
@@ -136,7 +157,14 @@ State::State(state_t id, std::string composition, int structure, int function, s
     mStructure = structure;
     mFunction = function;
     mHandlingModule = handling_module;
-    mType = None;
+    // this is not ideal:
+    // if module is empty, than we assume it is a forest state
+    // if not we say it is "None"???? (see setModule())
+    if (handling_module.empty())
+        mType = Forest;
+    else
+        mType = None;
+
     mModule = nullptr;
 
     if (mType != State::Forest) {
@@ -166,7 +194,7 @@ State::State(state_t id, std::string composition, int structure, int function, s
 
        if (s == lowercase(s)) {
            // save the index of the admixed species
-           admixed_species_index[adm_index++] = static_cast<int>(it-species.begin());;
+           admixed_species_index[adm_index++] = static_cast<int>(it-species.begin());
            if (adm_index>5)
                throw std::logic_error("Invalid state: too many admixed species. id: " + to_string(id) + ", " + mComposition);
        } else {

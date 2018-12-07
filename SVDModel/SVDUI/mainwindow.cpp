@@ -1,3 +1,21 @@
+/********************************************************************************************
+**    SVD - the scalable vegetation dynamics model
+**    https://github.com/SVDmodel/SVD
+**    Copyright (C) 2018-  Werner Rammer, Rupert Seidl
+**
+**    This program is free software: you can redistribute it and/or modify
+**    it under the terms of the GNU General Public License as published by
+**    the Free Software Foundation, either version 3 of the License, or
+**    (at your option) any later version.
+**
+**    This program is distributed in the hope that it will be useful,
+**    but WITHOUT ANY WARRANTY; without even the implied warranty of
+**    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**    GNU General Public License for more details.
+**
+**    You should have received a copy of the GNU General Public License
+**    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+********************************************************************************************/
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QDebug>
@@ -6,6 +24,12 @@
 #include <QTime>
 #include <QMessageBox>
 #include <QClipboard>
+#include <QFileDialog>
+#include <QQuickWidget>
+#include <QQmlEngine>
+#include <QQmlContext>
+#include <QDesktopServices>
+
 
 #include "testdnn.h"
 
@@ -19,8 +43,12 @@
 #include "spdlog/spdlog.h"
 #include "strtools.h"
 
+#include "aboutdialog.h"
 
-static ToyModelController *mc=nullptr;
+// visualization
+#include "cameracontrol.h"
+#include "colorpalette.h"
+
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -32,7 +60,45 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // start up the model shell
     mMC = std::unique_ptr<ModelController>(new ModelController());
+
+    // initialize visualization
+    mLandscapeVis = new LandscapeVisualization(this);
+
+    // signals & slots
     initiateModelController();
+
+    // some UI tweaks
+    ui->mainToolBar->addWidget(ui->sYears);
+    ui->mainToolBar->addWidget(ui->progressBarContainer);
+
+    readSettings();
+
+    QString lastconfigfile = QSettings().value("project/lastprojectfile").toString();
+    if (!lastconfigfile.isEmpty() && QFile::exists(lastconfigfile))
+        ui->lConfigFile->setText(lastconfigfile);
+
+    checkAvailableActions();
+
+    // setup the ruler (QML based)
+
+    mLegend = new Legend(); // global object
+
+    mQmlView = new QQuickWidget();
+
+    mQmlView->engine()->rootContext()->setContextProperty("legend", mLegend);
+    mQmlView->engine()->addImageProvider(QLatin1String("colors"), new ColorImageProvider);
+
+    // from resource (proper)
+    //mQmlView->setSource(QUrl("qrc:/qml/ruler.qml"));
+    // for develop/debug from file system
+    mQmlView->setResizeMode(QQuickWidget::SizeRootObjectToView);
+    mQmlView->setSource(QUrl::fromLocalFile("E:/dev/SVD/SVDModel/SVDUI/res/qml/legend.qml"));
+    mQmlView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    ui->legendLayout->replaceWidget(ui->legendContainer, mQmlView);
+
+    ui->tabWidget->setTabEnabled(1,false); // the other tab next to "main" visualization
+    ui->pbReloadQml->setVisible(false); // hide the reload qml button
 
 
 }
@@ -50,15 +116,31 @@ MainWindow::~MainWindow()
     });
     //spdlog::drop_all();
     delete ui;
+    delete mLegend;
+    delete mLandscapeVis;
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    writeSettings();
+    QApplication::closeAllWindows();
+    event->accept();
 }
 
 void MainWindow::modelStateChanged(QString s)
 {
+    if (mMC->state()->state() == ModelRunState::ReadyToRun && !mLandscapeVis->isValid()) {
+        // setup of the visualization
+        mLandscapeVis->setup(ui->main3d, mLegend);
+    }
+
     // stop the update timer...
-    if (mMC->state()->isModelFinished()) {
+    if (mMC->state()->isModelFinished() || mMC->state()->isModelPaused()) {
         mUpdateModelTimer.stop();
         modelUpdate();
     }
+
+    checkAvailableActions();
 
 }
 
@@ -67,10 +149,29 @@ void MainWindow::modelUpdate()
     int stime = ui->lModelState->property("starttime").toTime().elapsed();
     //QTime().addMSecs(stime).toString(Qt::ISODateWithMs)
     ui->lModelState->setText(QString("%1 - %2").arg( QTime(0,0).addMSecs(stime).toString(Qt::ISODate) ).arg(QString::fromStdString(RunState::instance()->asString())));
-    on_pbUpdateStats_clicked();
-    if (mMC->state()->isModelFinished()) {
+    updateModelStats();
+    if (mMC->state()->isModelFinished() || mMC->state()->isModelPaused()) {
         mUpdateModelTimer.stop();
     }
+}
+
+void MainWindow::finishedYear()
+{
+    if (mLandscapeVis->isValid())
+        mLandscapeVis->update();
+}
+
+void MainWindow::checkVisualization()
+{
+    // for any radiobuttion
+    if (ui->visExpression->isChecked())
+        mLandscapeVis->renderExpression(ui->lExpression->text());
+
+    if (ui->visState->isChecked())
+        mLandscapeVis->setRenderType(LandscapeVisualization::RenderState);
+
+    if (ui->visNone->isChecked())
+        mLandscapeVis->setRenderType(LandscapeVisualization::RenderNone);
 }
 
 
@@ -82,35 +183,6 @@ void MainWindow::on_actionTest_DNN_triggered()
 
 }
 
-void MainWindow::on_pbStart_clicked()
-{
-    if (!mc) {
-        ui->lLog->appendPlainText("Starting ModelController...");
-        mc = new ToyModelController(this);
-        connect(mc, &ToyModelController::log, ui->lLog, &QPlainTextEdit::appendPlainText);
-    }
-}
-
-void MainWindow::on_pbStop_clicked()
-{
-    if (mc) {
-        ui->lLog->appendPlainText("Stopping ModelController...");
-        delete mc;
-        mc=nullptr;
-    }
-}
-
-void MainWindow::on_run_clicked()
-{
-    if (mc)
-        mc->run();
-}
-
-void MainWindow::on_pushButton_clicked()
-{
-    if (mc)
-        mc->abort();
-}
 
 void MainWindow::on_pbTest_clicked()
 {
@@ -204,6 +276,8 @@ void MainWindow::initiateModelController()
     connect(mMC.get(), &ModelController::finishedYear, ui->progressBar, &QProgressBar::setValue);
     connect(mMC.get(), &ModelController::finished, [this]() { ui->progressBar->setValue(ui->progressBar->maximum());});
 
+    connect(mMC.get(), &ModelController::finishedYear, mLandscapeVis, &LandscapeVisualization::update);
+
     connect(&mUpdateModelTimer, &QTimer::timeout, this, &MainWindow::modelUpdate);
 
     //connect(mMC.get(), &ModelController::stateChanged, ui->statusBar, &QStatusBar::showMessage);
@@ -223,65 +297,7 @@ void MainWindow::on_pushButton_5_clicked()
     it.testTensor();
 }
 
-void MainWindow::on_pbLoad_clicked()
-{
-    // create & load model
-    if (mMC && mMC->model()) {
-        if (QMessageBox::question(this, "Confirm reload", "The model is already created. Create a new model?")==QMessageBox::No)
-            return;
-    }
-    ui->lModelState->setProperty("starttime", QTime::currentTime());
-    mMC.reset();
-    mMC.reset(new ModelController()); // this frees the current model
-    initiateModelController();
 
-    mMC->setup(ui->lConfigFile->text());
-    mUpdateModelTimer.start(100);
-}
-
-void MainWindow::on_pbDeleteModel_clicked()
-{
-    mMC->shutdown();
-}
-
-void MainWindow::on_pbRunModel_clicked()
-{
-    ui->progressBar->reset();
-    ui->progressBar->setMaximum( ui->sYears->value() );
-    mMC->run( ui->sYears->value() );
-    ui->lModelState->setProperty("starttime", QTime::currentTime());
-    mUpdateModelTimer.start(100);
-}
-
-void MainWindow::on_pbRun_clicked()
-{
-    std::string s = mMC->shell()->run_test_op(ui->cbOption->currentText().toStdString());
-    writeFile(ui->lParam->text().toStdString(), s);
-
-}
-
-
-
-void MainWindow::on_pbUpdateStats_clicked()
-{
-    auto stats = mMC->systemStatus();
-    ui->listStatus->clear();
-    ui->listStatus->setHorizontalHeaderLabels({"Statistic", "Value"});
-    ui->listStatus->setRowCount(static_cast<int>(stats.size()));
-    ui->listStatus->setColumnCount(2);
-    int r=0;
-    for (std::pair<std::string, std::string> s : stats) {
-        ui->listStatus->setItem(r,0, new QTableWidgetItem(QString::fromStdString(s.first)));
-        ui->listStatus->setItem(r,1, new QTableWidgetItem(QString::fromStdString(s.second)));
-        ++r;
-    }
-}
-
-void MainWindow::on_pbCancel_clicked()
-{
-    if (mMC && mMC->model())
-        mMC->shutdown();
-}
 
 void MainWindow::on_pbTestTF_clicked()
 {
@@ -304,5 +320,237 @@ void MainWindow::on_actioncreate_output_docs_triggered()
     QApplication::clipboard()->setText(QString::fromStdString(output_doc));
 
     spdlog::get("main")->info("Output documentation copied to the clipboard!");
+
+}
+
+
+void MainWindow::on_pbRenderExpression_clicked()
+{
+    if (mLandscapeVis->isValid())
+        mLandscapeVis->renderExpression(ui->lExpression->text());
+}
+
+
+void MainWindow::on_actionRender_to_file_triggered()
+{
+    mLandscapeVis->renderToFile();
+}
+
+void MainWindow::on_actionSetupProject_triggered()
+{
+    // save currently selected config file
+    recentFileMenu();
+
+    // create & load model
+    if (mMC && mMC->model()) {
+        if (QMessageBox::question(this, "Confirm reload", "The model is already created. Create a new model?")==QMessageBox::No)
+            return;
+    }
+    ui->lModelState->setProperty("starttime", QTime::currentTime());
+    mMC.reset();
+    mMC.reset(new ModelController()); // this frees the current model
+    mLandscapeVis->invalidate();
+    initiateModelController();
+
+    mMC->setup(ui->lConfigFile->text());
+    mUpdateModelTimer.start(100);
+
+}
+
+void MainWindow::on_actionRunSim_triggered()
+{
+    ui->progressBar->reset();
+    ui->progressBar->setMaximum( ui->sYears->value() );
+    mMC->run( ui->sYears->value() );
+    ui->lModelState->setProperty("starttime", QTime::currentTime());
+    mUpdateModelTimer.start(100);
+}
+
+void MainWindow::on_actionStopSim_triggered()
+{
+    if (mMC && mMC->model())
+        mMC->shutdown();
+}
+
+void MainWindow::on_actiondelete_model_triggered()
+{
+    mMC->shutdown();
+    mLandscapeVis->invalidate();
+    checkAvailableActions();
+}
+
+
+void MainWindow::on_openProject_clicked()
+{
+    QString the_filter = "*.conf;;All files (*.*)";
+
+    QString fileName = QFileDialog::getOpenFileName(this,
+     "Select project config file", "", the_filter);
+
+
+    if (fileName.isEmpty())
+        return;
+
+    ui->lConfigFile->setText(fileName);
+
+}
+
+void MainWindow::on_actionOpenProject_triggered()
+{
+    on_openProject_clicked();
+}
+
+
+void MainWindow::menuRecent_files()
+{
+    QAction* action = dynamic_cast<QAction*>(sender());
+    if (action)
+        ui->lConfigFile->setText(action->text());
+
+}
+
+void MainWindow::readSettings()
+{
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+    QCoreApplication::setOrganizationName("SVD");
+    QCoreApplication::setOrganizationDomain("svd.boku.ac.at");
+    QCoreApplication::setApplicationName("SVD");
+    QSettings settings;
+    qDebug() << "reading settings from" << settings.fileName();
+
+    // window state and
+    restoreGeometry(settings.value("MainWindow/geometry").toByteArray());
+    restoreState(settings.value("MainWindow/windowState").toByteArray());
+
+    // read javascript commands
+//    int size = settings.beginReadArray("javascriptCommands");
+//    for (int i=0;i<size; ++i) {
+//        settings.setArrayIndex(i);
+//        ui->scriptCommandHistory->addItem(settings.value("item").toString());
+//    }
+//    settings.endArray();
+    //recent files menu qsettings registry load
+    settings.beginGroup("recent_files");
+    for(int i = 0;i < settings.childKeys().size();i++){
+        mRecentFileList.append(settings.value(QString("file-%1").arg(i)).toString());
+    }
+    recentFileMenu();
+
+    settings.endGroup();
+
+}
+
+void MainWindow::writeSettings()
+{
+    QSettings settings;
+    settings.beginGroup("MainWindow");
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("windowState", saveState());
+    settings.endGroup();
+    // javascript commands
+//    settings.beginWriteArray("javascriptCommands");
+//    int size = qMin(ui->scriptCommandHistory->count(), 15); // max 15 entries in the history
+//    for (int i=0;i<size; ++i) {
+//        settings.setArrayIndex(i);
+//        settings.setValue("item", ui->scriptCommandHistory->itemText(i));
+//    }
+//    settings.endArray();
+    settings.beginGroup("project");
+    settings.setValue("lastprojectfile", ui->lConfigFile->text());
+    settings.endGroup();
+    //recent files menu qsettings registry save
+    settings.beginGroup("recent_files");
+    for(int i = 0;i < mRecentFileList.size();i++){
+        settings.setValue(QString("file-%1").arg(i),mRecentFileList[i]);
+    }
+    settings.endGroup();
+    //settings.setValue("javascript", ui->scriptCode->toPlainText());
+
+}
+
+void MainWindow::recentFileMenu()
+{
+    if(mRecentFileList.size() > 9){
+        mRecentFileList.removeAt(9);
+    }
+    if(mRecentFileList.contains(ui->lConfigFile->text())){
+        mRecentFileList.removeAt(mRecentFileList.indexOf(ui->lConfigFile->text()));
+     }
+
+    if (!ui->lConfigFile->text().isEmpty())
+        mRecentFileList.prepend(ui->lConfigFile->text());
+
+    for(int i = 0;i < ui->menuRecent_files->actions().size();i++){
+        if(i < mRecentFileList.size()){
+            ui->menuRecent_files->actions()[i]->setText(mRecentFileList[i]);
+            connect(ui->menuRecent_files->actions()[i],SIGNAL(triggered()),this,SLOT(menuRecent_files()));
+            ui->menuRecent_files->actions()[i]->setVisible(true);
+        }else{
+            ui->menuRecent_files->actions()[i]->setVisible(false);
+        }
+     }
+
+}
+
+void MainWindow::checkAvailableActions()
+{
+    if (!mMC)
+        return;
+    mMC->state()->isModelValid();
+    ui->actionRunSim->setEnabled( mMC->state()->isModelPaused() );
+    ui->actionStopSim->setEnabled( mMC->state()->isModelRunning() );
+    ui->actiondelete_model->setEnabled( mMC->state()->isModelValid() );
+    ui->actionSetupProject->setEnabled( !mMC->state()->isModelRunning() && !ui->lConfigFile->text().isEmpty());
+    ui->actionOpenProject->setEnabled( !mMC->state()->isModelRunning() );
+    ui->openProject->setEnabled(!mMC->state()->isModelRunning());
+
+}
+
+void MainWindow::updateModelStats()
+{
+    auto stats = mMC->systemStatus();
+    ui->listStatus->clear();
+    ui->listStatus->setHorizontalHeaderLabels({"Statistic", "Value"});
+    ui->listStatus->setRowCount(static_cast<int>(stats.size()));
+    ui->listStatus->setColumnCount(2);
+    int r=0;
+    for (std::pair<std::string, std::string> s : stats) {
+        ui->listStatus->setItem(r,0, new QTableWidgetItem(QString::fromStdString(s.first)));
+        ui->listStatus->setItem(r,1, new QTableWidgetItem(QString::fromStdString(s.second)));
+        ++r;
+    }
+
+}
+
+
+
+void MainWindow::on_pbReloadQml_clicked()
+{
+    if (!mQmlView)
+        return;
+    mQmlView->engine()->clearComponentCache();
+    qDebug() << mQmlView->source();
+    mQmlView->setSource(mQmlView->source());
+}
+
+void MainWindow::on_action3D_Camera_settings_triggered()
+{
+    // open form for camera control
+    CameraControl *cntrl = new CameraControl(this);
+    cntrl->setSurfaceGraph( ui->main3d);
+    QObject::connect(ui->main3d, &SurfaceGraph::cameraChanged, cntrl, &CameraControl::cameraChanged);
+    cntrl->show();
+}
+
+void MainWindow::on_actionAbout_SVD_triggered()
+{
+    AboutDialog adlg(nullptr);
+    adlg.exec();
+}
+
+void MainWindow::on_actionOnline_resources_triggered()
+{
+    //https://github.com/SVDmodel/SVD/blob/master/README.md
+    QDesktopServices::openUrl(QUrl("https://github.com/SVDmodel/SVD/blob/master/README.md"));
 
 }

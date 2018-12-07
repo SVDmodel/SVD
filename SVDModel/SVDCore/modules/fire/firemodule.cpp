@@ -1,3 +1,21 @@
+/********************************************************************************************
+**    SVD - the scalable vegetation dynamics model
+**    https://github.com/SVDmodel/SVD
+**    Copyright (C) 2018-  Werner Rammer, Rupert Seidl
+**
+**    This program is free software: you can redistribute it and/or modify
+**    it under the terms of the GNU General Public License as published by
+**    the Free Software Foundation, either version 3 of the License, or
+**    (at your option) any later version.
+**
+**    This program is distributed in the hope that it will be useful,
+**    but WITHOUT ANY WARRANTY; without even the implied warranty of
+**    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**    GNU General Public License for more details.
+**
+**    You should have received a copy of the GNU General Public License
+**    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+********************************************************************************************/
 #include "firemodule.h"
 
 #include "tools.h"
@@ -5,7 +23,7 @@
 #include "filereader.h"
 #include "randomgen.h"
 
-FireModule::FireModule(): Module("fire", State::None)
+FireModule::FireModule(std::string module_name): Module(module_name, State::None)
 {
 
 }
@@ -13,7 +31,7 @@ FireModule::FireModule(): Module("fire", State::None)
 void FireModule::setup()
 {
     lg = spdlog::get("setup");
-    lg->info("Setup of FireModule");
+    lg->info("Setup of FireModule '{}'", name());
     auto settings = Model::instance()->settings();
     settings.requiredKeys("modules.fire", {"transitionFile", "stateFile", "ignitionFile", "extinguishProb"});
 
@@ -52,7 +70,7 @@ void FireModule::setup()
     mGrid.setup(grid.metricRect(), grid.cellsize());
     lg->debug("Created fire grid {} x {} cells.", mGrid.sizeX(), mGrid.sizeY());
 
-    lg->info("Setup of FireModule complete.");
+    lg->info("Setup of FireModule '{}' complete.", name());
 
     lg = spdlog::get("main");
 

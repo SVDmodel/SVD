@@ -1,72 +1,29 @@
+/********************************************************************************************
+**    SVD - the scalable vegetation dynamics model
+**    https://github.com/SVDmodel/SVD
+**    Copyright (C) 2018-  Werner Rammer, Rupert Seidl
+**
+**    This program is free software: you can redistribute it and/or modify
+**    it under the terms of the GNU General Public License as published by
+**    the Free Software Foundation, either version 3 of the License, or
+**    (at your option) any later version.
+**
+**    This program is distributed in the hope that it will be useful,
+**    but WITHOUT ANY WARRANTY; without even the implied warranty of
+**    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**    GNU General Public License for more details.
+**
+**    You should have received a copy of the GNU General Public License
+**    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+********************************************************************************************/
 #include "modelcontroller.h"
 #include "modelshell.h"
-#include "toymodel.h"
 #include "model.h"
 #include "../Predictor/batchmanager.h"
 #include "../Predictor/batch.h"
 
 #include "../Predictor/dnnshell.h"
 
-ToyModelController::ToyModelController(QObject *parent) : QObject(parent)
-{
-    ToyModelShell *model_shell = new ToyModelShell;
-    modelThread = new QThread();
-    mModel = model_shell;
-    mModel->moveToThread(modelThread);
-
-    connect(modelThread, &QThread::finished, model_shell, &QObject::deleteLater);
-
-    //connect(this, &ModelController::operate, model_shell, &ModelShell::doWork);
-    //connect(model_shell, &ModelShell::resultReady, this, &ModelController::handleResults);
-
-    dnnThread = new QThread();
-    ToyInference *ti = new ToyInference;
-    ti->moveToThread(dnnThread);
-    connect(dnnThread, &QThread::finished, ti, &QObject::deleteLater);
-
-    // connection between main model and DNN:
-    connect(&mModel->toyModel(), &ToyModel::newPackage, ti, &ToyInference::doWork);
-    connect(ti, &ToyInference::workDone, &mModel->toyModel(), &ToyModel::processedPackage);
-    connect(&mModel->toyModel(), &ToyModel::finished, this, &ToyModelController::finishedRun);
-
-    // logging
-    connect(mModel, &ToyModelShell::log, this, &ToyModelController::log);
-    log("Modelcontroller: before thread.start()");
-    modelThread->setObjectName("SVDMain");
-    modelThread->start();
-
-    dnnThread->setObjectName("SVDDNN");
-    dnnThread->start();
-}
-
-ToyModelController::~ToyModelController()
-{
-    abort();
-    modelThread->quit();
-    dnnThread->quit();
-    modelThread->wait();
-    dnnThread->wait();
-    log("Destroyed Thread");
-
-}
-
-void ToyModelController::run()
-{
-    QMetaObject::invokeMethod(mModel, "run", Qt::QueuedConnection);
-    log("... ModelController: started");
-}
-
-void ToyModelController::abort()
-{
-    QMetaObject::invokeMethod(mModel, "abort");
-    log(".... stopping thread....");
-
-}
-
-void ToyModelController::finishedRun()
-{
-    log(" *** Finished ***");
-}
 
 
 //***************** Model Controller ******************

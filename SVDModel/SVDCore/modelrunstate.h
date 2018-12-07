@@ -1,3 +1,21 @@
+/********************************************************************************************
+**    SVD - the scalable vegetation dynamics model
+**    https://github.com/SVDmodel/SVD
+**    Copyright (C) 2018-  Werner Rammer, Rupert Seidl
+**
+**    This program is free software: you can redistribute it and/or modify
+**    it under the terms of the GNU General Public License as published by
+**    the Free Software Foundation, either version 3 of the License, or
+**    (at your option) any later version.
+**
+**    This program is distributed in the hope that it will be useful,
+**    but WITHOUT ANY WARRANTY; without even the implied warranty of
+**    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**    GNU General Public License for more details.
+**
+**    You should have received a copy of the GNU General Public License
+**    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+********************************************************************************************/
 #ifndef MODELRUNSTATE_H
 #define MODELRUNSTATE_H
 
@@ -18,6 +36,7 @@ public:
     // operations
     ModelRunState &operator=(const State &s) { if (this->mState!=s) {this->mState = s; update(); } return *this; }
     bool operator==(const State &s) const { return this->mState == s; }
+    bool operator!=(const State &s) const { return this->mState != s; }
     // return true if the current state is in the list of 'states' (e.g., state.in({Creating, Running})
     bool in(const std::vector<State> &states) const {  for (auto &s : states) if (mState==s) return true; return false; }
 
@@ -59,6 +78,8 @@ public:
     bool isError() const { return mModel.in({ModelRunState::Error, ModelRunState::ErrorDuringSetup}); }
     bool isModelRunning() const { return mModel.in({ModelRunState::Creating, ModelRunState::Running, ModelRunState::Stopping}); }
     bool isModelFinished() const { return mModel.in({ModelRunState::Error, ModelRunState::ErrorDuringSetup, ModelRunState::Finished, ModelRunState::Canceled});}
+    bool isModelPaused() const { return mModel.in({ ModelRunState::ReadyToRun, ModelRunState::Paused}); }
+    bool isModelValid() const { return isModelRunning() || isModelFinished() || isModelPaused(); }
 private:
     ModelRunState mModel;
     ModelRunState mDNN;

@@ -1,7 +1,7 @@
 # Project file
 
 The project file is the central [configuration file](SVD_data_formats.md) of a SVD project.
-When referring to input files, a relative path to the folder with the project file can be given.
+When referring to input files, a relative path to the folder with the project file may be provided.
 
 ## General settings
 
@@ -73,8 +73,8 @@ See [here](configuring_the_landscape.md) for details.
 #### `initialState.mode` (string)
 The setting define how the initial state of the vegetation is set up.
 Possible values are:
-* `file`: initial states are extracted from the table in `landscape.file`. The expected column names are `stateId` for the initial state, 
-and `residenceTime` for the initial value of residence time.
+* `file`: initial states are extracted from the table in `landscape.file`. The expected column names are `initialStateId` for the initial state, 
+and `initialResidenceTime` for the initial value of residence time.
 * `grid`: the initial state of the landscape is retrieved from raster file (settings `initialState.stateGrid`, `initialState.residenceTimeGrid`) 
 * `random`: creates a random landscape (state: 1 - max-state, residence time: 0-10)
 
@@ -106,7 +106,8 @@ List of species codes that are available (comma separated). See also [Neighbors]
 
 ## Outputs
 Output-specific settings start with `output.`. The general scheme is:
-`output.<outputname>.<setting>`. See the [output page](outputs.md) for details on available outputs.
+`output.<outputname>.<setting>`. The `outputname` specifies the type of the output; 
+see the [output page](outputs.md) for details on available outputs.
 
 Settings that are generally available are:
 * `enabled` (boolean): if `true` the output is active
@@ -124,5 +125,14 @@ output.StateGrid.interval = 20
 
 ## Modules
 Settings that are specific to a module start with `modules.`. The general scheme is:
-`<modules.<module>.<setting>`
+`modules.<module-name>.<setting> = <value>`, where the `module-name` can be freely chosen.
+
+See the [module page](modules.md) for details.
+
+Settings that are generally available are:
+* `enabled` (boolean): if `true` the module is active
+* `type` (string): specifies the module `type` (See [module page](modules.md) for available types)
+
+Additional module settings are `type` specific, and are described on the respective module pages. Note
+that multiple modules of the same type (but with different a `module-name`) can be used.
 

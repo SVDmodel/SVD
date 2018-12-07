@@ -1,7 +1,7 @@
 /********************************************************************************************
-**    iLand - an individual based forest landscape and disturbance model
-**    http://iland.boku.ac.at
-**    Copyright (C) 2009-  Werner Rammer, Rupert Seidl
+**    SVD - the scalable vegetation dynamics model
+**    https://github.com/SVDmodel/SVD
+**    Copyright (C) 2018-  Werner Rammer, Rupert Seidl
 **
 **    This program is free software: you can redistribute it and/or modify
 **    it under the terms of the GNU General Public License as published by
@@ -225,6 +225,7 @@ public:
     inline Point indexOf(const T* element) const; ///< retrieve index (x/y) of the pointer element. returns -1/-1 if element is not valid.
     // special queries
     T max() const; ///< retrieve the maximum value of a grid
+    T min() const; ///< get the minimum value of a grid
     T sum() const; ///< retrieve the sum of the grid
     T avg() const; ///< retrieve the average value of a grid
     // modifying operations
@@ -486,6 +487,19 @@ T  Grid<T>::max() const
     for (p=begin(); p!=pend;++p)
         maxv = std::max(maxv, *p);
     return maxv;
+}
+
+template<class T>
+T Grid<T>::min() const
+{
+    T minv = std::numeric_limits<T>::max();
+    T nullval = std::numeric_limits<T>::min();
+    T* p;
+    T* pend = end();
+    for (p=begin(); p!=pend;++p)
+        minv = *p>nullval ? std::min(minv, *p) : minv;
+    return minv;
+
 }
 
 template <class T>

@@ -1,3 +1,21 @@
+/********************************************************************************************
+**    SVD - the scalable vegetation dynamics model
+**    https://github.com/SVDmodel/SVD
+**    Copyright (C) 2018-  Werner Rammer, Rupert Seidl
+**
+**    This program is free software: you can redistribute it and/or modify
+**    it under the terms of the GNU General Public License as published by
+**    the Free Software Foundation, either version 3 of the License, or
+**    (at your option) any later version.
+**
+**    This program is distributed in the hope that it will be useful,
+**    but WITHOUT ANY WARRANTY; without even the implied warranty of
+**    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**    GNU General Public License for more details.
+**
+**    You should have received a copy of the GNU General Public License
+**    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+********************************************************************************************/
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
@@ -6,6 +24,11 @@
 #include <memory>
 
 #include "modelcontroller.h"
+#include "landscapevisualization.h"
+#include "colorpalette.h"
+
+class QQuickWidget; // forward
+
 
 namespace Ui {
 class MainWindow;
@@ -16,23 +39,21 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(QWidget *parent = nullptr);
     void initiateLogging();
     void initiateModelController();
     ~MainWindow();
+
+protected:
+     void closeEvent(QCloseEvent *event);
+
 private slots:
     void modelStateChanged(QString s);
     void modelUpdate();
+    void finishedYear();
+    void checkVisualization();
 
     void on_actionTest_DNN_triggered();
-
-    void on_pbStart_clicked();
-
-    void on_pbStop_clicked();
-
-    void on_run_clicked();
-
-    void on_pushButton_clicked();
 
     void on_pbTest_clicked();
 
@@ -42,19 +63,9 @@ private slots:
 
     void on_pushButton_4_clicked();
 
-    void on_pbLoad_clicked();
-
-    void on_pbDeleteModel_clicked();
-
-    void on_pbRunModel_clicked();
-
-    void on_pbRun_clicked();
 
     void on_pushButton_5_clicked();
 
-    void on_pbUpdateStats_clicked();
-
-    void on_pbCancel_clicked();
 
     void on_pbTestTF_clicked();
 
@@ -62,9 +73,53 @@ private slots:
 
     void on_actioncreate_output_docs_triggered();
 
+
+    void on_pbRenderExpression_clicked();
+
+    void on_visState_clicked() { checkVisualization(); }
+    void on_visExpression_clicked() {checkVisualization(); }
+    void on_visNone_clicked() {checkVisualization(); }
+
+    void on_actionRender_to_file_triggered();
+
+    void on_actionSetupProject_triggered();
+
+    void on_actionRunSim_triggered();
+
+    void on_actionStopSim_triggered();
+
+    void on_actiondelete_model_triggered();
+
+
+    void on_openProject_clicked();
+
+
+    void menuRecent_files();
+
+    void on_actionOpenProject_triggered();
+
+    void on_pbReloadQml_clicked();
+
+    void on_action3D_Camera_settings_triggered();
+
+    void on_actionAbout_SVD_triggered();
+
+    void on_actionOnline_resources_triggered();
+
 private:
+    QList<QString> mRecentFileList;
+
+    void readSettings(); ///< read UI settings from ini file
+    void writeSettings(); ///< save UI settings
+    void recentFileMenu(); ///< update the list of recently used project files
+    void checkAvailableActions(); ///< check status of the actions (run, cancel, ...)
+    void updateModelStats(); ///< refresh model stats
+
     Ui::MainWindow *ui;
     std::unique_ptr<ModelController> mMC;
+    LandscapeVisualization *mLandscapeVis;
+    QQuickWidget *mQmlView;
+    Legend *mLegend;
     QTimer mUpdateModelTimer;
 };
 
