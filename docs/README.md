@@ -1,10 +1,16 @@
 # SVD Documentation
 *Scaling vegetation transitions*
 
+SVD is a modeling framework for the simulation of vegetation transitions on larger spatial scales.
+It is a [research tool](svd_papers.md) and released under a GPL open source license. 
+
+![Screenshot](img/screenshot_npka.jpg)
+
 ## Installation
+*  [Installation guide](install.md)
 
 ## Setup of a project
-* [SVD overview](svd_setup.md)
+* [SVD setup](svd_setup.md)
 * [Configuring the landscape](configuring_the_landscape.md)
 * [DNN setup](dnn_setup.md)
 * [Configuring DNN meta data](configuring_dnn_metadata.md)
@@ -15,7 +21,7 @@
   * [Fire module](module_fire.md)
   * [Matrix module](module_matrix.md)
 
-## Running SVD
+## Using SVD
 
 ## Reference documentation
 * [configuration file](project_file.md)
