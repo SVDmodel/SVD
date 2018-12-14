@@ -268,26 +268,26 @@ void LandscapeVisualization::setupColorRamps()
 {
     mContinuousPalette = new Palette();
 
-    std::vector< std::pair< float, QString> > stops = {{0.0, "black"},
-                                                       {0.33, "blue"},
-                                                       {0.67, "red"},
-                                                       {1.0, "yellow"}};
+    std::vector< std::pair< float, QString> > stops = {{0.0f, "black"},
+                                                       {0.33f, "blue"},
+                                                       {0.67f, "red"},
+                                                       {1.0f, "yellow"}};
 
     mContinuousPalette->setupContinuousPalette("black-yellow", stops);
     mLegend->addPalette(mContinuousPalette->name(), mContinuousPalette);
 
     Palette *pal = new Palette();
 
-    stops = {{0.0, "blue"},
-             {1.0, "red"}};
+    stops = {{0.0f, "blue"},
+             {1.0f, "red"}};
 
     pal->setupContinuousPalette("blue-red", stops);
     mLegend->addPalette(pal->name(), pal);
 
     pal = new Palette();
 
-    stops = {{0.0, "grey"},
-             {1.0, "red"}};
+    stops = {{0.0f, "grey"},
+             {1.0f, "red"}};
 
     pal->setupContinuousPalette("grey-red", stops);
     mLegend->addPalette(pal->name(), pal);

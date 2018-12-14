@@ -1,7 +1,7 @@
 # SVD
 *Scaling vegetation dynamics*
 
-
+![screenshot npka](SVDModel/documentation/img/screenshot_npka.jpg)
 
 ## Documentation
 

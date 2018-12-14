@@ -89,7 +89,6 @@ MainWindow::MainWindow(QWidget *parent) :
     mQmlView->engine()->addImageProvider(QLatin1String("colors"), new ColorImageProvider);
 
     // from resource (proper)
-    //mQmlView->setSource(QUrl("qrc:/qml/ruler.qml"));
     // for develop/debug from file system
     mQmlView->setResizeMode(QQuickWidget::SizeRootObjectToView);
     mQmlView->setSource(QUrl::fromLocalFile("E:/dev/SVD/SVDModel/SVDUI/res/qml/legend.qml"));
