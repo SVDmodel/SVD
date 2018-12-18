@@ -22,6 +22,7 @@ It is a [research tool](svd_papers.md) and released under a GPL open source lice
   * [Matrix module](module_matrix.md)
 
 ## Using SVD
+* [SVD user interface](svdUI.md)
 
 ## Reference documentation
 * [configuration file](project_file.md)
