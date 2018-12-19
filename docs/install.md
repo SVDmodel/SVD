@@ -2,6 +2,14 @@
 
 You can either use the precompiled version of SVD, or build SVD for yourself. 
 
+## Installing SVD
+
+The `executable` folder contains all the required files and libraries for Windows. There is
+no separate installation. To run SVD, start the `SVDUI.exe` ([instructions](svdUI.md)).
+
+Note: Due to file size limits of GitHub, the library `tensorflow.dll` is zipped (`tensorflow.zip`) in the
+`executable` folder. Therefore unzipping (into the same folder) is required.
+
 ## Instructions for compiling SVD 
 
 The SVD model is a stand alone modelling software written in C++ and available under a 
