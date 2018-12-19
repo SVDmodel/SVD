@@ -35,6 +35,8 @@ The tricky part is the compilation of the `Predictor` sub-project as this requir
 TensorFlow installation (for include files) and a compiled version of TensorFlow in a DLL. 
 Check the `Predictor.pro` file which includes some links for further information.
 
+Contact Werner Rammer (werner.rammer@boku.ac.at) for help.
+
 ### Compiling TensorFlow
 
 Compiling TensorFlow with CMake on Windows is hard. I did go through this (see [here](https://github.com/tensorflow/tensorflow/issues/15254)
