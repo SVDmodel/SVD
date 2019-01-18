@@ -31,7 +31,7 @@
 #include <string>
 
 #include "strtools.h"
-
+#include "randomgen.h"
 class Point {
 public:
     Point() : mX(0), mY(0) {}
@@ -113,9 +113,9 @@ class Grid {
 public:
 
     Grid();
-    Grid(double cellsize, int sizex, int sizey) { mData=0; setup(cellsize, sizex, sizey); }
+    Grid(double cellsize, int sizex, int sizey) { mData=nullptr; setup(cellsize, sizex, sizey); }
     /// create from a metric rect
-    Grid(const RectF rect_metric, const double cellsize) { mData=0; setup(rect_metric,cellsize); }
+    Grid(const RectF rect_metric, const double cellsize) { mData=nullptr; setup(rect_metric,cellsize); }
     /// load a grid from an ASCII grid file
     /// the coordinates and cell size remain as in the grid file.
     bool loadGridFromFile(const std::string &fileName);
@@ -123,7 +123,7 @@ public:
     // copy ctor
     Grid(const Grid<T>& toCopy);
     ~Grid() { clear(); }
-    void clear() { if (mData) delete[] mData; mData=0; }
+    void clear() { if (mData) delete[] mData; mData=nullptr; }
 
     bool setup(const double cellsize, const int sizex, const int sizey);
     bool setup(const RectF& rect, const double cellsize);
@@ -153,7 +153,7 @@ public:
     /// get the length of one pixel of the grid
     double cellsize() const { return mCellsize; }
     int count() const { return mCount; } ///< returns the number of elements of the grid
-    bool isEmpty() const { return mData==NULL; } ///< returns false if the grid was not setup
+    bool isEmpty() const { return mData==nullptr; } ///< returns false if the grid was not setup
     // operations
 
     // query
@@ -207,7 +207,7 @@ public:
     int index10(int idx) const {return ((idx/mSizeX)/10)*(mSizeX/10) + (idx%mSizeX)/10; }
 
     /// force @param pos to contain valid indices with respect to this grid.
-    void validate(Point &pos) const{ pos.setX( qMax(qMin(pos.x(), mSizeX-1), 0) );  pos.setY( qMax(qMin(pos.y(), mSizeY-1), 0) );} ///< ensure that "pos" is a valid key. if out of range, pos is set to minimum/maximum values.
+    void validate(Point &pos) const{ pos.setX( std::max(std::min(pos.x(), mSizeX-1), 0) );  pos.setY( std::max(std::min(pos.y(), mSizeY-1), 0) );} ///< ensure that "pos" is a valid key. if out of range, pos is set to minimum/maximum values.
     /// get the (metric) centerpoint of cell with index @p pos
     PointF cellCenterPoint(const Point &pos) const { return PointF( (pos.x()+0.5)*mCellsize+mRect.left(), (pos.y()+0.5)*mCellsize + mRect.top());} ///< get metric coordinates of the cells center
     /// get the metric cell center point of the cell given by index 'index'
@@ -433,15 +433,16 @@ bool Grid<T>::setup(const double cellsize, const int sizex, const int sizey)
         // test if we can re-use the allocated memory.
         if (mSizeX*mSizeY > mCount || mCellsize != cellsize) {
             // we cannot re-use the memory - create new data
-            delete[] mData; mData=NULL;
+            delete[] mData; mData=nullptr;
         }
     }
     mCellsize=cellsize;
     mCount = mSizeX*mSizeY;
     if (mCount==0)
         return false;
-    if (mData==NULL)
+    if (mData==nullptr) {
         mData = new T[mCount];
+    }
     mEnd = &(mData[mCount]);
     return true;
 }
@@ -820,8 +821,8 @@ bool Grid<T>::loadGridFromFile(const std::string &fileName)
     std::string key;
     std::string strValue;
     T value;
-    double cell_size;
-    int n_rows, n_cols;
+    double cell_size=0.;
+    int n_rows=0, n_cols=0;
     double ox=0., oy=0.;
     double no_data_val=0.;
 

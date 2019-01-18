@@ -6,16 +6,24 @@
 
 QT       -= gui
 QT      += concurrent
+QT      += core
 
 TARGET = Predictor
 TEMPLATE = lib
 CONFIG += staticlib
-
+win32 {
 ### tensorflow compiled locally
 INCLUDEPATH += e:/dev/tensorflow e:/dev/tensorflow/tensorflow/contrib/cmake/build  e:/dev/tensorflow/tensorflow/contrib/cmake/build/external/eigen_archive
 INCLUDEPATH += e:/dev/tensorflow/tensorflow/contrib/cmake/build/external/nsync/public
 INCLUDEPATH += e:/dev/tensorflow/third_party/eigen3 e:/dev/tensorflow/tensorflow/contrib/cmake/build/protobuf/src/protobuf/src
+}
+unix {
+INCLUDEPATH += /usr/include/tensorflow-cpp
+}
+# SVD modules
 INCLUDEPATH += ../SVDCore ../SVDCore/core ../SVDCore/tools ../SVDCore/third_party ../SVDCore/outputs
+
+win32 {
 
 # https://joe-antognini.github.io/machine-learning/windows-tf-project
 DEFINES +=  COMPILER_MSVC
@@ -36,6 +44,8 @@ DEFINES +=  NOGDI
 DEFINES +=  TENSORFLOW_USE_EIGEN_THREADPOOL
 DEFINES +=  EIGEN_HAS_C99_MATH
 DEFINES += GOOGLE_CUDA=1
+}
+
 
 win32:CONFIG(release, debug|release): DEFINES +=  _ITERATOR_DEBUG_LEVEL=0
 

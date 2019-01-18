@@ -8,4 +8,4 @@ SUBDIRS += \
 SVDUI.depends = SVDCore Predictor
 
 RESOURCES += \
-    SVDUI/res/iland.qrc
+    SVDUI/res/resource.qrc
