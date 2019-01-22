@@ -91,7 +91,8 @@ MainWindow::MainWindow(QWidget *parent) :
     // from resource (proper)
     // for develop/debug from file system
     mQmlView->setResizeMode(QQuickWidget::SizeRootObjectToView);
-    mQmlView->setSource(QUrl::fromLocalFile("E:/dev/SVD/SVDModel/SVDUI/res/qml/legend.qml"));
+    //mQmlView->setSource(QUrl::fromLocalFile("E:/dev/SVD/SVDModel/SVDUI/res/qml/legend.qml"));
+    mQmlView->setSource(QUrl("qrc:/qml/legend.qml"));
     mQmlView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     ui->legendLayout->replaceWidget(ui->legendContainer, mQmlView);

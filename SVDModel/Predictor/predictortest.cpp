@@ -103,7 +103,7 @@ Status ReadLabelsFile(string file_name, std::vector<string>* result,
 
 // Given an image file name, read in the data, try to decode it as an image,
 // resize it to the requested size, and then scale the values as desired.
-Status ReadTensorFromImageFile(string file_name, const int input_height,
+Status ReadTensorFromImuageFile(string file_name, const int input_height,
                                const int input_width, const float input_mean,
                                const float input_std,
                                std::vector<Tensor>* out_tensors) {
@@ -117,16 +117,17 @@ Status ReadTensorFromImageFile(string file_name, const int input_height,
   // Now try to figure out what kind of file it is and decode it.
   const int wanted_channels = 3;
   tensorflow::Output image_reader;
-  if (tensorflow::StringPiece(file_name).ends_with(".png")) {
-    image_reader = DecodePng(root.WithOpName("png_reader"), file_reader,
-                             DecodePng::Channels(wanted_channels));
-  } else if (tensorflow::StringPiece(file_name).ends_with(".gif")) {
-    image_reader = DecodeGif(root.WithOpName("gif_reader"), file_reader);
-  } else {
-    // Assume if it's neither a PNG nor a GIF then it must be a JPEG.
-    image_reader = DecodeJpeg(root.WithOpName("jpeg_reader"), file_reader,
-                              DecodeJpeg::Channels(wanted_channels));
-  }
+  // uncommented (WR20190118 - linux)
+//  if (tensorflow::StringPiece(file_name).ends_with(".png")) {
+//    image_reader = DecodePng(root.WithOpName("png_reader"), file_reader,
+//                             DecodePng::Channels(wanted_channels));
+//  } else if (tensorflow::StringPiece(file_name).ends_with(".gif")) {
+//    image_reader = DecodeGif(root.WithOpName("gif_reader"), file_reader);
+//  } else {
+//    // Assume if it's neither a PNG nor a GIF then it must be a JPEG.
+//    image_reader = DecodeJpeg(root.WithOpName("jpeg_reader"), file_reader,
+//                              DecodeJpeg::Channels(wanted_channels));
+//  }
   // Now cast the image data to float so we can do normal math on it.
   auto float_caster =
       Cast(root.WithOpName("float_caster"), image_reader, tensorflow::DT_FLOAT);
@@ -328,9 +329,9 @@ QString PredictorTest::classifyImage(QString image_path)
 
     std::vector<Tensor> resized_tensors;
     string simage_path = image_path.toStdString();
-    Status read_tensor_status =
-        ReadTensorFromImageFile(simage_path, input_height, input_width, input_mean,
-                                input_std, &resized_tensors);
+    Status read_tensor_status; // =
+//        ReadTensorFromImageFile(simage_path, input_height, input_width, input_mean,
+//                                input_std, &resized_tensors);
     if (!read_tensor_status.ok()) {
       qWarning() << read_tensor_status.error_message().data();
       return QString::fromStdString(read_tensor_status.error_message());
@@ -391,7 +392,7 @@ QString PredictorTest::insight()
     auto t = Input1.tensor<float,2>();
     const Eigen::Tensor<float, 2>::Dimensions& d = t.dimensions();
     QStringList out;
-    out  << QString("Dim size: %1, dim0: %2 dim1: %3 ").arg(int(d.size)).arg(int(d[0])).arg(int(d[1])) ;
+    //out  << QString("Dim size: %1, dim0: %2 dim1: %3 ").arg(int(d.size)).arg(int(d[0])).arg(int(d[1])) ;
     out << QString("n dimensionsXXX: %1").arg(t.NumDimensions);
 
     size_t dx=d[0], dy=d[1];

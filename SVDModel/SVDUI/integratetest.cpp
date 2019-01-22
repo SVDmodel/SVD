@@ -190,8 +190,8 @@ void IntegrateTest::testRandom()
 void IntegrateTest::testTensor()
 {
 
-    PredictorTest pt;
-    pt.tensorTest();
+//    PredictorTest pt;
+//    pt.tensorTest();
 
 }
 

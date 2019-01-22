@@ -258,7 +258,8 @@ void Model::setupModules()
 
 void Model::setupExpressionWrapper()
 {
-    EnvironmentCell &ec = mLandscape->environmentCell(0);
+    //EnvironmentCell &ec = mLandscape->environmentCell(0);
+    EnvironmentCell ec(-1, -1); // need just something to extract variable names from (which are static)
     const State &s = mStates->stateByIndex(0);
     CellWrapper::setupVariables(&ec, &s);
     CellWrapper cw(nullptr);
