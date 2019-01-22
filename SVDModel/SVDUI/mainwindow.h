@@ -106,6 +106,8 @@ private slots:
 
     void on_actionOnline_resources_triggered();
 
+    void on_lConfigFile_textChanged(const QString &arg1);
+
 private:
     QList<QString> mRecentFileList;
 

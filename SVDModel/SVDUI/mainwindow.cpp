@@ -553,3 +553,8 @@ void MainWindow::on_actionOnline_resources_triggered()
     QDesktopServices::openUrl(QUrl("https://github.com/SVDmodel/SVD/blob/master/README.md"));
 
 }
+
+void MainWindow::on_lConfigFile_textChanged(const QString &arg1)
+{
+    checkAvailableActions();
+}
