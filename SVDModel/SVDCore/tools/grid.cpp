@@ -29,7 +29,9 @@ struct SCoordTrans {
     double offsetX, offsetY, offsetZ;
     void setupTransformation(double new_offsetx, double new_offsety, double new_offsetz, double angle_degree)
     {
-        //const double M_PI = 3.141592653589793;
+#ifndef M_PI
+#define M_PI 3.141592653589793
+#endif
         offsetX = new_offsetx;
         offsetY = new_offsety;
         offsetZ = new_offsetz;
