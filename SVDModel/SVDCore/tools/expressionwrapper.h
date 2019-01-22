@@ -20,6 +20,7 @@
 #define EXPRESSIONWRAPPERH
 
 #include <vector>
+#include <string>
 
 class ExpressionWrapper
 {

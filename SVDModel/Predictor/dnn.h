@@ -30,6 +30,7 @@ class Batch; // forward
 
 #include "inputtensoritem.h"
 #include "tensorhelper.h"
+#include <list>
 
 class DNN
 {
