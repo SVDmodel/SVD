@@ -153,6 +153,8 @@ void MainWindow::modelUpdate()
     if (mMC->state()->isModelFinished() || mMC->state()->isModelPaused()) {
         mUpdateModelTimer.stop();
     }
+    if (mMC->state()->isModelRunning())
+        mUpdateModelTimer.start(100);
 }
 
 void MainWindow::finishedYear()
@@ -497,7 +499,7 @@ void MainWindow::checkAvailableActions()
     if (!mMC)
         return;
     mMC->state()->isModelValid();
-    ui->actionRunSim->setEnabled( mMC->state()->isModelPaused() );
+    ui->actionRunSim->setEnabled( mMC->state()->isModelPaused() || mMC->state()->isModelReadyToRun());
     ui->actionStopSim->setEnabled( mMC->state()->isModelRunning() );
     ui->actiondelete_model->setEnabled( mMC->state()->isModelValid() );
     ui->actionSetupProject->setEnabled( !mMC->state()->isModelRunning() && !ui->lConfigFile->text().isEmpty());

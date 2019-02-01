@@ -157,6 +157,7 @@ void FileReader::readHeader()
     for (size_t i=0;i<mFields.size(); i++) {
        mValues.push_back(0.);
        replace_string(mFields[i], "\"", ""); // drop quotes
+       replace_string(mFields[i], "\r", ""); // drop CR (when reading windows files on linux)
     }
 
     // Note: in gcc calling tellg() seems to invalidate the stream loading process (i.e. the next loaded line is truncated).
@@ -227,7 +228,7 @@ bool FileReader::next()
     if (eof())
         return false;
 
-    size_t line_len;
+    size_t line_len=0;
     while (!eof()) {
         mInStream.getline(mBuffer, FRBUFSIZE);
         // skip empty lines (unless we are in section mode - then a empty line signals end of section)
@@ -243,7 +244,7 @@ bool FileReader::next()
     // parse....
     char *p = mBuffer;
     while (*p && (*p==mDelimiter || *p==' ') ) p++; // skip delimeters
-    for (int i=0;i<mColCount;i++) {
+    for (size_t i=0;i<mColCount;i++) {
         if (*p==mDelimiter)
             mValues[i] = 0.;
         else
@@ -283,6 +284,8 @@ std::string FileReader::valueString(const size_t columnIndex)
                 if (columnIndex<mColCount-1)
                     throw std::logic_error("FileReader::valueString not enough values.\nError at line:" + std::string(mBuffer) + "\nin:" + mFileName);
                 std::string s(ps);
+                if (s.size()>0 && s[s.size()-1] == '\r')
+                    s = s.substr( 0, s.size() - 1 ); // drop last character if CR
                 return s;
             }
             std::string s(ps, p-ps);  // copy only content, subtract delimiter

@@ -93,7 +93,7 @@ ModelController::~ModelController()
 std::unordered_map<std::string, std::string> ModelController::systemStatus()
 {
     std::unordered_map<std::string, std::string> result;
-    if (mModelShell->model() == nullptr || !state()->isModelCreated())
+    if (mModelShell->model() == nullptr || !state()->isModelCreated() || !BatchManager::hasInstance())
         return result;
 
     // add statistics

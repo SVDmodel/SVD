@@ -55,9 +55,9 @@ void DNNShell::setup(QString fileName)
 
     // setup is called *after* the set up of the main model
     lg = spdlog::get("dnn");
-    size_t n_models = Model::instance()->settings().valueUInt("dnn.count", 1);
+
     if (lg)
-        lg->info("DNN Setup, config file: {}, number of DNNs: {}", fileName.toStdString(), n_models);
+        lg->info("DNN Setup, config file: {}", fileName.toStdString());
 
     RunState::instance()->dnnState()=ModelRunState::Creating;
 
@@ -72,6 +72,8 @@ void DNNShell::setup(QString fileName)
 
 
     try {
+        size_t n_models = Model::instance()->settings().valueUInt("dnn.count", 1);
+        lg->info("DNN Setup, starting '{}' DNN instances....", n_models);
         for (size_t i=0;i<n_models;++i) {
             DNN *dnn = new DNN();
             mDNNs.push_back(dnn);
