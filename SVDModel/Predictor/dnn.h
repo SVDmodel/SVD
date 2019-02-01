@@ -37,20 +37,15 @@ class DNN
 public:
     DNN();
     ~DNN();
-    /// access to the currently avaialable global instance of the DNN
-    /// this allows accessing the model with DNN::instance()->....
-    static DNN *instance() {
-        assert(mInstance!=nullptr);
-        return mInstance; }
-
+    size_t index() const {return mIndex; }
 
     /// set up the actual DNN (TensorFlow)
-    bool setupDNN();
+    bool setupDNN(size_t aindex);
 
     /// set up the links to the main model
-    void setupInput();
+    static void setupInput();
 
-    void setupBatch(Batch *abatch, std::vector<TensorWrapper*> &tensors);
+    static void setupBatch(Batch *abatch, std::vector<TensorWrapper*> &tensors);
 
     /// DNN main function: execute the DNN inference for the
     /// examples provided in 'batch'.
@@ -58,18 +53,17 @@ public:
 
     // getters
     /// the definition of the tensors to fill
-    const std::list<InputTensorItem> &tensorDefinition() const {return mTensorDef; }
+    static const std::list<InputTensorItem> &tensorDefinition() {return mTensorDef; }
 
 
 private:
-    static DNN *mInstance;
 
-
-    TensorWrapper *buildTensor(size_t batch_size, InputTensorItem &item);
+    static TensorWrapper *buildTensor(size_t batch_size, InputTensorItem &item);
     // logging
     std::shared_ptr<spdlog::logger> lg;
 
     // DNN specifics
+    size_t mIndex; ///< internal number of the DNN
     bool mDummyDNN; ///< if true, then the tensorflow components are not really used (for debug builds)
     bool mTopK_tf; ///< use tensorflow for the state top k calculation
     size_t mTopK_NClasses; ///< number of classes used for the top k algorithm
@@ -90,7 +84,7 @@ private:
 
 
     /// definition of input tensors
-    std::list<InputTensorItem> mTensorDef;
+    static std::list<InputTensorItem> mTensorDef;
 
 
 };

@@ -24,6 +24,8 @@ number of threads used by the SVD model (without threads specifically for the DN
 
 #### `dnn.threads` (numeric)
 The number of threads used for DNN processing (default 2)
+#### `dnn.count` (numeric)
+Number of (parallel) DNNs that are used. Each instance uses the same network (`dnn.file`) (default: 1)
 #### `dnn.batchSize` (numeric)
 The size of a single "batch". Multiple cells are processed simultaneously by the DNN, and the batch size
 indicates how many. Bigger batch sizes are usually processed faster, if batches are too large memory problems

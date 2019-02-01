@@ -40,6 +40,7 @@ DNNShell::DNNShell()
 
 DNNShell::~DNNShell()
 {
+    delete_and_clear(mDNNs);
     delete mThreads;
 
 }
@@ -50,11 +51,13 @@ void DNNShell::setup(QString fileName)
     mBatchesProcessed = 0;
     mCellsProcessed = 0;
     mProcessing = 0;
+    mExecutionCount = 0;
 
     // setup is called *after* the set up of the main model
     lg = spdlog::get("dnn");
+    size_t n_models = Model::instance()->settings().valueUInt("dnn.count", 1);
     if (lg)
-        lg->info("DNN Setup, config file: {}", fileName.toStdString());
+        lg->info("DNN Setup, config file: {}, number of DNNs: {}", fileName.toStdString(), n_models);
 
     RunState::instance()->dnnState()=ModelRunState::Creating;
 
@@ -67,12 +70,17 @@ void DNNShell::setup(QString fileName)
         return;
     }
 
+
     try {
-        mDNN = std::unique_ptr<DNN>(new DNN());
-        if (!mDNN->setupDNN()) {
-            RunState::instance()->dnnState()=ModelRunState::ErrorDuringSetup;
-            return;
+        for (size_t i=0;i<n_models;++i) {
+            DNN *dnn = new DNN();
+            mDNNs.push_back(dnn);
+            if (!dnn->setupDNN(mDNNs.size())) {
+                RunState::instance()->dnnState()=ModelRunState::ErrorDuringSetup;
+                return;
+            }
         }
+
 
         // wait for the model thread to complete model setup before
         // setting up the inputs (which may need data from the model)
@@ -84,7 +92,7 @@ void DNNShell::setup(QString fileName)
         }
 
         if (RunState::instance()->modelState() != ModelRunState::ErrorDuringSetup)
-            mDNN->setupInput();
+            DNN::setupInput();
         else
             lg->debug("Error during model setup - setup of DNN interrupted.");
 
@@ -126,14 +134,14 @@ void DNNShell::doWork(Batch *batch)
     lg->debug("DNNShell: received package {}. Starting DNN (batch: {}, state: {}, active threads now: {}, #processing: {}) ", batch->packageId(), static_cast<void*>(batch), batch->state(), mThreads->activeThreadCount(), mProcessing);
 
     QtConcurrent::run( mThreads,
-                       [](DNNShell *shell, Batch *batch, DNN* dnn){
+                       [](DNNShell *shell, Batch *batch, DNN *dnn){
                             dnn->run(batch);
 
                             if (!QMetaObject::invokeMethod(shell, "dnnFinished", Qt::QueuedConnection,
                                                            Q_ARG(void*, static_cast<void*>(batch))) ) {
                                 batch->setError(true);
                             }
-                        }, this, batch, mDNN.get());
+                        }, this, batch, mDNNs[mExecutionCount++ % mDNNs.size()]);
 }
 
 void DNNShell::dnnFinished(void *vbatch)

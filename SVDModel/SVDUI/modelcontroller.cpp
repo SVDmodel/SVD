@@ -43,7 +43,7 @@ ModelController::ModelController(QObject *)
 
 
     dnnThread = new QThread();
-    mDNNShell = new DNNShell;
+    mDNNShell = new DNNShell();
     mDNNShell->moveToThread(dnnThread);
 
     connect(dnnThread, &QThread::finished, mDNNShell, &QObject::deleteLater);
@@ -93,7 +93,7 @@ ModelController::~ModelController()
 std::unordered_map<std::string, std::string> ModelController::systemStatus()
 {
     std::unordered_map<std::string, std::string> result;
-    if (mModelShell->model() == nullptr)
+    if (mModelShell->model() == nullptr || !state()->isModelCreated())
         return result;
 
     // add statistics

@@ -80,6 +80,7 @@ public:
     bool isModelFinished() const { return mModel.in({ModelRunState::Error, ModelRunState::ErrorDuringSetup, ModelRunState::Finished, ModelRunState::Canceled});}
     bool isModelPaused() const { return mModel.in({ ModelRunState::ReadyToRun, ModelRunState::Paused}); }
     bool isModelValid() const { return isModelRunning() || isModelFinished() || isModelPaused(); }
+    bool isModelCreated() const { return !mModel.in({ModelRunState::Invalid, ModelRunState::Creating}); }
 private:
     ModelRunState mModel;
     ModelRunState mDNN;

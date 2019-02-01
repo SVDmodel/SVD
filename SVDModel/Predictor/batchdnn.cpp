@@ -92,7 +92,7 @@ void BatchDNN::processResults()
 bool BatchDNN::fetchPredictors(Cell *cell, size_t slot)
 {
     inferenceData(slot).fetchData(cell, this, slot); // the old way
-    for (auto &t : DNN::instance()->tensorDefinition()) {
+    for (auto &t : DNN::tensorDefinition()) {
         try {
         t.mFetch->fetch(cell, this, slot);
         } catch (const std::logic_error &e) {
@@ -105,7 +105,7 @@ bool BatchDNN::fetchPredictors(Cell *cell, size_t slot)
 
 void BatchDNN::setupTensors()
 {
-    DNN::instance()->setupBatch(this, mTensors);
+    DNN::setupBatch(this, mTensors);
 }
 
 // choose randomly a value in *values (length=n), return the index.

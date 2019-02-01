@@ -59,7 +59,9 @@ private:
     std::shared_ptr<spdlog::logger> lg;
 
     std::unique_ptr<BatchManager> mBatchManager;
-    std::unique_ptr<DNN> mDNN;
+    //std::unique_ptr<DNN> mDNN;
+    std::vector<DNN *> mDNNs;
+    std::atomic<size_t> mExecutionCount;
     std::atomic<int> mProcessing;
 
     // store a watcher and a flag if the watcher is used (=true) or free (false)
