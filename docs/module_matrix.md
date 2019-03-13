@@ -20,7 +20,7 @@ The table below shows a transition matrix for shallow, and deep soils (note that
 shallow soils the state does not change):
 
 State | p(State 1) | p(State 2) | p(State 3) | Soildepth
-------| ----------- | ---------| -----------
+------| ----------- | ---------| ----------- | ---------
 1 | 0% | 20% | 80% | <30cm
 1 | 0%  | 40% | 60% | >=30cm
 2 | 0% | 100% | 0% | <30cm
