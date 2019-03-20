@@ -28,6 +28,7 @@
 #include "colorpalette.h"
 
 class QQuickWidget; // forward
+class QTreeWidgetItem;
 
 
 namespace Ui {
@@ -79,6 +80,7 @@ private slots:
     void on_visState_clicked() { checkVisualization(); }
     void on_visExpression_clicked() {checkVisualization(); }
     void on_visNone_clicked() {checkVisualization(); }
+    void on_visVariable_clicked() {checkVisualization(); }
 
     void on_actionRender_to_file_triggered();
 
@@ -108,6 +110,8 @@ private slots:
 
     void on_lConfigFile_textChanged(const QString &arg1);
 
+    void on_visVariables_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
+
 private:
     QList<QString> mRecentFileList;
 
@@ -116,6 +120,7 @@ private:
     void recentFileMenu(); ///< update the list of recently used project files
     void checkAvailableActions(); ///< check status of the actions (run, cancel, ...)
     void updateModelStats(); ///< refresh model stats
+    void onModelCreated(); ///< called after the model is created (and ready to run)
 
     Ui::MainWindow *ui;
     std::unique_ptr<ModelController> mMC;

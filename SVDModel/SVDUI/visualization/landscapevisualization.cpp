@@ -139,6 +139,42 @@ bool LandscapeVisualization::renderExpression(QString expression)
 
 }
 
+bool LandscapeVisualization::renderVariable(QString variableName, QString description)
+{
+    if (!isValid())
+        return false;
+
+    mCurrentType = RenderExpression;
+
+    bool auto_scale = true; // scale colors automatically between min and maximum value
+
+
+    checkTexture();
+
+
+    try {
+
+        QElapsedTimer timer;
+        timer.start();
+        mExpression.setExpression(variableName.toStdString());
+        if (mExpression.isEmpty())
+            return false;
+
+        mLegend->setCaption(QString::fromStdString(mExpression.expression()));
+        mLegend->setDescription(description);
+        doRenderExpression(auto_scale);
+
+        spdlog::get("main")->info("Rendered variable '{}' ({} ms)", variableName.toStdString(), timer.elapsed());
+
+        return true;
+
+    } catch (const std::exception &e) {
+        spdlog::get("main")->error("Visualization error: {}", e.what());
+        return false;
+    }
+
+}
+
 
 void LandscapeVisualization::update()
 {

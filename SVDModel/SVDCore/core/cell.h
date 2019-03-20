@@ -25,10 +25,11 @@ class EnvironmentCell; // forward
 class Cell
 {
 public:
-    Cell() : mStateId(-1), mResidenceTime(-1), mNextUpdateTime(-1), mNextStateId(-1),  mExternalSeedType(-1), mIsUpdated(false), mState(nullptr), mEnvCell(nullptr) {}
-    Cell(state_t state, restime_t res_time=0): mStateId(state), mResidenceTime(res_time), mNextUpdateTime(0), mNextStateId(-1), mExternalSeedType(-1), mIsUpdated(false), mEnvCell(nullptr) { setState(state); }
+    Cell() : mCellIndex(-1), mStateId(-1), mResidenceTime(-1), mNextUpdateTime(-1), mNextStateId(-1),  mExternalSeedType(-1), mIsUpdated(false), mState(nullptr), mEnvCell(nullptr) {}
+    Cell(state_t state, restime_t res_time=0): mCellIndex(-1), mStateId(state), mResidenceTime(res_time), mNextUpdateTime(0), mNextStateId(-1), mExternalSeedType(-1), mIsUpdated(false), mEnvCell(nullptr) { setState(state); }
     /// establish the link to the environment cell
     void setEnvironmentCell(const EnvironmentCell *ec) { mEnvCell = ec; }
+    void setCellIndex(int cell_index) { mCellIndex = cell_index; }
 
     // access
     /// isNull() returns true if the cell is not an actively simulated cell
@@ -42,6 +43,8 @@ public:
     restime_t residenceTime() const { return mResidenceTime; }
     /// get the year for which the next update is scheduled
     int nextUpdate() const {return mNextUpdateTime; }
+    /// the index is the position of the cell within the landscape
+    int cellIndex() const { return mCellIndex; }
 
     /// ptr of the environment cell
     const EnvironmentCell *environment() const { return mEnvCell; }
@@ -73,6 +76,7 @@ public:
     std::vector<double> neighborSpecies() const;
 private:
     void dumpDebugData();
+    int mCellIndex; ///< index of the grid cell within the landscape grid
     state_t mStateId; ///< the numeric ID of the state the cell is in
     restime_t mResidenceTime;
     int mNextUpdateTime; ///< the year (see Model::year()) when the next update of this cell is scheduled

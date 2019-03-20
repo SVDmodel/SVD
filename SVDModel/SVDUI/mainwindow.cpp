@@ -48,7 +48,7 @@
 // visualization
 #include "cameracontrol.h"
 #include "colorpalette.h"
-
+#include "expressionwrapper.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -132,6 +132,7 @@ void MainWindow::modelStateChanged(QString s)
     if (mMC->state()->state() == ModelRunState::ReadyToRun && !mLandscapeVis->isValid()) {
         // setup of the visualization
         mLandscapeVis->setup(ui->main3d, mLegend);
+        onModelCreated();
     }
 
     // stop the update timer...
@@ -172,6 +173,9 @@ void MainWindow::checkVisualization()
 
     if (ui->visNone->isChecked())
         mLandscapeVis->setRenderType(LandscapeVisualization::RenderNone);
+
+    if (ui->visVariable->isChecked())
+        on_visVariables_currentItemChanged(ui->visVariables->currentItem(), nullptr);
 }
 
 
@@ -522,6 +526,35 @@ void MainWindow::updateModelStats()
 
 }
 
+void MainWindow::onModelCreated()
+{
+    ui->visVariables->clear();
+    CellWrapper cw(nullptr);
+    auto & vars = cw.getVariablesList();
+    auto & metadata = cw.getVariablesMetaData();
+
+    QList<QTreeWidgetItem *> items;
+    QStack<QTreeWidgetItem*> stack;
+    stack.push(nullptr);
+    std::string group="";
+    for (size_t i=0;i<vars.size();++i) {
+        if (metadata[i].first != group) {
+            if (stack.size()>1)
+                stack.pop();
+            items.append(new QTreeWidgetItem(stack.last(), QStringList() << QString::fromStdString(metadata[i].first))); // add group
+            stack.push(items.back());
+            group = metadata[i].first;
+        }
+        items.append( new QTreeWidgetItem(stack.last(),  QStringList() << QString::fromStdString(vars[i]) ) ); // add variable
+        items.back()->setToolTip(0, QString::fromStdString(metadata[i].second));
+        items.back()->setData(0, Qt::UserRole+0, i);
+
+    }
+
+    ui->visVariables->addTopLevelItems(items);
+
+}
+
 
 
 void MainWindow::on_pbReloadQml_clicked()
@@ -558,4 +591,26 @@ void MainWindow::on_actionOnline_resources_triggered()
 void MainWindow::on_lConfigFile_textChanged(const QString &arg1)
 {
     checkAvailableActions();
+}
+
+void MainWindow::on_visVariables_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
+{
+    Q_UNUSED(previous)
+    if (!mLandscapeVis->isValid())
+        return;
+
+    if (!current || current->data(0, Qt::UserRole+0).isNull())
+        return;
+
+    int key = current->data(0, Qt::UserRole+0).toInt();
+    if (key<0)
+        return;
+    size_t ukey = static_cast<size_t>(key);
+    spdlog::get("main")->debug("Clicked on {}", key);
+    CellWrapper cw(nullptr);
+    ui->visVariable->setChecked(true);
+    mLandscapeVis->renderVariable(QString::fromStdString( cw.getVariablesList()[ukey] ),
+                                  QString::fromStdString(cw.getVariablesMetaData()[ukey].second) );
+
+
 }

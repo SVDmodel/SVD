@@ -543,6 +543,40 @@
       <string>Nothing</string>
      </property>
     </widget>
+    <widget class="QTreeWidget" name="visVariables">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>140</y>
+       <width>141</width>
+       <height>192</height>
+      </rect>
+     </property>
+     <property name="indentation">
+      <number>8</number>
+     </property>
+     <attribute name="headerVisible">
+      <bool>false</bool>
+     </attribute>
+     <column>
+      <property name="text">
+       <string notr="true">1</string>
+      </property>
+     </column>
+    </widget>
+    <widget class="QRadioButton" name="visVariable">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>120</y>
+       <width>82</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Variable</string>
+     </property>
+    </widget>
    </widget>
   </widget>
   <action name="actionTest_DNN">
@@ -677,6 +711,7 @@
   </customwidget>
  </customwidgets>
  <resources>
+  <include location="res/resource.qrc"/>
   <include location="res/resource.qrc"/>
  </resources>
  <connections>

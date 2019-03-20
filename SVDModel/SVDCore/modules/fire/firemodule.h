@@ -52,6 +52,8 @@ class FireModule : public Module
 public:
     FireModule(std::string module_name);
     void setup();
+    std::vector<std::pair<std::string, std::string> > moduleVariableNames() const;
+    virtual double moduleVariable(const Cell *cell, size_t variableIndex) const;
 
     void run();
 

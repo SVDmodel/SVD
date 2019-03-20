@@ -262,6 +262,10 @@ void Model::setupExpressionWrapper()
     EnvironmentCell ec(-1, -1); // need just something to extract variable names from (which are static)
     const State &s = mStates->stateByIndex(0);
     CellWrapper::setupVariables(&ec, &s);
+    // set up module variables
+    for (const auto &module : mModules) {
+        CellWrapper::setupVariables(module.get());
+    }
     CellWrapper cw(nullptr);
     lg_setup->debug("Setup of variables for expressions completed. List of variables: {}", join(cw.getVariablesList()) );
 }

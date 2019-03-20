@@ -72,7 +72,7 @@ void FireOut::execute()
 
         std::string result = gridToESRIRaster<SFireCell>(grid, [](const SFireCell &c) { return std::to_string(c.last_burn); });
         if (!writeFile(file_name, result))
-            throw std::logic_error("FireOut: couldn't write output grid file file: " + file_name);
+            throw std::logic_error("FireOut: couldn't write output grid file: " + file_name);
 
 
     }

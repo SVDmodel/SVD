@@ -116,8 +116,10 @@ void Landscape::setup()
     mGrid.setup(mEnvironmentGrid.metricRect(), mEnvironmentGrid.cellsize());
 
     Cell *a=mGrid.begin();
-    for (EnvironmentCell **ec=mEnvironmentGrid.begin(); ec!=mEnvironmentGrid.end(); ++ec, ++a)
+    int cell_index = 0;
+    for (EnvironmentCell **ec=mEnvironmentGrid.begin(); ec!=mEnvironmentGrid.end(); ++ec, ++a, ++cell_index)
         if (*ec) {
+            a->setCellIndex(cell_index);
             // set to invalid state (different from NULL which is outside of the project area)
             a->setInvalid();
             // establish link to the environment

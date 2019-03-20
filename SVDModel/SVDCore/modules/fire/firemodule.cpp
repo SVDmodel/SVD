@@ -76,6 +76,31 @@ void FireModule::setup()
 
 }
 
+std::vector<std::pair<std::string, std::string> > FireModule::moduleVariableNames() const
+{
+    return {{"fireSpread", "progress of the last fire (value is the iteration)"},
+        {"fireNFires", "cumulative number of fires"},
+        {"fireNHighSeverity", "cumulative number of high severity fires"},
+        {"fireLastBurn", "the year of the last fire on a cell (or 0 if never burned)"}};
+}
+
+double FireModule::moduleVariable(const Cell *cell, size_t variableIndex) const
+{
+    auto &gr = mGrid[cell->cellIndex()];
+    switch (variableIndex) {
+    case 0:
+        return gr.spread;
+    case 1:
+        return gr.n_fire;
+    case 2:
+        return gr.n_high_severity;
+    case 3:
+        return gr.last_burn;
+    default:
+        return 0.;
+    }
+}
+
 void FireModule::run()
 {
     // check if we have ignitions

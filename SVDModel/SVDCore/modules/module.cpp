@@ -65,3 +65,13 @@ bool Module::registerModule()
     }
     return true;
 }
+
+std::vector<std::pair<std::string, std::string> > Module::moduleVariableNames() const
+{
+    return {}; // an empty variable list
+}
+
+double Module::moduleVariable(const Cell *, size_t ) const
+{
+    return 0.;
+}
