@@ -175,11 +175,12 @@ std::vector<std::pair<const Module*, size_t> > CellWrapper::mModules;
 
 void CellWrapper::setupVariables(EnvironmentCell *ecell, const State *astate)
 {
-    mVariableList = {  "index", "environmentId", "climateId", "stateId", "residenceTime", "function", "structure" }; // reset
+    mVariableList = {  "index", "environmentId", "climateId", "elevation" ,"stateId", "residenceTime", "function", "structure" }; // reset
     mVariablesMetaData = {
         { "General", "0-based cell index" }, // index
         { "General", "Id of the environment zone" }, // environmentId
         { "General", "Id of the climate zone" }, // climateId
+        { "General", "elevation (m) of the cell" }, // elevation
         { "General", "Id of the cell state" }, // stateId
         { "General", "residence time of the cell (years)" }, // residenceTime
         { "General", "ecosystem functioning class of the cell" }, // function
@@ -229,19 +230,20 @@ void CellWrapper::setupVariables(const Module *module)
 
 double CellWrapper::value(const size_t variableIndex)
 {
+    const size_t NFixedVariables = 8;
 
-    if (variableIndex < 7) {
-        // fixed variables: id, climateId
+    if (variableIndex < NFixedVariables) {
+        // fixed variables: id, climateId, ...
 
         switch (variableIndex) {
         case 0: return mData->cellIndex();
         case 1: return static_cast<double>(mData->environment()->id());
         case 2: return static_cast<double>(mData->environment()->climateId());
-        case 3: return static_cast<double>(mData->stateId());
-        case 4: return static_cast<double>(mData->residenceTime());
-        case 5: return static_cast<double>( mData->state() ? mData->state()->function() : 0); // function
-        case 6: return static_cast<double>( mData->state() ? mData->state()->structure() : 0); // structure
-
+        case 3: return static_cast<double>(mData->elevation());
+        case 4: return static_cast<double>(mData->stateId());
+        case 5: return static_cast<double>(mData->residenceTime());
+        case 6: return static_cast<double>( mData->state() ? mData->state()->function() : 0); // function
+        case 7: return static_cast<double>( mData->state() ? mData->state()->structure() : 0); // structure
 
         }
 
@@ -249,7 +251,7 @@ double CellWrapper::value(const size_t variableIndex)
     } else if (variableIndex < mMaxStateVar) {
         // state variable
         const State *s = mData->state();
-        return s->value(variableIndex - 7);
+        return s->value(variableIndex - NFixedVariables);
     } else if (variableIndex < mMaxEnvVar){
         // environment variable
         const EnvironmentCell *ec = mData->environment();

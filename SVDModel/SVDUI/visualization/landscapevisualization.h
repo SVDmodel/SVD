@@ -31,7 +31,7 @@ class LandscapeVisualization : public QObject
 {
 Q_OBJECT
 public:
-    enum RenderType {RenderNone, RenderState, RenderExpression};
+    enum RenderType {RenderNone, RenderState, RenderExpression, RenderVariable};
     LandscapeVisualization(QObject *parent=nullptr);
     ~LandscapeVisualization();
     void setup(SurfaceGraph *graph, Legend *palette);

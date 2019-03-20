@@ -144,7 +144,7 @@ bool LandscapeVisualization::renderVariable(QString variableName, QString descri
     if (!isValid())
         return false;
 
-    mCurrentType = RenderExpression;
+    mCurrentType = RenderVariable;
 
     bool auto_scale = true; // scale colors automatically between min and maximum value
 
@@ -185,7 +185,8 @@ void LandscapeVisualization::update()
     switch (mCurrentType) {
     case RenderNone: return;
     case RenderExpression: doRenderExpression(true); return;
-    case RenderState: doRenderState();
+    case RenderState: doRenderState(); return;
+    case RenderVariable: doRenderExpression(true); return;
     }
 
 }

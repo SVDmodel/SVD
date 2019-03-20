@@ -51,6 +51,10 @@ void FireModule::setup()
     miBurnProbability = static_cast<size_t>(State::valueIndex("pBurn"));
     miHighSeverity = static_cast<size_t>(State::valueIndex("pSeverity"));
 
+    // check if DEM is available
+    if (settings.valueString("visualization.dem").empty())
+        throw logic_error_fmt("The fire module requires a digital elevation model!");
+
     // set up ignitions
     filename = Tools::path(settings.valueString("modules.fire.ignitionFile"));
     FileReader rdr(filename);
@@ -155,6 +159,8 @@ void FireModule::fireSpread(const FireModule::SIgnition &ign)
         for (int iy=iymin; iy<=iymax; ++iy)
             for (int ix=ixmin; ix<=ixmax; ++ix) {
                 if (mGrid(ix, iy).spread == 1) {
+
+                    // TODO: update -> probabilities based on elevation (wind/slope factors a la iLand), ....
 
                     if (burnCell(ix, iy, n_highseverity_ha, n_rounds)) {
                         // the cell is burning and can spread
