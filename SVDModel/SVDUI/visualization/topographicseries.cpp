@@ -77,6 +77,7 @@ void TopographicSeries::setTopographyFile(const QString file, float width, float
 void TopographicSeries::setGrid(const Grid<float> &grid, float min_value)
 {
     RectF extent = grid.metricRect();
+    m_gridRect = extent;
     QtDataVisualization::QSurfaceDataArray *dataArray = new QtDataVisualization::QSurfaceDataArray;
     dataArray->reserve(grid.sizeY());
     for (int y=0;y<grid.sizeY();++y) {
@@ -94,4 +95,15 @@ void TopographicSeries::setGrid(const Grid<float> &grid, float min_value)
     m_sampleCountX = float(grid.sizeX());
     m_sampleCountZ = float(grid.sizeY());
 
+}
+
+QVector3D TopographicSeries::getCoordsFromRelative(const QVector3D &rel)
+{
+    QVector3D world;
+    if (m_gridRect.isNull())
+        return world;
+
+    world.setX(static_cast<float> (m_gridRect.left() + (rel.x()+1.)/2. * (m_gridRect.right()-m_gridRect.left()) ));
+    world.setY(static_cast<float>( m_gridRect.top() - (rel.z()+1.)/2. * (m_gridRect.top()-m_gridRect.bottom()) ));
+    return world;
 }

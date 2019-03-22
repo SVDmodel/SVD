@@ -21,6 +21,7 @@
 
 #include <QString>
 #include <QImage>
+#include <QVector3D>
 #include "grid.h"
 #include "expression.h"
 #include "colorpalette.h"
@@ -31,7 +32,7 @@ class LandscapeVisualization : public QObject
 {
 Q_OBJECT
 public:
-    enum RenderType {RenderNone, RenderState, RenderExpression};
+    enum RenderType {RenderNone, RenderState, RenderExpression, RenderVariable};
     LandscapeVisualization(QObject *parent=nullptr);
     ~LandscapeVisualization();
     void setup(SurfaceGraph *graph, Legend *palette);
@@ -48,8 +49,13 @@ public slots:
     /// renders the expression and sets the render type to "Expression"
     bool renderExpression(QString expression);
 
+    /// renders the content of the cell variable
+    bool renderVariable(QString variableName, QString description);
+
     /// update the rendering
     void update();
+signals:
+    void pointSelected(QVector3D world_coord); ///< coordinates of the point where a user clicks on the visualization
 
 private:
     bool isRendering() {return mIsRendering; }

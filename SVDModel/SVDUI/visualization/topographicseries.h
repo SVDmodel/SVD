@@ -39,6 +39,8 @@ public:
 
     // WR
     void setGrid(const Grid<float> &grid, float min_value);
+    // convert relative coords [-1,1] to metric coordinates on the DEM
+    QVector3D getCoordsFromRelative(const QVector3D &rel);
 
     float sampleCountX() { return m_sampleCountX; }
     float sampleCountZ() { return m_sampleCountZ; }
@@ -46,6 +48,7 @@ public:
 public Q_SLOTS:
 
 private:
+    RectF m_gridRect;
     float m_sampleCountX;
     float m_sampleCountZ;
 };

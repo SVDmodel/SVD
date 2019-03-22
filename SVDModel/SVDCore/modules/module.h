@@ -53,6 +53,10 @@ public:
     // startup
     virtual void setup() {}
     virtual void run() {}
+
+    // variables
+    virtual std::vector<std::pair<std::string, std::string> > moduleVariableNames() const;
+    virtual double moduleVariable(const Cell *cell, size_t variableIndex) const;
 protected:
     std::string mName;
     State::StateType mType; ///< states of this type are automatically handled by the module

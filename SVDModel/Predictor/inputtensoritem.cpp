@@ -43,6 +43,7 @@ static std::map< std::string, InputTensorItem::DataType> data_types = {
     {"int16",   InputTensorItem::DT_INT16},
     {"int64",   InputTensorItem::DT_INT64},
     {"uint16",  InputTensorItem::DT_UINT16},
+    {"int32",   InputTensorItem::DT_INT32},
     {"float16", InputTensorItem::DT_BFLOAT16},
     {"bool",    InputTensorItem::DT_BOOL}
 };

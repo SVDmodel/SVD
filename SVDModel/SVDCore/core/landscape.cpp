@@ -111,17 +111,40 @@ void Landscape::setup()
         throw std::logic_error("Setup of the landscape: The ID '" + std::to_string(*iptr) + "' is invalid. Check the log for additional details.");
     }
 
+    // load a DEM (if available)
+    Grid<float> dem;
+    std::string filename = Model::instance()->settings().valueString("visualization.dem","");
+    if (!filename.empty()) {
+        filename = Tools::path(filename);
+
+        if (!Tools::fileExists(filename)) {
+            lg->error("DEM is provided, but the file is not available ('{}').", filename);
+            return;
+        }
+        dem.loadGridFromFile(filename);
+        lg->debug("Loaded a digital elevation model (DEM) from '{}'. Cellsize: {}m, Left-Right: {}m - {}m, Top-Bottom: {}m - {}m.", filename, dem.cellsize(), dem.metricRect().left(), dem.metricRect().right(), dem.metricRect().top(), dem.metricRect().bottom());
+    }
+
+
     // now set up the landscape cells
     // the grid has the same size:
     mGrid.setup(mEnvironmentGrid.metricRect(), mEnvironmentGrid.cellsize());
 
     Cell *a=mGrid.begin();
-    for (EnvironmentCell **ec=mEnvironmentGrid.begin(); ec!=mEnvironmentGrid.end(); ++ec, ++a)
+    int cell_index = 0;
+    for (EnvironmentCell **ec=mEnvironmentGrid.begin(); ec!=mEnvironmentGrid.end(); ++ec, ++a, ++cell_index)
         if (*ec) {
+            a->setCellIndex(cell_index);
             // set to invalid state (different from NULL which is outside of the project area)
             a->setInvalid();
             // establish link to the environment
             a->setEnvironmentCell(*ec);
+            if (!dem.isEmpty()) {
+                PointF p = mGrid.cellCenterPoint(cell_index);
+                if (!dem.coordValid(p))
+                    throw logic_error_fmt("The digital elevation model '{}' is not valid for the point {}/{} (which is within the project area)!", filename, p.x(), p.y());
+                a->setElevation( dem[p] );
+            }
         }
 
 

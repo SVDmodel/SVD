@@ -73,6 +73,8 @@ void LandscapeVisualization::setup(SurfaceGraph *graph, Legend *palette)
 
     graph->setup(mDem, mMinHeight, mMaxHeight);
 
+
+
     //graph->topoSeries()->setGrid(mDem, mMinHeight);
 
     setupColorRamps();
@@ -86,6 +88,8 @@ void LandscapeVisualization::setup(SurfaceGraph *graph, Legend *palette)
 
     connect(palette, &Legend::paletteChanged, this, &LandscapeVisualization::update);
     connect(palette, &Legend::manualValueRangeChanged, this, &LandscapeVisualization::update);
+
+    connect(graph, &SurfaceGraph::pointSelected, this, &LandscapeVisualization::pointSelected);
 
 
 }
@@ -139,6 +143,42 @@ bool LandscapeVisualization::renderExpression(QString expression)
 
 }
 
+bool LandscapeVisualization::renderVariable(QString variableName, QString description)
+{
+    if (!isValid())
+        return false;
+
+    mCurrentType = RenderVariable;
+
+    bool auto_scale = true; // scale colors automatically between min and maximum value
+
+
+    checkTexture();
+
+
+    try {
+
+        QElapsedTimer timer;
+        timer.start();
+        mExpression.setExpression(variableName.toStdString());
+        if (mExpression.isEmpty())
+            return false;
+
+        mLegend->setCaption(QString::fromStdString(mExpression.expression()));
+        mLegend->setDescription(description);
+        doRenderExpression(auto_scale);
+
+        spdlog::get("main")->info("Rendered variable '{}' ({} ms)", variableName.toStdString(), timer.elapsed());
+
+        return true;
+
+    } catch (const std::exception &e) {
+        spdlog::get("main")->error("Visualization error: {}", e.what());
+        return false;
+    }
+
+}
+
 
 void LandscapeVisualization::update()
 {
@@ -149,7 +189,8 @@ void LandscapeVisualization::update()
     switch (mCurrentType) {
     case RenderNone: return;
     case RenderExpression: doRenderExpression(true); return;
-    case RenderState: doRenderState();
+    case RenderState: doRenderState(); return;
+    case RenderVariable: doRenderExpression(true); return;
     }
 
 }
@@ -290,6 +331,25 @@ void LandscapeVisualization::setupColorRamps()
              {1.0f, "red"}};
 
     pal->setupContinuousPalette("grey-red", stops);
+    mLegend->addPalette(pal->name(), pal);
+
+//    QVector<QColor> ColorPalette::mTerrainCol = QVector<QColor>() << QColor("#00A600") << QColor("#24B300") << QColor("#4CBF00") << QColor("#7ACC00")
+//                                                           << QColor("#ADD900") << QColor("#E6E600") << QColor("#E8C727") << QColor("#EAB64E")
+//                                                           << QColor("#ECB176") << QColor("#EEB99F") << QColor("#F0CFC8") <<  QColor("#F2F2F2");
+
+    pal = new Palette();
+    stops = { {0/12., "#00A600"}, {1.f/12.f, "#24B300"}, {2.f/12.f, "#4CBF00"},
+              {3/12., "#7ACC00"}, {4.f/12.f, "#ADD900"}, {5.f/12.f, "#E6E600"},
+              {6/12., "#E8C727"}, {7.f/12.f, "#EAB64E"}, {8.f/12.f, "#ECB176"},
+              {9/12., "#EEB99F"}, {10.f/12.f, "#F0CFC8"}, {11.f/12.f, "#F2F2F2"}  };
+    pal->setupContinuousPalette("terrain", stops);
+    mLegend->addPalette(pal->name(), pal);
+
+    pal = new Palette();
+    stops = { {0.f, "#0080FF"}, {0.25f, "#FFFF00"}, {0.5f, "#FF8000"},
+              {0.75f, "#FF0000"},
+              {1.f, "#FF0080"}  };
+    pal->setupContinuousPalette("rainbow", stops);
     mLegend->addPalette(pal->name(), pal);
 
 

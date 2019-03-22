@@ -48,7 +48,7 @@
 // visualization
 #include "cameracontrol.h"
 #include "colorpalette.h"
-
+#include "expressionwrapper.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -132,6 +132,7 @@ void MainWindow::modelStateChanged(QString s)
     if (mMC->state()->state() == ModelRunState::ReadyToRun && !mLandscapeVis->isValid()) {
         // setup of the visualization
         mLandscapeVis->setup(ui->main3d, mLegend);
+        onModelCreated();
     }
 
     // stop the update timer...
@@ -174,6 +175,19 @@ void MainWindow::checkVisualization()
 
     if (ui->visNone->isChecked())
         mLandscapeVis->setRenderType(LandscapeVisualization::RenderNone);
+
+    if (ui->visVariable->isChecked())
+        on_visVariables_currentItemChanged(ui->visVariables->currentItem(), nullptr);
+}
+
+void MainWindow::pointClickedOnVisualization(QVector3D world_pos)
+{
+    //spdlog::get("main")->info("x/y: {}/{}", world_pos.x(), world_pos.y());
+    QString label=QString("%1m/%2m").arg(static_cast<int>(world_pos.x())).arg(static_cast<int>(world_pos.y()));
+    ui->visCoords->setText(label);
+    ui->visCoordsInspector->setText(label);
+    populateInspector(world_pos);
+
 }
 
 
@@ -279,6 +293,8 @@ void MainWindow::initiateModelController()
     connect(mMC.get(), &ModelController::finished, [this]() { ui->progressBar->setValue(ui->progressBar->maximum());});
 
     connect(mMC.get(), &ModelController::finishedYear, mLandscapeVis, &LandscapeVisualization::update);
+    connect(mMC.get(), &ModelController::finished, mLandscapeVis, &LandscapeVisualization::update);
+    connect(mLandscapeVis, &LandscapeVisualization::pointSelected, this, &MainWindow::pointClickedOnVisualization);
 
     connect(&mUpdateModelTimer, &QTimer::timeout, this, &MainWindow::modelUpdate);
 
@@ -524,6 +540,85 @@ void MainWindow::updateModelStats()
 
 }
 
+void MainWindow::onModelCreated()
+{
+    ui->visVariables->clear();
+    ui->visCellData->clear();
+    CellWrapper cw(nullptr);
+    auto & vars = cw.getVariablesList();
+    auto & metadata = cw.getVariablesMetaData();
+
+    QList<QTreeWidgetItem *> items;
+    QStack<QTreeWidgetItem*> stack;
+    QList<QTreeWidgetItem *> items_insp;
+    QStack<QTreeWidgetItem*> stack_insp;
+    items_insp.append(new QTreeWidgetItem(QStringList() << "State")); // add group
+    items_insp.back()->setData(0, Qt::UserRole+0, -2);
+
+    stack.push(nullptr);
+    stack_insp.push(nullptr);
+    std::string group="";
+    for (size_t i=0;i<vars.size();++i) {
+        if (metadata[i].first != group) {
+            if (stack.size()>1) {
+                stack.pop();
+                stack_insp.pop();
+            }
+            items.append(new QTreeWidgetItem(stack.last(), QStringList() << QString::fromStdString(metadata[i].first))); // add group
+            items.back()->setData(0, Qt::UserRole+0, -1);
+            stack.push(items.back());
+
+            items_insp.append(new QTreeWidgetItem(stack_insp.last(), QStringList() << QString::fromStdString(metadata[i].first))); // add group
+            items_insp.back()->setData(0, Qt::UserRole+0, -1);
+            stack_insp.push(items_insp.back());
+
+            group = metadata[i].first;
+        }
+        items.append( new QTreeWidgetItem(stack.last(),  QStringList() << QString::fromStdString(vars[i]) ) ); // add variable
+        items.back()->setToolTip(0, QString::fromStdString(metadata[i].second));
+        items.back()->setData(0, Qt::UserRole+0, i);
+        items_insp.append( new QTreeWidgetItem(stack_insp.last(),  QStringList() << QString::fromStdString(vars[i]) ) ); // add variable
+        items_insp.back()->setToolTip(0, QString::fromStdString(metadata[i].second));
+        items_insp.back()->setData(0, Qt::UserRole+0, i);
+
+    }
+
+    ui->visVariables->addTopLevelItems(items);
+    ui->visCellData->addTopLevelItems(items_insp);
+
+}
+
+void MainWindow::populateInspector(QVector3D point)
+{
+    if (!mMC->state()->isModelValid())
+        return;
+    auto &grid = mMC->model()->instance()->landscape()->grid();
+    if (!grid.coordValid(point.x(), point.y()))
+        return;
+    const auto &cell = grid(point.x(), point.y());
+    if (cell.isNull())
+        return;
+    CellWrapper cw(&cell);
+
+    // loop over all elements of the inspector and
+    ui->visCellData->topLevelItem(0);
+    QTreeWidgetItemIterator it(ui->visCellData);
+    while (*it) {
+        int idx = (*it)->data(0, Qt::UserRole+0).toInt();
+        if (idx >= 0) {
+            double val = cw.value(static_cast<size_t>(idx));
+            (*it)->setText(1, QString::number(val));
+        }
+        if (idx<-1) {
+            switch (-idx) {
+            case 2: (*it)->setText(1, QString::fromStdString(cell.state()->asString()));  break;
+
+            }
+        }
+        ++it;
+    }
+}
+
 
 
 void MainWindow::on_pbReloadQml_clicked()
@@ -560,4 +655,26 @@ void MainWindow::on_actionOnline_resources_triggered()
 void MainWindow::on_lConfigFile_textChanged(const QString &arg1)
 {
     checkAvailableActions();
+}
+
+void MainWindow::on_visVariables_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
+{
+    Q_UNUSED(previous)
+    if (!mLandscapeVis->isValid())
+        return;
+
+    if (!current || current->data(0, Qt::UserRole+0).isNull())
+        return;
+
+    int key = current->data(0, Qt::UserRole+0).toInt();
+    if (key<0)
+        return;
+    size_t ukey = static_cast<size_t>(key);
+    spdlog::get("main")->debug("Clicked on {}", key);
+    CellWrapper cw(nullptr);
+    ui->visVariable->setChecked(true);
+    mLandscapeVis->renderVariable(QString::fromStdString( cw.getVariablesList()[ukey] ),
+                                  QString::fromStdString(cw.getVariablesMetaData()[ukey].second) );
+
+
 }
