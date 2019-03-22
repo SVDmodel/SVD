@@ -20,6 +20,7 @@
 
 #include "surfacegraph.h"
 #include "topographicseries.h"
+#include "custom3dinputhandler.h"
 
 #include <QtDataVisualization/QValue3DAxis>
 #include <QtDataVisualization/Q3DTheme>
@@ -130,11 +131,14 @@ SurfaceGraph::SurfaceGraph(QWidget *parent) : QWidget(parent)
 
     m_graph->setActiveTheme(theme);
 
+
     QObject::connect(m_graph->scene()->activeCamera(), &QtDataVisualization::Q3DCamera::targetChanged, this, &SurfaceGraph::cameraChanged);
     QObject::connect(m_graph->scene()->activeCamera(), &QtDataVisualization::Q3DCamera::zoomLevelChanged, this, &SurfaceGraph::cameraChanged);
     QObject::connect(m_graph->scene()->activeCamera(), &QtDataVisualization::Q3DCamera::xRotationChanged, this, &SurfaceGraph::cameraChanged);
     QObject::connect(m_graph->scene()->activeCamera(), &QtDataVisualization::Q3DCamera::yRotationChanged, this, &SurfaceGraph::cameraChanged);
+    QObject::connect(m_graph, &QtDataVisualization::Q3DSurface::queriedGraphPositionChanged, this, &SurfaceGraph::queryPositionChanged);
 
+    m_graph->setActiveInputHandler(new Custom3dInputHandler());
 }
 
 SurfaceGraph::~SurfaceGraph()
@@ -238,5 +242,12 @@ void SurfaceGraph::clickCamera()
     m_graph->scene()->activeCamera()->setTarget(target);
     m_graph->scene()->activeCamera()->setMaxZoomLevel(2000);
     m_graph->scene()->activeCamera()->setZoomLevel( m_graph->scene()->activeCamera()->zoomLevel() + 100 );
+}
+
+void SurfaceGraph::queryPositionChanged(const QVector3D &pos)
+{
+    QVector3D world_pos = m_topography->getCoordsFromRelative(pos);
+    //spdlog::get("main")->info("Grid: x: {}, y: {}, z: {} World: x: {}, y: {}, z: {} ", pos.x(), pos.y(), pos.z(), world_pos.x(), world_pos.y(), world_pos.z());
+    emit pointSelected(world_pos);
 }
 //! [0]

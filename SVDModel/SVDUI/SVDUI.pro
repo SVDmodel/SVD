@@ -40,7 +40,8 @@ SOURCES += \
     visualization/landscapevisualization.cpp \
     visualization/colorpalette.cpp \
     aboutdialog.cpp \
-    version.cpp
+    version.cpp \
+    visualization/custom3dinputhandler.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -53,7 +54,8 @@ HEADERS += \
     visualization/landscapevisualization.h \
     visualization/colorpalette.h \
     aboutdialog.h \
-    version.h
+    version.h \
+    visualization/custom3dinputhandler.h
 
 FORMS += \
         mainwindow.ui \

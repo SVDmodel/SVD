@@ -31,8 +31,8 @@
 class FireOut; // forward
 
 struct SFireCell {
-    SFireCell() : spread(0), n_fire(0), n_high_severity(0), last_burn(0) {}
-    short int spread; ///< spread flag during current fire event
+    SFireCell() : spread(0.f), n_fire(0), n_high_severity(0), last_burn(0) {}
+    float spread; ///< spread flag during current fire event
     short int n_fire; ///< counter how often cell burned
     short int n_high_severity; ///< high severity counter
     short int last_burn; ///< year when the cell burned the last time
@@ -68,10 +68,12 @@ private:
 
     // store for ignitions
     struct SIgnition {
-        SIgnition(int ayear, double ax, double ay, double amax): year(ayear), x(ax), y(ay), max_size(amax) {}
+        SIgnition(int ayear, double ax, double ay, double amax, double wspeed, double wdirection): year(ayear), x(ax), y(ay), max_size(amax), wind_speed(wspeed), wind_direction(wdirection) {}
        int year;
        double x, y; // cooridnates (meter)
-       double max_size; // maximum fire size in m2
+       double max_size; // maximum fire size in ha
+       double wind_speed; // current wind speed (m/2)
+       double wind_direction; // wind direction in degrees (0=north, 90=east, ...)
     };
     std::multimap< int, SIgnition > mIgnitions;
 
@@ -79,6 +81,10 @@ private:
 
     void fireSpread(const SIgnition &ign);
     bool burnCell(int ix, int iy, int &rHighSeverity, int round);
+
+    double calcSlopeFactor(const double slope) const;
+    double calcWindFactor(const SIgnition &fire_event, const double direction) const;
+    void calculateSpreadProbability(const SIgnition &fire_event, const Point &point, const float origin_elevation,  const int direction);
 
 
     // store for transition probabilites for burned cells

@@ -39,11 +39,12 @@ struct InputTensorItem {
         Function = 9
     };
 
-    /// supported data types (values copied from tensorflow types.pb.h)
+    /// supported data types (values copied from tensorflow types.pb.h (build/tensorflow/core/framework)
     enum DataType {
         DT_INVALID = 0,
         DT_FLOAT = 1,
         DT_INT16 = 5,
+        DT_INT32 = 3,
         DT_INT64 = 9,
         DT_BOOL = 10,
         DT_UINT16 = 17,

@@ -21,6 +21,7 @@
 
 #include <QMainWindow>
 #include <QTimer>
+#include <QVector3D>
 #include <memory>
 
 #include "modelcontroller.h"
@@ -53,6 +54,7 @@ private slots:
     void modelUpdate();
     void finishedYear();
     void checkVisualization();
+    void pointClickedOnVisualization(QVector3D world_pos);
 
     void on_actionTest_DNN_triggered();
 
@@ -121,6 +123,8 @@ private:
     void checkAvailableActions(); ///< check status of the actions (run, cancel, ...)
     void updateModelStats(); ///< refresh model stats
     void onModelCreated(); ///< called after the model is created (and ready to run)
+
+    void populateInspector(QVector3D point);
 
     Ui::MainWindow *ui;
     std::unique_ptr<ModelController> mMC;

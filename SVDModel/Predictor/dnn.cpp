@@ -533,6 +533,9 @@ TensorWrapper *DNN::buildTensor(size_t batch_size, InputTensorItem &item)
             tw = new TensorWrap2d<short unsigned int>(batch_size, item.sizeX); break;
         case InputTensorItem::DT_INT64:
             tw = new TensorWrap2d<long long>(batch_size, item.sizeX); break;
+        case InputTensorItem::DT_INT32:
+            tw = new TensorWrap2d<int32_t>(batch_size, item.sizeX); break;
+
         default:
             throw std::logic_error("Unhandled data type in tensorwrapper");
         }

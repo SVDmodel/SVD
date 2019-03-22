@@ -35,7 +35,7 @@
 class Point {
 public:
     Point() : mX(0), mY(0) {}
-    Point (int x, int y) { mX=x; mY=y; }
+    Point (int x, int y): mX(x), mY(y) {}
     int x() const { return mX; }
     int y() const { return mY; }
     void setX(int x) { mX = x; }

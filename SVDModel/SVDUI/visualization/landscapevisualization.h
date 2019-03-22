@@ -21,6 +21,7 @@
 
 #include <QString>
 #include <QImage>
+#include <QVector3D>
 #include "grid.h"
 #include "expression.h"
 #include "colorpalette.h"
@@ -53,6 +54,8 @@ public slots:
 
     /// update the rendering
     void update();
+signals:
+    void pointSelected(QVector3D world_coord); ///< coordinates of the point where a user clicks on the visualization
 
 private:
     bool isRendering() {return mIsRendering; }

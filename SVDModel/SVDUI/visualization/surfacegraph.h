@@ -47,9 +47,15 @@ public:
 
     QtDataVisualization::Q3DSurface *graph() { return m_graph; }
     TopographicSeries *topoSeries() { return m_topography; }
+public slots:
+    void queryPositionChanged(const QVector3D &pos);
+
 signals:
     void cameraChanged();
+    void pointSelected(QVector3D pos);
+
 private:
+
     QtDataVisualization::Q3DSurface *m_graph;
 
     TopographicSeries *m_topography;
