@@ -519,6 +519,7 @@ void MainWindow::checkAvailableActions()
     ui->actionSetupProject->setEnabled( !mMC->state()->isModelRunning() && !ui->lConfigFile->text().isEmpty());
     ui->actionOpenProject->setEnabled( !mMC->state()->isModelRunning() );
     ui->openProject->setEnabled(!mMC->state()->isModelRunning());
+    ui->actionReset_view->setEnabled( mMC->state()->isModelValid() );
 
 }
 
@@ -583,6 +584,11 @@ void MainWindow::onModelCreated()
 
     ui->visVariables->addTopLevelItems(items);
     ui->visCellData->addTopLevelItems(items_insp);
+
+    // saved views
+    ui->actionCustom_view_1->setEnabled(false);
+    ui->actionCustom_View_2->setEnabled(false);
+    ui->actionCustom_View_3->setEnabled(false);
 
 }
 
@@ -674,5 +680,61 @@ void MainWindow::on_visVariables_currentItemChanged(QTreeWidgetItem *current, QT
     mLandscapeVis->renderVariable(QString::fromStdString( cw.getVariablesList()[ukey] ),
                                   QString::fromStdString(cw.getVariablesMetaData()[ukey].second) );
 
+
+}
+
+void MainWindow::on_actionReset_view_triggered()
+{
+    if (mLandscapeVis->isValid()) {
+        mLandscapeVis->resetView();
+    }
+}
+
+void MainWindow::on_actionSaveView_1_triggered()
+{
+    if (mLandscapeVis->isValid()) {
+        mLandscapeVis->saveView(1);
+        ui->actionCustom_view_1->setEnabled(true);
+    }
+}
+
+void MainWindow::on_actionSaveView_2_triggered()
+{
+    if (mLandscapeVis->isValid()) {
+        mLandscapeVis->saveView(2);
+        ui->actionCustom_View_2->setEnabled(true);
+    }
+
+}
+
+void MainWindow::on_actionSaveView_3_triggered()
+{
+    if (mLandscapeVis->isValid()) {
+        mLandscapeVis->saveView(3);
+        ui->actionCustom_View_3->setEnabled(true);
+    }
+
+}
+
+void MainWindow::on_actionCustom_view_1_triggered()
+{
+    if (mLandscapeVis->isValid()) {
+        mLandscapeVis->resetView(1);
+    }
+}
+
+void MainWindow::on_actionCustom_View_2_triggered()
+{
+    if (mLandscapeVis->isValid()) {
+        mLandscapeVis->resetView(2);
+    }
+
+}
+
+void MainWindow::on_actionCustom_View_3_triggered()
+{
+    if (mLandscapeVis->isValid()) {
+        mLandscapeVis->resetView(3);
+    }
 
 }

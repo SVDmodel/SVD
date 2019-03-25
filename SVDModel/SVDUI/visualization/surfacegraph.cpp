@@ -44,12 +44,6 @@ private:
     mutable QVector<float> empty_vec;
 };
 
-//using namespace QtDataVisualization;
-
-//const float areaWidth = 8000.0f;
-//const float areaHeight = 8000.0f;
-const float aspectRatio = 0.1389f;
-//const float minRange = areaWidth * 0.49f;
 
 SurfaceGraph::SurfaceGraph(QWidget *parent) : QWidget(parent)
 {
@@ -144,24 +138,19 @@ SurfaceGraph::SurfaceGraph(QWidget *parent) : QWidget(parent)
 SurfaceGraph::~SurfaceGraph()
 {
     delete m_graph;
+    qDeleteAll(mDefaultViews);
 }
 
-void SurfaceGraph::setFilename(QString grid_file_name)
-{
-//    m_Grid.loadGridFromFile(grid_file_name.toStdString());
-//    setup();
 
-}
 
 void SurfaceGraph::setup(Grid<float> &dem, float min_h, float max_h)
 {
-    mDem = &dem;
 
     m_graph->axisX()->setLabelFormat("%i");
     m_graph->axisZ()->setLabelFormat("%i");
-    m_graph->axisX()->setRange(0.0f, dem.metricSizeX());
-    m_graph->axisY()->setRange(min_h, max_h*6);
-    m_graph->axisZ()->setRange(0.0f, dem.metricSizeY());
+    m_graph->axisX()->setRange(0.0f, static_cast<float>(dem.metricSizeX()));
+    m_graph->axisY()->setRange(min_h, max_h*4);
+    m_graph->axisZ()->setRange(0.0f, static_cast<float>(dem.metricSizeY()));
 
 
     m_topography = new TopographicSeries();
@@ -173,75 +162,26 @@ void SurfaceGraph::setup(Grid<float> &dem, float min_h, float max_h)
 
     m_graph->addSeries(m_topography);
 
-
-}
-
-//! [0]
-void SurfaceGraph::toggleSurfaceTexture(bool enable)
-{
-    QLinearGradient gr(0,0,1000,1);
-
-    gr.setColorAt(0.0, Qt::black);
-    gr.setColorAt(0.33, Qt::blue);
-    gr.setColorAt(0.67, Qt::red);
-    gr.setColorAt(1.0, Qt::yellow);
-    //gr.setCoordinateMode(QGradient::StretchToDeviceMode);
-    QBrush brush(gr);
-    QImage color_map(1000, 10, QImage::Format_ARGB32_Premultiplied);
-
-    QPainter painter(&color_map);
-    painter.setBrush(brush);
-    painter.drawRect(color_map.rect());
-    //painter.fillRect(color_map.rect(), brush);
-    painter.end();
-    color_map.save("test.jpg");
-
-
-    //QImage img = m_topography->texture();
-    QImage img = m_topography->texture();
-    bool new_img = false;
-    if (img.isNull()) {
-        //img = QImage(m_Grid.sizeX(), m_Grid.sizeY(), QImage::Format_ARGB32_Premultiplied);
-        new_img = true;
+    mDefaultViews.clear();
+    for (int i=0;i<4;++i) {
+        mDefaultViews.push_back(new Q3DCamera());
+        mDefaultViews[i]->copyValuesFrom(*m_graph->scene()->activeCamera());
     }
-    for (int x=0;x<img.width();++x)
-        for (int y=0;y<img.height(); ++y) {
-            if (new_img) {
-                float value = y/float(img.height())*y/float(img.height());
-                QRgb col = color_map.pixel( value * color_map.width(),1);
-                //QRgb col = qRgba( x % 256, y % 256, 127, int(120+x/10));
-                if ((*mDem)(x,y)>1189.f)
-                    img.setPixel(x,img.height()-y-1,col);
-                else
-                    img.setPixel(x,img.height()-y-1,qRgba(255,255,255,127));
-            } else {
-                QColor col(img.pixel(x,y));
-                col.setRed( (col.red()+1) % 255);
-                img.setPixel(x,y, col.rgba() );
 
-            }
-        }
-
-    m_topography->setTexture(img);
-    return;
-
-    if (enable)
-        m_topography->setTextureFile(":/maps/maptexture");
-    else
-        m_topography->setTextureFile("");
 }
+
 
 void SurfaceGraph::clickCamera()
 {
-    qDebug() << "click";
     int preset = int(m_graph->scene()->activeCamera()->cameraPreset());
     qDebug() << preset;
     // m_graph->scene()->activeCamera()->setCameraPreset(QtDataVisualization::Q3DCamera::CameraPreset( preset + 1) );
     QVector3D target = m_graph->scene()->activeCamera()->target();
-    target.setX(target.y() - 0.1);
+    target.setX(target.y() - 0.1f);
     m_graph->scene()->activeCamera()->setTarget(target);
     m_graph->scene()->activeCamera()->setMaxZoomLevel(2000);
     m_graph->scene()->activeCamera()->setZoomLevel( m_graph->scene()->activeCamera()->zoomLevel() + 100 );
+
 }
 
 void SurfaceGraph::queryPositionChanged(const QVector3D &pos)
@@ -250,4 +190,24 @@ void SurfaceGraph::queryPositionChanged(const QVector3D &pos)
     //spdlog::get("main")->info("Grid: x: {}, y: {}, z: {} World: x: {}, y: {}, z: {} ", pos.x(), pos.y(), pos.z(), world_pos.x(), world_pos.y(), world_pos.z());
     emit pointSelected(world_pos);
 }
-//! [0]
+
+void SurfaceGraph::resetCameraPosition(int cameraPreset)
+{
+   if (cameraPreset>=mDefaultViews.length())
+       return;
+
+    m_graph->scene()->activeCamera()->copyValuesFrom(*mDefaultViews[cameraPreset]);
+   // force a repaint of the scene
+   float rot = m_graph->scene()->activeCamera()->xRotation();
+   m_graph->scene()->activeCamera()->setXRotation(rot + 1.f);
+   m_graph->scene()->activeCamera()->setXRotation(rot);
+
+}
+
+void SurfaceGraph::saveCameraPosition(int cameraPreset)
+{
+    if (cameraPreset>0 && cameraPreset<mDefaultViews.size()) {
+        mDefaultViews[cameraPreset]->copyValuesFrom(*m_graph->scene()->activeCamera());
+    }
+
+}

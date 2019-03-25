@@ -54,6 +54,9 @@ public slots:
 
     /// update the rendering
     void update();
+    /// reset view to stored view
+    void resetView(int camera=0);
+    void saveView(int camera);
 signals:
     void pointSelected(QVector3D world_coord); ///< coordinates of the point where a user clicks on the visualization
 
