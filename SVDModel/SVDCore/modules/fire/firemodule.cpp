@@ -57,7 +57,7 @@ void FireModule::setup()
 
     // check if DEM is available
     if (settings.valueString("visualization.dem").empty())
-        throw logic_error_fmt("The fire module requires a digital elevation model!");
+        throw logic_error_fmt("The fire module requires a digital elevation model! {}", 0);
 
     // set up ignitions
     filename = Tools::path(settings.valueString("modules.fire.ignitionFile"));

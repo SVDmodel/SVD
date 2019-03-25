@@ -577,10 +577,10 @@ void MainWindow::onModelCreated()
         }
         items.append( new QTreeWidgetItem(stack.last(),  QStringList() << QString::fromStdString(vars[i]) ) ); // add variable
         items.back()->setToolTip(0, QString::fromStdString(metadata[i].second));
-        items.back()->setData(0, Qt::UserRole+0, i);
+        items.back()->setData(0, Qt::UserRole+0, static_cast<int>(i));
         items_insp.append( new QTreeWidgetItem(stack_insp.last(),  QStringList() << QString::fromStdString(vars[i]) ) ); // add variable
         items_insp.back()->setToolTip(0, QString::fromStdString(metadata[i].second));
-        items_insp.back()->setData(0, Qt::UserRole+0, i);
+        items_insp.back()->setData(0, Qt::UserRole+0, static_cast<int>(i));
 
     }
 
@@ -599,9 +599,9 @@ void MainWindow::populateInspector(QVector3D point)
     if (!mMC->state()->isModelValid())
         return;
     auto &grid = mMC->model()->instance()->landscape()->grid();
-    if (!grid.coordValid(point.x(), point.y()))
+    if (!grid.coordValid(static_cast<double>(point.x()), static_cast<double>(point.y())))
         return;
-    const auto &cell = grid(point.x(), point.y());
+    const auto &cell = grid(static_cast<double>(point.x()), static_cast<double>(point.y()));
     if (cell.isNull())
         return;
     CellWrapper cw(&cell);
@@ -660,6 +660,7 @@ void MainWindow::on_actionOnline_resources_triggered()
 
 void MainWindow::on_lConfigFile_textChanged(const QString &arg1)
 {
+    Q_UNUSED(arg1)
     checkAvailableActions();
 }
 

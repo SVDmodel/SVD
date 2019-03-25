@@ -166,7 +166,7 @@ void FetchDataStandard::fetchState(Cell *cell, BatchDNN* batch, size_t slot)
         *p = cell->stateId() - 1;
         return;
     }
-    throw logic_error_fmt("FetchDataStandard:fetchState: invalid data type (allowed: uint16, int32)");
+    throw logic_error_fmt("FetchDataStandard:fetchState: invalid data type (allowed: uint16, int32){}", "");
 
 }
 
