@@ -81,7 +81,7 @@ public:
     bool isModelPaused() const { return mModel.in({ ModelRunState::Paused}); }
     bool isModelReadyToRun() const { return mModel.in({ ModelRunState::ReadyToRun}); }
     //bool isModelPaused() const { return mModel.in({ ModelRunState::ReadyToRun, ModelRunState::Paused}); }
-    bool isModelValid() const { return isModelRunning() || isModelFinished() || isModelPaused(); }
+    bool isModelValid() const { return isModelRunning() || isModelFinished() || isModelPaused() || isModelReadyToRun();  }
     bool isModelCreated() const { return !mModel.in({ModelRunState::Invalid, ModelRunState::Creating}); }
 private:
     ModelRunState mModel;

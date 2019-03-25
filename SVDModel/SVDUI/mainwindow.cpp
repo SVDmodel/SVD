@@ -514,7 +514,6 @@ void MainWindow::checkAvailableActions()
 {
     if (!mMC)
         return;
-    mMC->state()->isModelValid();
     ui->actionRunSim->setEnabled( mMC->state()->isModelPaused() || mMC->state()->isModelReadyToRun());
     ui->actionStopSim->setEnabled( mMC->state()->isModelRunning() );
     ui->actiondelete_model->setEnabled( mMC->state()->isModelValid() );

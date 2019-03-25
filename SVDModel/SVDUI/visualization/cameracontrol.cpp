@@ -44,9 +44,10 @@ void CameraControl::cameraChanged()
     ui->zoomFactor->setValue(static_cast<int>(camera->zoomLevel()));
     ui->rotationX->setText(QString::number(camera->xRotation()));
     ui->rotationY->setText(QString::number(camera->yRotation()));
+    ui->zFactor->setValue(static_cast<int>(mSurface->graph()->aspectRatio()*100));
 
-    QString cam_string = QString("%1,%2,%3,%4,%5,%6").arg(camera->target().x()).arg(camera->target().y()).arg(camera->target().z())
-            .arg(camera->zoomLevel()).arg(camera->xRotation()).arg(camera->yRotation());
+    QString cam_string = QString("%1,%2,%3,%4,%5,%6,%7").arg(camera->target().x()).arg(camera->target().y()).arg(camera->target().z())
+            .arg(camera->zoomLevel()).arg(camera->xRotation()).arg(camera->yRotation()).arg(mSurface->graph()->aspectRatio());
     ui->lCamPos->setText(cam_string);
 }
 
@@ -116,4 +117,5 @@ void CameraControl::on_pbSetFromString_clicked()
     camera->setZoomLevel(elem[3].toDouble());
     camera->setXRotation(elem[4].toDouble());
     camera->setYRotation(elem[5].toDouble());
+    mSurface->graph()->setAspectRatio(elem[6].toDouble());
 }

@@ -149,7 +149,7 @@ void SurfaceGraph::setup(Grid<float> &dem, float min_h, float max_h)
     m_graph->axisX()->setLabelFormat("%i");
     m_graph->axisZ()->setLabelFormat("%i");
     m_graph->axisX()->setRange(0.0f, static_cast<float>(dem.metricSizeX()));
-    m_graph->axisY()->setRange(min_h, max_h*4);
+    m_graph->axisY()->setRange(min_h, max_h*40);
     m_graph->axisZ()->setRange(0.0f, static_cast<float>(dem.metricSizeY()));
 
 
