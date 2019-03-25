@@ -24,13 +24,10 @@
 #include <QtDataVisualization/QSurface3DSeries>
 #include <QtWidgets/QSlider>
 #include "topographicseries.h"
-//#include "highlightseries.h"
 
-//#include "custominputhandler.h"
 
 #include "grid.h"
 
-// using namespace QtDataVisualization;
 
 class SurfaceGraph : public QWidget
 {
@@ -39,16 +36,16 @@ public:
     explicit SurfaceGraph(QWidget *parent=nullptr);
     ~SurfaceGraph();
 
-    void setFilename(QString grid_file_name);
     void setup(Grid<float> &dem, float min_h, float max_h);
 
-    void toggleSurfaceTexture(bool enable);
     void clickCamera();
 
     QtDataVisualization::Q3DSurface *graph() { return m_graph; }
     TopographicSeries *topoSeries() { return m_topography; }
 public slots:
     void queryPositionChanged(const QVector3D &pos);
+    void resetCameraPosition(int cameraPreset);
+    void saveCameraPosition(int cameraPreset);
 
 signals:
     void cameraChanged();
@@ -57,18 +54,12 @@ signals:
 private:
 
     QtDataVisualization::Q3DSurface *m_graph;
+    QVector<QtDataVisualization::Q3DCamera*> mDefaultViews;
 
     TopographicSeries *m_topography;
-    // HighlightSeries *m_highlight;
     int m_highlightWidth;
     int m_highlightHeight;
 
-    //float m_areaWidth;
-    //float m_areaHeight;
-
-    Grid<float> *mDem;
-
-    // CustomInputHandler *m_inputHandler;
 };
 
 #endif // SURFACEGRAPH_H

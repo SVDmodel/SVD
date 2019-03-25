@@ -239,6 +239,13 @@ void Landscape::setupInitialState()
                     if (n_errors<100)
                         lg->error("Init landscape: cell with index '{}' ({}/{}) not valid in state or residence time grid.", i, p.x(), p.y());
                 } else {
+                    int intstate = state_grid.valueAt(p);
+                    if (intstate == state_grid.nullValue()) {
+                        ++n_errors;
+                        if (n_errors<120)
+                            lg->error("Init landscape: NA at {}/{}: not a valid stateId.",  p.x(), p.y());
+                        continue;
+                    }
                     state_t state = static_cast<state_t>(state_grid.valueAt(p));
                     restime_t restime = static_cast<restime_t>(restime_grid.valueAt(p));
                     if (!Model::instance()->states()->isValid(state)) {

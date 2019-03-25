@@ -280,8 +280,21 @@
     <property name="title">
      <string>Visualization</string>
     </property>
+    <widget class="QMenu" name="menuSave_custom_view">
+     <property name="title">
+      <string>Save custom view...</string>
+     </property>
+     <addaction name="actionSaveView_1"/>
+     <addaction name="actionSaveView_2"/>
+     <addaction name="actionSaveView_3"/>
+    </widget>
     <addaction name="actionRender_to_file"/>
     <addaction name="action3D_Camera_settings"/>
+    <addaction name="actionReset_view"/>
+    <addaction name="actionCustom_view_1"/>
+    <addaction name="actionCustom_View_2"/>
+    <addaction name="actionCustom_View_3"/>
+    <addaction name="menuSave_custom_view"/>
    </widget>
    <widget class="QMenu" name="menuOther">
     <property name="title">
@@ -487,7 +500,7 @@
      <item>
       <widget class="QTabWidget" name="tabWidget_2">
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="tabVisualization">
         <attribute name="title">
@@ -788,6 +801,53 @@
   <action name="actionAbout_SVD">
    <property name="text">
     <string>About SVD</string>
+   </property>
+  </action>
+  <action name="actionReset_view">
+   <property name="text">
+    <string>Reset view</string>
+   </property>
+   <property name="shortcut">
+    <string>F6</string>
+   </property>
+  </action>
+  <action name="actionCustom_view_1">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Custom view 1</string>
+   </property>
+  </action>
+  <action name="actionCustom_View_2">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Custom View 2</string>
+   </property>
+  </action>
+  <action name="actionCustom_View_3">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Custom View 3</string>
+   </property>
+  </action>
+  <action name="actionSaveView_1">
+   <property name="text">
+    <string>View 1</string>
+   </property>
+  </action>
+  <action name="actionSaveView_2">
+   <property name="text">
+    <string>View 2</string>
+   </property>
+  </action>
+  <action name="actionSaveView_3">
+   <property name="text">
+    <string>View 3</string>
    </property>
   </action>
  </widget>

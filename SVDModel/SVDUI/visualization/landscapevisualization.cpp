@@ -74,9 +74,6 @@ void LandscapeVisualization::setup(SurfaceGraph *graph, Legend *palette)
     graph->setup(mDem, mMinHeight, mMaxHeight);
 
 
-
-    //graph->topoSeries()->setGrid(mDem, mMinHeight);
-
     setupColorRamps();
     setupStateColors();
     mIsValid = true;
@@ -195,6 +192,21 @@ void LandscapeVisualization::update()
 
 }
 
+void LandscapeVisualization::resetView(int camera)
+{
+    if (mGraph) {
+        mGraph->resetCameraPosition(camera);
+
+    }
+}
+
+void LandscapeVisualization::saveView(int camera)
+{
+    // save the camera position
+    if (mGraph)
+        mGraph->saveCameraPosition(camera);
+}
+
 void LandscapeVisualization::doRenderExpression(bool auto_scale)
 {
     if (mExpression.isEmpty())
@@ -202,7 +214,6 @@ void LandscapeVisualization::doRenderExpression(bool auto_scale)
 
     mIsRendering = true;
 
-    //mPalette->setCaption(QString::fromStdString(mExpression.expression()));
     CellWrapper cw(nullptr);
     auto &grid = Model::instance()->landscape()->grid();
     double value;
@@ -220,8 +231,6 @@ void LandscapeVisualization::doRenderExpression(bool auto_scale)
                 max_value = std::max(max_value, value);
             }
         }
-        //if (min_value == max_value)
-        //    max_value = min_value + 1.; // avoid div by 0 later
     }
     mLegend->setAbsoluteValueRange(min_value, max_value);
     Palette *pal = (mLegend->currentPalette() == nullptr ? mContinuousPalette : mLegend->currentPalette() );
@@ -239,8 +248,6 @@ void LandscapeVisualization::doRenderExpression(bool auto_scale)
                 cw.setData(&c);
                 value = mExpression.calculate(cw);
                 *line = pal->color(value);
-                //value_rel = (value - min_value) / (max_value - min_value);
-                //*line = colorValue(value_rel);
             } else {
                 *line = fill_color;
             }
@@ -351,27 +358,6 @@ void LandscapeVisualization::setupColorRamps()
               {1.f, "#FF0080"}  };
     pal->setupContinuousPalette("rainbow", stops);
     mLegend->addPalette(pal->name(), pal);
-
-
-//    QLinearGradient gr(0,0,1000,1);
-
-//    gr.setColorAt(0.0, Qt::black);
-//    gr.setColorAt(0.33, Qt::blue);
-//    gr.setColorAt(0.67, Qt::red);
-//    gr.setColorAt(1.0, Qt::yellow);
-//    //gr.setCoordinateMode(QGradient::StretchToDeviceMode);
-//    QBrush brush(gr);
-//    QImage color_map(1000, 10, QImage::Format_ARGB32_Premultiplied);
-
-//    QPainter painter(&color_map);
-//    painter.setBrush(brush);
-//    painter.drawRect(color_map.rect());
-//    //painter.fillRect(color_map.rect(), brush);
-//    painter.end();
-
-//    mColorLookup.clear();
-//    for (int i=0;i<1000;++i)
-//        mColorLookup.push_back(color_map.pixel(i,1));
 }
 
 void LandscapeVisualization::setupStateColors()
@@ -391,25 +377,5 @@ void LandscapeVisualization::setupStateColors()
     mStatePalette = pal;
     mStatePalette->setDescription("state specific colors (defined in state meta data).");
     mLegend->addPalette(pal->name(), pal);
-
-//    int max_state_id=0;
-//    for (const auto &s : states)
-//        max_state_id = std::max(max_state_id, static_cast<int>(s.id()));
-
-//    mStateColorLookup.clear();
-//    mStateColorLookup.resize(max_state_id + 1);
-
-//    QRgb no_value = QColor(100,100,100).rgba();
-//    for (const auto &s : states) {
-//        mStateColorLookup[static_cast<int>(s.id())] = no_value;
-//        if (!s.colorName().empty()) {
-//            QColor col(QString::fromStdString(s.colorName()));
-//            if (col.isValid())
-//                mStateColorLookup[static_cast<int>(s.id())] = col.rgba();
-//            else
-//                spdlog::get("main")->warn("The color '{}' for stateId '{}' is not valid (see Qt doc for valid color names)!", s.colorName(), s.id());
-//        }
-
-//    }
 
 }

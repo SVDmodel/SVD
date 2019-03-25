@@ -114,6 +114,20 @@ private slots:
 
     void on_visVariables_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
 
+    void on_actionReset_view_triggered();
+
+    void on_actionSaveView_1_triggered();
+
+    void on_actionSaveView_2_triggered();
+
+    void on_actionSaveView_3_triggered();
+
+    void on_actionCustom_view_1_triggered();
+
+    void on_actionCustom_View_2_triggered();
+
+    void on_actionCustom_View_3_triggered();
+
 private:
     QList<QString> mRecentFileList;
 
