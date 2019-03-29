@@ -36,6 +36,7 @@ FireOut::FireOut()
     {"year", "simulation year of the fire event", DataType::Int},
     {"x", "x coordinate (m) of the ignition point", DataType::Double},
     {"y", "y coordinate (m) of the ignition point", DataType::Double},
+    {"id", "unique identifier of a single fire", DataType::Int},
     {"planned_size", "planned fire size (ha)", DataType::Double},
     {"realized_size", "realized fire size (ha)", DataType::Double},
     {"share_high_severity", "share of pixels burning with high severity (0..1)", DataType::Double}   };
@@ -59,7 +60,7 @@ void FireOut::execute()
     // write output table
     for (auto &s : fire->mStats) {
         if (s.year == Model::instance()->year()) {
-            out() << s.year << s.x << s.y << s.max_size << s.ha_burned << (s.ha_burned>0? s.ha_high_severity/static_cast<double>(s.ha_burned) : 0. );
+            out() << s.year << s.Id << s.x << s.y << s.max_size << s.ha_burned << (s.ha_burned>0? s.ha_high_severity/static_cast<double>(s.ha_burned) : 0. );
             out().write();
         }
     }

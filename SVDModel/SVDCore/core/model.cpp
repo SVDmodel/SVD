@@ -169,14 +169,14 @@ void Model::inititeLogging()
 
     int idx = indexOf(levels, settings().valueString("logging.model.level"));
     if (idx==-1)
-        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.model.level") + "' is not a valid logging level. Valid are: " + join(levels) );
+        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.model.level") + "' is not a valid logging level for logging.model.level. Valid are: " + join(levels) );
     combined_logger->set_level(spdlog::level::level_enum(idx) );
 
     combined_logger=spdlog::create("setup", sinks.begin(), sinks.end());
     combined_logger->flush_on(spdlog::level::err);
     idx = indexOf(levels, settings().valueString("logging.setup.level"));
     if (idx==-1)
-        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.setup.level") + "' is not a valid logging level. Valid are: " + join(levels) );
+        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.setup.level") + "' is not a valid logging level for logging.setup.level. Valid are: " + join(levels) );
     combined_logger->set_level(spdlog::level::level_enum(idx) );
 
 
@@ -184,9 +184,15 @@ void Model::inititeLogging()
     combined_logger->flush_on(spdlog::level::err);
     idx = indexOf(levels, settings().valueString("logging.dnn.level"));
     if (idx==-1)
-        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.dnn.level") + "' is not a valid logging level. Valid are: " + join(levels) );
+        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.dnn.level") + "' is not a valid logging level for logging.dnn.level. Valid are: " + join(levels) );
     combined_logger->set_level(spdlog::level::level_enum(idx) );
 
+    combined_logger=spdlog::create("modules", sinks.begin(), sinks.end());
+    combined_logger->flush_on(spdlog::level::err);
+    idx = indexOf(levels, settings().valueString("logging.modules.level"));
+    if (idx==-1)
+        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.modules.level") + "' is not a valid logging level for logging.modules.level. Valid are: " + join(levels) );
+    combined_logger->set_level(spdlog::level::level_enum(idx) );
 
     //auto combined_logger = std::make_shared<spdlog::logger>("console", begin(sinks), end(sinks));
 
@@ -195,7 +201,7 @@ void Model::inititeLogging()
     lg_main = spdlog::get("main");
     lg_setup = spdlog::get("setup");
 
-    lg_main->info("Started logging. Log levels: main: {}, setup: {}, dnn: {}", levels[lg_main->level()], levels[lg_setup->level()], levels[spdlog::get("dnn")->level()]);
+    lg_main->info("Started logging. Log levels: main: {}, setup: {}, dnn: {}, modules: {}", levels[lg_main->level()], levels[lg_setup->level()], levels[spdlog::get("dnn")->level()], levels[spdlog::get("modules")->level()]);
 
 }
 

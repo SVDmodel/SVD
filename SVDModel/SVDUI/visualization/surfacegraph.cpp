@@ -130,6 +130,8 @@ SurfaceGraph::SurfaceGraph(QWidget *parent) : QWidget(parent)
     QObject::connect(m_graph->scene()->activeCamera(), &QtDataVisualization::Q3DCamera::zoomLevelChanged, this, &SurfaceGraph::cameraChanged);
     QObject::connect(m_graph->scene()->activeCamera(), &QtDataVisualization::Q3DCamera::xRotationChanged, this, &SurfaceGraph::cameraChanged);
     QObject::connect(m_graph->scene()->activeCamera(), &QtDataVisualization::Q3DCamera::yRotationChanged, this, &SurfaceGraph::cameraChanged);
+    QObject::connect(m_graph, &QtDataVisualization::Q3DSurface::aspectRatioChanged, this, &SurfaceGraph::cameraChanged);
+    QObject::connect(m_graph->axisY(), &QtDataVisualization::QValue3DAxis::maxChanged, this, &SurfaceGraph::cameraChanged);
     QObject::connect(m_graph, &QtDataVisualization::Q3DSurface::queriedGraphPositionChanged, this, &SurfaceGraph::queryPositionChanged);
 
     m_graph->setActiveInputHandler(new Custom3dInputHandler());
@@ -138,7 +140,6 @@ SurfaceGraph::SurfaceGraph(QWidget *parent) : QWidget(parent)
 SurfaceGraph::~SurfaceGraph()
 {
     delete m_graph;
-    qDeleteAll(mDefaultViews);
 }
 
 
@@ -146,13 +147,15 @@ SurfaceGraph::~SurfaceGraph()
 void SurfaceGraph::setup(Grid<float> &dem, float min_h, float max_h)
 {
 
+    float longer_side = static_cast<float>(std::max(dem.metricSizeX(), dem.metricSizeY()));
+    float max_range = 10000 + pow(longer_side, 0.9f); // a rule of thumb
     m_graph->axisX()->setLabelFormat("%i");
     m_graph->axisZ()->setLabelFormat("%i");
     m_graph->axisX()->setRange(0.0f, static_cast<float>(dem.metricSizeX()));
-    m_graph->axisY()->setRange(min_h, max_h*40);
+    m_graph->axisY()->setRange(min_h, min_h + std::max(max_h, max_range));
     m_graph->axisZ()->setRange(0.0f, static_cast<float>(dem.metricSizeY()));
 
-
+    qDebug() << "set y-range: max-side:"<< longer_side << "min:" << min_h << "max:" << m_graph->axisY()->max();
     m_topography = new TopographicSeries();
 
     m_topography->setGrid(dem, min_h);
@@ -163,9 +166,14 @@ void SurfaceGraph::setup(Grid<float> &dem, float min_h, float max_h)
     m_graph->addSeries(m_topography);
 
     mDefaultViews.clear();
+    ViewParams vp;
     for (int i=0;i<4;++i) {
-        mDefaultViews.push_back(new Q3DCamera());
-        mDefaultViews[i]->copyValuesFrom(*m_graph->scene()->activeCamera());
+        mDefaultViews.push_back(vp);
+        mDefaultViews[i].camera = new Q3DCamera();
+        mDefaultViews[i].camera->copyValuesFrom(*m_graph->scene()->activeCamera());
+        mDefaultViews[i].aspectRatio = m_graph->aspectRatio();
+        mDefaultViews[i].maxAxisYRange = m_graph->axisY()->max();
+
     }
 
 }
@@ -179,9 +187,33 @@ void SurfaceGraph::clickCamera()
     QVector3D target = m_graph->scene()->activeCamera()->target();
     target.setX(target.y() - 0.1f);
     m_graph->scene()->activeCamera()->setTarget(target);
-    m_graph->scene()->activeCamera()->setMaxZoomLevel(2000);
+    m_graph->scene()->activeCamera()->setMaxZoomLevel(5000);
     m_graph->scene()->activeCamera()->setZoomLevel( m_graph->scene()->activeCamera()->zoomLevel() + 100 );
 
+}
+
+bool SurfaceGraph::isCameraValid(int cameraPreset)
+{
+    if (cameraPreset>0 && cameraPreset<mDefaultViews.size())
+        return mDefaultViews[cameraPreset].valid;
+    return false;
+}
+
+QString SurfaceGraph::cameraString(int cameraPreset)
+{
+    if (cameraPreset<mDefaultViews.size()) {
+        return mDefaultViews[cameraPreset].asString();
+    } else {
+        return QString();
+    }
+
+}
+
+void SurfaceGraph::setCameraString(int cameraPreset, QString str)
+{
+    if (cameraPreset<mDefaultViews.size()) {
+        return mDefaultViews[cameraPreset].setFromString(str);
+    }
 }
 
 void SurfaceGraph::queryPositionChanged(const QVector3D &pos)
@@ -196,7 +228,10 @@ void SurfaceGraph::resetCameraPosition(int cameraPreset)
    if (cameraPreset>=mDefaultViews.length())
        return;
 
-    m_graph->scene()->activeCamera()->copyValuesFrom(*mDefaultViews[cameraPreset]);
+    m_graph->scene()->activeCamera()->copyValuesFrom(*mDefaultViews[cameraPreset].camera);
+    m_graph->setAspectRatio(mDefaultViews[cameraPreset].aspectRatio);
+    m_graph->axisY()->setMax(mDefaultViews[cameraPreset].maxAxisYRange);
+
    // force a repaint of the scene
    float rot = m_graph->scene()->activeCamera()->xRotation();
    m_graph->scene()->activeCamera()->setXRotation(rot + 1.f);
@@ -207,7 +242,61 @@ void SurfaceGraph::resetCameraPosition(int cameraPreset)
 void SurfaceGraph::saveCameraPosition(int cameraPreset)
 {
     if (cameraPreset>0 && cameraPreset<mDefaultViews.size()) {
-        mDefaultViews[cameraPreset]->copyValuesFrom(*m_graph->scene()->activeCamera());
+        mDefaultViews[cameraPreset].camera->copyValuesFrom(*m_graph->scene()->activeCamera());
+        mDefaultViews[cameraPreset].aspectRatio = m_graph->aspectRatio();
+        mDefaultViews[cameraPreset].maxAxisYRange = m_graph->axisY()->max();
+        mDefaultViews[cameraPreset].valid = true;
+
     }
+
+}
+
+SurfaceGraph::ViewParams::ViewParams() : aspectRatio(0.), maxAxisYRange(0.f), valid(false)
+{
+    camera = nullptr;
+}
+
+SurfaceGraph::ViewParams::~ViewParams()
+{
+    //if (camera)
+    //    delete camera;
+}
+
+QString SurfaceGraph::ViewParams::asString()
+{
+    QStringList res;
+    res << QString("xRotation=%1").arg(camera->xRotation())
+        << QString("yRotation=%1").arg(camera->yRotation())
+        << QString("zoomLevel=%1").arg(camera->zoomLevel())
+        << QString("targetX=%1").arg(camera->target().x())
+        << QString("targetY=%1").arg(camera->target().y())
+        << QString("targetZ=%1").arg(camera->target().z())
+        << QString("aspectRatio=%1").arg(aspectRatio)
+        << QString("maxYAxis=%1").arg(maxAxisYRange)
+        << QString("backgroundColor=%1").arg(backgroundColor)
+        << QString("valid=%1").arg(valid ? "true" : "false");
+    return res.join(",");
+
+}
+
+void SurfaceGraph::ViewParams::setFromString(QString str)
+{
+    QStringList l = str.split(",");
+    QMap<QString, QString> dat;
+    for (auto s : l) {
+        auto li = s.split("=");
+        dat[li.first()]=li.last();
+    }
+    camera->setXRotation( dat["xRotation"].toFloat() );
+    camera->setYRotation( dat["yRotation"].toFloat() );
+    camera->setZoomLevel( dat["zoomLevel"].toFloat() );
+    camera->setTarget(QVector3D(dat["targetX"].toFloat(),
+                                dat["targetX"].toFloat(),
+                                dat["targetX"].toFloat()));
+    aspectRatio = dat["aspectRatio"].toDouble();
+    maxAxisYRange= dat["maxYAxis"].toFloat();
+    backgroundColor = dat["backgroundColor"];
+    valid = dat["valid"] == "true";
+
 
 }

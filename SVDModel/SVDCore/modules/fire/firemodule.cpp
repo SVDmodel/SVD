@@ -64,14 +64,18 @@ void FireModule::setup()
     FileReader rdr(filename);
     rdr.requiredColumns({"year", "x", "y", "max_size", "windspeed", "winddirection"});
     size_t iyr=rdr.columnIndex("year"), ix=rdr.columnIndex("x"), iy=rdr.columnIndex("y"), is=rdr.columnIndex("max_size"), iws=rdr.columnIndex("windspeed"), iwd=rdr.columnIndex("winddirection");
+    size_t iid = rdr.columnIndex("id");
+    int fire_id = 0;
     while (rdr.next()) {
         int year = static_cast<int>(rdr.value(iyr));
-        mIgnitions.emplace(std::make_pair(year, SIgnition(year, rdr.value(ix), rdr.value(iy), rdr.value(is), rdr.value(iws), rdr.value(iwd))));
+        fire_id = iid!=std::string::npos ? static_cast<int>(rdr.value(iid)) : fire_id + 1; // use provided Ids or a custom Id
+        mIgnitions.emplace(std::make_pair(year, SIgnition(year, fire_id, rdr.value(ix), rdr.value(iy), rdr.value(is), rdr.value(iws), rdr.value(iwd))));
     }
     lg->debug("Loaded {} ignitions from '{}'", mIgnitions.size(), filename);
 
     // set up parameters
     mExtinguishProb = settings.valueDouble("modules.fire.extinguishProb");
+    mSpreadToDistProb = 1. - settings.valueDouble("modules.fire.spreadDistProb");
 
     // setup of the fire grid (values per cell)
     auto grid = Model::instance()->landscape()->grid();
@@ -80,7 +84,7 @@ void FireModule::setup()
 
     lg->info("Setup of FireModule '{}' complete.", name());
 
-    lg = spdlog::get("main");
+    lg = spdlog::get("modules");
 
 }
 
@@ -163,7 +167,7 @@ void FireModule::fireSpread(const FireModule::SIgnition &ign)
     if (!burnCell(index.x(), index.y(), n_highseverity_ha, n_rounds)) {
         lg->debug("Fire: not spreading, stopped at ignition point.");
     } else {
-
+        ++n_ha; // one cell already burned
         while (n_ha <= max_ha) {
             n_burned_in_round=0;
             // calculate spread probabilities based on wind and slope from currently burning px
@@ -224,6 +228,7 @@ void FireModule::fireSpread(const FireModule::SIgnition &ign)
     lg->info("FireEvent. total burned (ha): {}, high severity (ha): {}, max-fire-size (ha): {}", n_ha, n_highseverity_ha, max_ha);
     SFireStat stat;
     stat.year = Model::instance()->year();
+    stat.Id = ign.Id;
     stat.x = ign.x;
     stat.y = ign.y;
     stat.max_size = max_ha;
@@ -241,13 +246,27 @@ bool FireModule::burnCell(int ix, int iy, int &rHighSeverity, int round)
     auto &s = grid[Point(ix, iy)];
     if (s.isNull()) {
         c.spread = -1.f;
+        if (round==1)
+            lg->debug("Stopped at ignition: invalid cell!");
         return false;
     }
+
+    // If a cell is already altered *during* this year (e.g. by a previous)
+    // fire, then the state used here is still the old (i.e. unburned) state.
+    // Can happen that a cells burns twice a year
+    // a workaround could be: if cell->isUpdated() then then cell is already changed; in
+    // this case, next years' state could be checked instead
+    // (not sure if this plays nicely with other combinations of modules / management, ...)
+
+
     // burn probability
     double pBurn = s.state()->value(miBurnProbability);
-    if (round>3)
+    if (round>3) {
         pBurn *= (1. - mExtinguishProb);
+    }
     if (pBurn == 0. || pBurn < drandom()) {
+        if (round==1)
+            lg->debug("Stopped at ignition: State: {} burn-prob: {}", s.state()->asString(), pBurn);
         c.spread = -1.f;
         return false;
     }
@@ -258,9 +277,9 @@ bool FireModule::burnCell(int ix, int iy, int &rHighSeverity, int round)
     s.setNewState(new_state);
 
     // test for landcover change
-    if (lg->should_log(spdlog::level::debug))
+    if (lg->should_log(spdlog::level::trace))
         if ( s.state()->type() != Model::instance()->states()->stateById(new_state).type() )
-            lg->debug("Landcover type change: from state '{}' to '{}'", s.stateId(), new_state);
+            lg->trace("Landcover type change: from state '{}' to '{}'", s.stateId(), new_state);
 
     c.last_burn = static_cast<short int>(Model::instance()->year());
     c.n_fire++;
@@ -386,7 +405,8 @@ void FireModule::calculateSpreadProbability(const SIgnition &fire_event,  const 
     if (spread_pixels<=0.)
         return;
 
-    double p_spread = pow(0.5, 1. / spread_pixels);
+    // calculate the probability: this is the chance
+    double p_spread = pow(mSpreadToDistProb, 1. / spread_pixels);
     // apply the r_land factor that accounts for different land types
     //p_spread *= fire_data.mRefLand;
     // add probabilites

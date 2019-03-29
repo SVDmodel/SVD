@@ -41,6 +41,8 @@ private slots:
 
     void on_doPredict_clicked();
 
+    void on_testGeoTiff_clicked();
+
 private:
     Ui::TestDNN *ui;
 };

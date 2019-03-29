@@ -68,7 +68,7 @@ public:
    /// number of columns
    size_t columnCount() {return mColCount; }
    const std::string &columnName(const size_t columnIndex) {assert(columnIndex<mColCount); return mFields[columnIndex];}
-   /// retrieve the index of a given column or -1 if the column is not found.
+   /// retrieve the index of a given column or std::string::npos if the column is not found.
    /// @sa indexOf
    size_t columnIndex(const char *columnName);
    const char *currentLine() {return mBuffer; }

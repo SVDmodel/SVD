@@ -42,6 +42,11 @@ public:
 
     QtDataVisualization::Q3DSurface *graph() { return m_graph; }
     TopographicSeries *topoSeries() { return m_topography; }
+
+    int cameraCount() const { return mDefaultViews.count(); }
+    bool isCameraValid(int cameraPreset);
+    QString cameraString(int cameraPreset);
+    void setCameraString(int cameraPreset, QString str);
 public slots:
     void queryPositionChanged(const QVector3D &pos);
     void resetCameraPosition(int cameraPreset);
@@ -54,7 +59,19 @@ signals:
 private:
 
     QtDataVisualization::Q3DSurface *m_graph;
-    QVector<QtDataVisualization::Q3DCamera*> mDefaultViews;
+    struct ViewParams {
+        ViewParams();
+        ~ViewParams();
+        QString asString();
+        void setFromString(QString str);
+        double aspectRatio;
+        float maxAxisYRange;
+        QString backgroundColor;
+        QtDataVisualization::Q3DCamera *camera;
+        bool valid;
+    };
+
+    QVector<ViewParams> mDefaultViews;
 
     TopographicSeries *m_topography;
     int m_highlightWidth;

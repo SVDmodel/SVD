@@ -39,6 +39,7 @@ LandscapeVisualization::LandscapeVisualization(QObject *parent): QObject(parent)
     mIsValid = false;
     mIsRendering = false;
     mCurrentType = RenderNone;
+    mBGColor = QColor(127,127,127,127);
 
 }
 
@@ -91,16 +92,51 @@ void LandscapeVisualization::setup(SurfaceGraph *graph, Legend *palette)
 
 }
 
-void LandscapeVisualization::renderToFile()
+void LandscapeVisualization::renderToFile(QString filename)
 {
     if (!isValid())
         return;
 
-    QImage img = mGraph->graph()->renderToImage(0, QSize(2000, 2000));
-    QString file_name = QString::fromStdString(Tools::path("render.png"));
+    QImage img = mGraph->graph()->renderToImage(8, QSize(1500, 1000));
+    QString file_name;
+    if (filename.isEmpty())
+        file_name = QString::fromStdString(Tools::path("render.png"));
+    else
+        file_name = QString::fromStdString(Tools::path(filename.toStdString()));
+
     img.save(file_name);
     spdlog::get("main")->info("Saved image to {}", file_name.toStdString());
 
+}
+
+int LandscapeVisualization::viewCount() const
+{
+    if (mGraph)
+        return mGraph->cameraCount();
+    else
+        return 0;
+}
+
+bool LandscapeVisualization::isViewValid(int camera)
+{
+    if (mGraph)
+        return mGraph->isCameraValid(camera);
+    else
+        return false;
+}
+
+QString LandscapeVisualization::viewString(int camera)
+{
+    if (mGraph)
+        return mGraph->cameraString(camera);
+    else
+        return QString();
+}
+
+void LandscapeVisualization::setViewString(int camera, QString str)
+{
+    if (mGraph)
+        mGraph->setCameraString(camera, str);
 }
 
 bool LandscapeVisualization::renderExpression(QString expression)
@@ -207,6 +243,12 @@ void LandscapeVisualization::saveView(int camera)
         mGraph->saveCameraPosition(camera);
 }
 
+void LandscapeVisualization::setFillColor(QColor col)
+{
+    mBGColor = col;
+    update();
+}
+
 void LandscapeVisualization::doRenderExpression(bool auto_scale)
 {
     if (mExpression.isEmpty())
@@ -235,8 +277,7 @@ void LandscapeVisualization::doRenderExpression(bool auto_scale)
     mLegend->setAbsoluteValueRange(min_value, max_value);
     Palette *pal = (mLegend->currentPalette() == nullptr ? mContinuousPalette : mLegend->currentPalette() );
 
-    //double value_rel;
-    QRgb fill_color=QColor(127,127,127,127).rgba();
+    QRgb fill_color=mBGColor.rgba();
 
     const uchar *cline = mRenderTexture.scanLine(0);
     QRgb* line = reinterpret_cast<QRgb*>(const_cast<uchar*>(cline)); // write directly to the buffer (without a potential detach)
@@ -268,7 +309,7 @@ void LandscapeVisualization::doRenderState()
 
     mLegend->setPalette(mStatePalette);
 
-    QRgb fill_color=QColor(255,255,255,255).rgba();
+    QRgb fill_color=mBGColor.rgba();
 
     const uchar *cline = mRenderTexture.scanLine(0);
     QRgb* line = reinterpret_cast<QRgb*>(const_cast<uchar*>(cline)); // write directly to the buffer (without a potential detach)

@@ -52,7 +52,7 @@ protected:
 private slots:
     void modelStateChanged(QString s);
     void modelUpdate();
-    void finishedYear();
+    void finishedYear(int n);
     void checkVisualization();
     void pointClickedOnVisualization(QVector3D world_pos);
 
@@ -132,6 +132,8 @@ private:
     QList<QString> mRecentFileList;
 
     void readSettings(); ///< read UI settings from ini file
+    void readVisualizationSettings(); ///< read UI settings related to 3d vis
+    void writeVisualizationSettings(); ///< write UI settings related to 3d vis
     void writeSettings(); ///< save UI settings
     void recentFileMenu(); ///< update the list of recently used project files
     void checkAvailableActions(); ///< check status of the actions (run, cancel, ...)

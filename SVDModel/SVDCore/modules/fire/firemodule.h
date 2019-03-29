@@ -40,6 +40,7 @@ struct SFireCell {
 
 struct SFireStat {
     int year; ///< year of the fire
+    int Id; ///< unique identifier
     double x, y; ///<  ignition point (metric coords)
     int max_size; ///< maximum fire size (ha)
     int ha_burned; ///< # of ha. burned
@@ -68,8 +69,9 @@ private:
 
     // store for ignitions
     struct SIgnition {
-        SIgnition(int ayear, double ax, double ay, double amax, double wspeed, double wdirection): year(ayear), x(ax), y(ay), max_size(amax), wind_speed(wspeed), wind_direction(wdirection) {}
+        SIgnition(int ayear, int id, double ax, double ay, double amax, double wspeed, double wdirection): year(ayear), Id(id), x(ax), y(ay), max_size(amax), wind_speed(wspeed), wind_direction(wdirection) {}
        int year;
+       int Id; // unique id
        double x, y; // cooridnates (meter)
        double max_size; // maximum fire size in ha
        double wind_speed; // current wind speed (m/2)
@@ -90,7 +92,8 @@ private:
     // store for transition probabilites for burned cells
     TransitionMatrix mFireMatrix;
 
-    double mExtinguishProb;
+    double mExtinguishProb; ///< prob. that a burned pixel stops spreading
+    double mSpreadToDistProb; ///< the prob. that a fire (with current wind/slope) reaches the neighboring pixel
 
     // index of variables
     size_t miBurnProbability;

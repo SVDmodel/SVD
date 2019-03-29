@@ -325,7 +325,7 @@ void ModelShell::internalRun()
 
         // check for each cell if we need to do something; if yes, then
         // fill a InferenceData item within a batch of data
-        //
+        // allPackagesBuilt() is called when completed
         packageFuture = QtConcurrent::map(mModel->landscape()->grid(), [this](Cell &cell){ this->evaluateCell(&cell); });
         packageWatcher.setFuture(packageFuture);
 
@@ -339,6 +339,8 @@ void ModelShell::internalRun()
 
 }
 
+/// Main processing function for a single cell on the landscape
+/// this function is called in parallel.
 void ModelShell::evaluateCell(Cell *cell)
 {
     if (RunState::instance()->cancel())

@@ -19,6 +19,7 @@
 
 #include "cameracontrol.h"
 #include "ui_cameracontrol.h"
+#include "landscapevisualization.h"
 
 CameraControl::CameraControl(QWidget *parent) :
     QDialog(parent),
@@ -45,10 +46,19 @@ void CameraControl::cameraChanged()
     ui->rotationX->setText(QString::number(camera->xRotation()));
     ui->rotationY->setText(QString::number(camera->yRotation()));
     ui->zFactor->setValue(static_cast<int>(mSurface->graph()->aspectRatio()*100));
+    ui->yMaxRange->setValue(static_cast<int>(mSurface->graph()->axisY()->max()/1000.));
 
-    QString cam_string = QString("%1,%2,%3,%4,%5,%6,%7").arg(camera->target().x()).arg(camera->target().y()).arg(camera->target().z())
-            .arg(camera->zoomLevel()).arg(camera->xRotation()).arg(camera->yRotation()).arg(mSurface->graph()->aspectRatio());
-    ui->lCamPos->setText(cam_string);
+    QStringList res;
+    res << QString("xRotation=%1").arg(camera->xRotation())
+        << QString("yRotation=%1").arg(camera->yRotation())
+        << QString("zoomLevel=%1").arg(camera->zoomLevel())
+        << QString("targetX=%1").arg(camera->target().x())
+        << QString("targetY=%1").arg(camera->target().y())
+        << QString("targetZ=%1").arg(camera->target().z())
+        << QString("aspectRatio=%1").arg(mSurface->graph()->aspectRatio())
+        << QString("maxYAxis=%1").arg(mSurface->graph()->axisY()->max());
+    ui->cameraText->setPlainText(res.join("\n"));
+
 }
 
 void CameraControl::on_targetX_actionTriggered(int action)
@@ -103,19 +113,22 @@ void CameraControl::closeEvent(QCloseEvent *event)
     event->accept();
 }
 
-void CameraControl::on_pbSetFromString_clicked()
-{
-    QStringList elem = ui->lCamPos->text().split(",");
-    if (elem.size()!=6)
-        return;
-    QtDataVisualization::Q3DCamera *camera = mSurface->graph()->scene()->activeCamera();
 
-    QVector3D new_pos = QVector3D(elem[0].toDouble(),
-            elem[1].toDouble(),
-            elem[2].toDouble());
-    camera->setTarget(new_pos);
-    camera->setZoomLevel(elem[3].toDouble());
-    camera->setXRotation(elem[4].toDouble());
-    camera->setYRotation(elem[5].toDouble());
-    mSurface->graph()->setAspectRatio(elem[6].toDouble());
+void CameraControl::on_yMaxRange_actionTriggered(int action)
+{
+    Q_UNUSED(action)
+    float max_range = ui->yMaxRange->value()*1000.f;
+    mSurface->graph()->axisY()->setRange(mSurface->graph()->axisY()->min(), std::max(mSurface->graph()->axisY()->min(), max_range));
+    qDebug() << "max-range:" << max_range/1000. << "km";
+}
+
+void CameraControl::on_mbSetBGColor_clicked()
+{
+    QString colstr = ui->lBGColor->text();
+    QColor col(colstr);
+    if (col.isValid())
+        mLandscapeVis->setFillColor(col);
+    else {
+        qDebug()<< "invalid color:" << colstr;
+    }
 }

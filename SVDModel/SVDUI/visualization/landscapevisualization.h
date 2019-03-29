@@ -43,7 +43,12 @@ public:
     RenderType renderType() const { return mCurrentType; }
     void setRenderType(RenderType type) { mCurrentType = type; update(); }
 
-    void renderToFile();
+    void renderToFile(QString filename=QString());
+
+    int viewCount() const;
+    bool isViewValid(int camera);
+    QString viewString(int camera);
+    void setViewString(int camera, QString str);
 
 public slots:
     /// renders the expression and sets the render type to "Expression"
@@ -57,6 +62,7 @@ public slots:
     /// reset view to stored view
     void resetView(int camera=0);
     void saveView(int camera);
+    void setFillColor(QColor col);
 signals:
     void pointSelected(QVector3D world_coord); ///< coordinates of the point where a user clicks on the visualization
 
@@ -71,6 +77,7 @@ private:
     void setupColorRamps();
     void setupStateColors();
     QRgb colorValue(double value) { return mColorLookup[ std::min(std::max(static_cast<int>(value*1000), 0), 999)]; }
+    QColor mBGColor;
 
     QVector<QRgb> mColorLookup;
     QVector<QRgb> mStateColorLookup;

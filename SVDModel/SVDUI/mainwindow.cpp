@@ -132,6 +132,7 @@ void MainWindow::modelStateChanged(QString s)
     if (mMC->state()->state() == ModelRunState::ReadyToRun && !mLandscapeVis->isValid()) {
         // setup of the visualization
         mLandscapeVis->setup(ui->main3d, mLegend);
+        readVisualizationSettings(); // from ini file
         onModelCreated();
     }
 
@@ -158,10 +159,16 @@ void MainWindow::modelUpdate()
         mUpdateModelTimer.start(100);
 }
 
-void MainWindow::finishedYear()
+void MainWindow::finishedYear(int)
 {
-    if (mLandscapeVis->isValid())
-        mLandscapeVis->update();
+    if (mLandscapeVis->isValid()) {
+
+        if (mMC->model()->settings().hasKey("visualization.render") && mMC->model()->settings().valueBool("visualization.render")) {
+            QString filename=QString("render_%1.png").arg(mMC->model()->year());
+            mLandscapeVis->update(); // force update
+            mLandscapeVis->renderToFile(filename);
+        }
+    }
 }
 
 void MainWindow::checkVisualization()
@@ -290,6 +297,7 @@ void MainWindow::initiateModelController()
     connect(mMC.get(), &ModelController::stateChanged, [this](QString s) {ui->statusBar->showMessage(s);});
     connect(mMC.get(), &ModelController::stateChanged, this, &MainWindow::modelStateChanged);
     connect(mMC.get(), &ModelController::finishedYear, ui->progressBar, &QProgressBar::setValue);
+    connect(mMC.get(), &ModelController::finishedYear, this, &MainWindow::finishedYear);
     connect(mMC.get(), &ModelController::finished, [this]() { ui->progressBar->setValue(ui->progressBar->maximum());});
 
     connect(mMC.get(), &ModelController::finishedYear, mLandscapeVis, &LandscapeVisualization::update);
@@ -458,6 +466,42 @@ void MainWindow::readSettings()
 
 }
 
+void MainWindow::readVisualizationSettings()
+{
+    QSettings settings;
+    QString view_name = QString("view-%1").arg(ui->lConfigFile->text()
+                                               .replace(QChar('/'),"_")
+                                               .replace(QChar('\\'), "_"));
+
+    settings.beginGroup(view_name);
+
+    for(int i = 0;i < settings.childKeys().size();i++){
+        QString camsettings = settings.value(QString("camera-%1").arg(i)).toString();
+        mLandscapeVis->setViewString(i, camsettings);
+    }
+    ui->actionCustom_view_1->setEnabled( mLandscapeVis->isViewValid(1) );
+    ui->actionCustom_View_2->setEnabled( mLandscapeVis->isViewValid(2) );
+    ui->actionCustom_View_3->setEnabled( mLandscapeVis->isViewValid(3) );
+
+
+    settings.endGroup();
+}
+
+void MainWindow::writeVisualizationSettings()
+{
+    QSettings settings;
+    if (mLandscapeVis->isValid()) {
+        QString view_name = QString("view-%1").arg(ui->lConfigFile->text()
+                                                   .replace(QChar('/'),"_")
+                                                   .replace(QChar('\\'), "_"));
+        settings.beginGroup(view_name);
+        for (int i=0; i< mLandscapeVis->viewCount(); ++i)
+            settings.setValue(QString("camera-%1").arg(i), mLandscapeVis->viewString(i));
+        settings.endGroup();
+    }
+
+}
+
 void MainWindow::writeSettings()
 {
     QSettings settings;
@@ -466,13 +510,13 @@ void MainWindow::writeSettings()
     settings.setValue("windowState", saveState());
     settings.endGroup();
     // javascript commands
-//    settings.beginWriteArray("javascriptCommands");
-//    int size = qMin(ui->scriptCommandHistory->count(), 15); // max 15 entries in the history
-//    for (int i=0;i<size; ++i) {
-//        settings.setArrayIndex(i);
-//        settings.setValue("item", ui->scriptCommandHistory->itemText(i));
-//    }
-//    settings.endArray();
+    //    settings.beginWriteArray("javascriptCommands");
+    //    int size = qMin(ui->scriptCommandHistory->count(), 15); // max 15 entries in the history
+    //    for (int i=0;i<size; ++i) {
+    //        settings.setArrayIndex(i);
+    //        settings.setValue("item", ui->scriptCommandHistory->itemText(i));
+    //    }
+    //    settings.endArray();
     settings.beginGroup("project");
     settings.setValue("lastprojectfile", ui->lConfigFile->text());
     settings.endGroup();
@@ -482,6 +526,9 @@ void MainWindow::writeSettings()
         settings.setValue(QString("file-%1").arg(i),mRecentFileList[i]);
     }
     settings.endGroup();
+
+    writeVisualizationSettings();
+
     //settings.setValue("javascript", ui->scriptCode->toPlainText());
 
 }
@@ -586,11 +633,6 @@ void MainWindow::onModelCreated()
     ui->visVariables->addTopLevelItems(items);
     ui->visCellData->addTopLevelItems(items_insp);
 
-    // saved views
-    ui->actionCustom_view_1->setEnabled(false);
-    ui->actionCustom_View_2->setEnabled(false);
-    ui->actionCustom_View_3->setEnabled(false);
-
 }
 
 void MainWindow::populateInspector(QVector3D point)
@@ -640,7 +682,9 @@ void MainWindow::on_action3D_Camera_settings_triggered()
     // open form for camera control
     CameraControl *cntrl = new CameraControl(this);
     cntrl->setSurfaceGraph( ui->main3d);
+    cntrl->setLandscapeVisualization(mLandscapeVis);
     QObject::connect(ui->main3d, &SurfaceGraph::cameraChanged, cntrl, &CameraControl::cameraChanged);
+    cntrl->cameraChanged(); // update initital values
     cntrl->show();
 }
 
@@ -697,6 +741,7 @@ void MainWindow::on_actionSaveView_1_triggered()
     if (mLandscapeVis->isValid()) {
         mLandscapeVis->saveView(1);
         ui->actionCustom_view_1->setEnabled(true);
+        writeVisualizationSettings();
     }
 }
 
@@ -705,6 +750,7 @@ void MainWindow::on_actionSaveView_2_triggered()
     if (mLandscapeVis->isValid()) {
         mLandscapeVis->saveView(2);
         ui->actionCustom_View_2->setEnabled(true);
+        writeVisualizationSettings();
     }
 
 }
@@ -714,6 +760,7 @@ void MainWindow::on_actionSaveView_3_triggered()
     if (mLandscapeVis->isValid()) {
         mLandscapeVis->saveView(3);
         ui->actionCustom_View_3->setEnabled(true);
+        writeVisualizationSettings();
     }
 
 }

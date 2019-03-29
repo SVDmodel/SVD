@@ -818,6 +818,9 @@
    <property name="text">
     <string>Custom view 1</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+F1</string>
+   </property>
   </action>
   <action name="actionCustom_View_2">
    <property name="enabled">
@@ -826,6 +829,9 @@
    <property name="text">
     <string>Custom View 2</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+F2</string>
+   </property>
   </action>
   <action name="actionCustom_View_3">
    <property name="enabled">
@@ -833,6 +839,9 @@
    </property>
    <property name="text">
     <string>Custom View 3</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+F3</string>
    </property>
   </action>
   <action name="actionSaveView_1">
