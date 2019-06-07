@@ -26,6 +26,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     modelshell.cpp \
+    outputs/statehistout.cpp \
     tools/grid.cpp \
     tools/strtools.cpp \
     tools/filereader.cpp \
@@ -55,6 +56,7 @@ SOURCES += \
 
 HEADERS += \
     modelshell.h \
+    outputs/statehistout.h \
     tools/grid.h \
     tools/strtools.h \
     tools/filereader.h \

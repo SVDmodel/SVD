@@ -80,20 +80,20 @@
 #define opAnd 7
 #define opOr  8
 
-std::vector<std::string> mathFuncList={"sin", "cos", "tan",
+static std::vector<std::string> mathFuncList={"sin", "cos", "tan",
                                        "exp", "ln", "sqrt",
                                        "min", "max", "if",
-                                       "incsum", "polygon", "mod", "sigmoid", "rnd", "rndg", "limit",  "round"};
-const int  MaxArgCount[17]={1,1,1,1,  1, 1,   -1, -1, 3, 1, -1, 2, 4, 2, 2, 3, 1};
+                                       "incsum", "polygon", "mod", "sigmoid", "rnd", "rndg", "limit",  "round", "in"};
+const int  MaxArgCount[18]={1,1,1,1,  1, 1,   -1, -1, 3, 1, -1, 2, 4, 2, 2, 3, 1, -1};
 #define    AGGFUNCCOUNT 6
-std::string AggFuncList[AGGFUNCCOUNT]={"sum", "avg", "max", "min", "stddev", "variance"};
+static std::string AggFuncList[AGGFUNCCOUNT]={"sum", "avg", "max", "min", "stddev", "variance"};
 
 bool Expression::mLinearizationAllowed = false;
 Expression::Expression()
 {
-    mModelObject = 0;
-    m_externVarSpace=0;
-    m_execList=0;
+    mModelObject = nullptr;
+    m_externVarSpace=nullptr;
+    m_execList=nullptr;
 }
 
 
@@ -148,7 +148,7 @@ Expression::ETokType  Expression::next_token()
         m_token="";
         while (( (*m_pos>='a' && *m_pos<='z') || (*m_pos>='A' && *m_pos<='Z')
                 || (*m_pos>='0' && *m_pos<='9') || (*m_pos=='_' || *m_pos=='.') )
-            && *m_pos!='(' && m_pos!=0 )
+            && *m_pos!='(' && m_pos!=nullptr )
             m_token+=*m_pos++;
         // brace -> function, else variable.
         if (*m_pos=='(' || *m_pos=='{') {
@@ -206,8 +206,8 @@ void Expression::setExpression(const std::string& aExpression)
     m_catchExceptions = false;
     m_errorMsg = "";
 
-    mModelObject = 0;
-    m_externVarSpace=0;
+    mModelObject = nullptr;
+    m_externVarSpace=nullptr;
 
     m_strict=true; // default....
     m_incSumEnabled=false;
@@ -217,8 +217,8 @@ void Expression::setExpression(const std::string& aExpression)
     m_execList = new ExtExecListItem[m_execListSize]; // init
 
     mLinearizeMode = 0; // linearization is switched off
-    mScriptIndexFunc=0;
-    mScriptValueFunc=0;
+    mScriptIndexFunc=nullptr;
+    mScriptValueFunc=nullptr;
 }
 
 
@@ -535,57 +535,61 @@ double Expression::execute(double *varlist, ExpressionWrapper *object, bool *rLo
         case etFunction:
             p--;
             switch (exec->Index) {
-                 case 0: *p=sin(*p); break;
-                 case 1: *p=cos(*p); break;
-                 case 2: *p=tan(*p); break;
-                 case 3: *p=exp(*p); break;
-                 case 4: *p=log(*p); break;
-                 case 5: *p=sqrt(*p); break;
-                     // min, max, if:  variable number of arguments
-                 case 6:      // min
-                     for (i=0;i<exec->Value-1;i++,p--)
-                         *(p-1)=(*p<*(p-1))?*p:*(p-1);
-                     break;
-                 case 7:  //max
-                     for (i=0;i<exec->Value-1;i++,p--)
-                         *(p-1)=(*p>*(p-1))?*p:*(p-1);
-                     break;
-                 case 8: // if
-                     if (*(p-2)==1) // true
-                         *(p-2)=*(p-1);
-                     else
-                         *(p-2)=*p; // false
-                     p-= 2; // drop both arguments
-                     break;
-                 case 9: // incremental sum
-                     m_incSumVar+=*p;
-                     *p=m_incSumVar;
-                     break;
-                 case 10: // polygon-function
-                     *(p-(int)(exec->Value-1))=udfPolygon(*(p-(int)(exec->Value-1)), p, (int)exec->Value);
-                     p-=(int) (exec->Value-1);
-                     break;
-                 case 11: // modulo division: result= remainder of arg1/arg2
-                     p--;
-                     *p=fmod(*p, *(p+1));
-                     break;
-                 case 12: // user-defined-function: sigmoid
-                     *(p-3)=udfSigmoid(*(p-3), *(p-2), *(p-1), *p);
-                     p-=3; // drop three args (4-1) ...
-                     break;
-                 case 13: case 14: // rnd(from, to) bzw. rndg(mean, stddev)
-                             p--;
-                     *p=udfRandom(exec->Index-13, *p, *(p+1));
-                     break;
-                 case 15: {// limit(value, lower_bound, upper_bound)
-                    double m = *(p-2)<*(p-1)?*(p-1):*(p-2); // limit to lower
-                    *(p-2) = m>*p?*p:m;  // ... and then to upper bound
-                    p-=2; // drop the arguments
-                    break;
-                    }
-                 case 16: // round number
-                    *p=floor(*p + 0.5); break;
-                 }
+            case 0: *p=sin(*p); break;
+            case 1: *p=cos(*p); break;
+            case 2: *p=tan(*p); break;
+            case 3: *p=exp(*p); break;
+            case 4: *p=log(*p); break;
+            case 5: *p=sqrt(*p); break;
+                // min, max, if:  variable number of arguments
+            case 6:      // min
+                for (i=0;i<exec->Value-1;i++,p--)
+                    *(p-1)=(*p<*(p-1))?*p:*(p-1);
+                break;
+            case 7:  //max
+                for (i=0;i<exec->Value-1;i++,p--)
+                    *(p-1)=(*p>*(p-1))?*p:*(p-1);
+                break;
+            case 8: // if
+                if (*(p-2)==1) // true
+                    *(p-2)=*(p-1);
+                else
+                    *(p-2)=*p; // false
+                p-= 2; // drop both arguments
+                break;
+            case 9: // incremental sum
+                m_incSumVar+=*p;
+                *p=m_incSumVar;
+                break;
+            case 10: // polygon-function
+                *(p-(int)(exec->Value-1))=udfPolygon(*(p-(int)(exec->Value-1)), p, (int)exec->Value);
+                p-=(int) (exec->Value-1);
+                break;
+            case 11: // modulo division: result= remainder of arg1/arg2
+                p--;
+                *p=fmod(*p, *(p+1));
+                break;
+            case 12: // user-defined-function: sigmoid
+                *(p-3)=udfSigmoid(*(p-3), *(p-2), *(p-1), *p);
+                p-=3; // drop three args (4-1) ...
+                break;
+            case 13: case 14: // rnd(from, to) bzw. rndg(mean, stddev)
+                p--;
+                *p=udfRandom(exec->Index-13, *p, *(p+1));
+                break;
+            case 15: {// limit(value, lower_bound, upper_bound)
+                double m = *(p-2)<*(p-1)?*(p-1):*(p-2); // limit to lower
+                *(p-2) = m>*p?*p:m;  // ... and then to upper bound
+                p-=2; // drop the arguments
+                break;
+            }
+            case 16: // round number
+                *p=floor(*p + 0.5); break;
+            case 17: // in(x, ....) - return true if x equals one of the arguments
+                *(p-(int)(exec->Value-1))=udfIn(*(p-(int)(exec->Value-1)), p, (int)exec->Value);
+                p-=(int) (exec->Value-1);
+                break;
+            }
             p++;
             break;
         case etLogical:
@@ -775,6 +779,20 @@ double Expression::udfSigmoid(double Value, double sType, double p1, double p2) 
         Result=1. - Result;
 
     return Result;
+}
+
+double Expression::udfIn(double Value, double *Stack, int ArgCount) const
+{
+    // signature: in(x, v1, v2, v3, ..., vn)
+    if (ArgCount<2)
+        throw std::logic_error("Expression: in() function: not enough parameters");
+    double *p = Stack - (ArgCount-2); // point at the first value (v1)
+    while (p <= Stack) {
+        if (*p == Value)
+            return static_cast<double>(True);
+        ++p;
+    }
+    return static_cast<double>(False);
 }
 
 

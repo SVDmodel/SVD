@@ -27,6 +27,7 @@
 #include "stategridout.h"
 #include "restimegridout.h"
 #include "statechangeout.h"
+#include "statehistout.h"
 #include "modules/fire/fireout.h"
 
 OutputManager::OutputManager()
@@ -35,6 +36,7 @@ OutputManager::OutputManager()
     mOutputs.push_back(new StateGridOut());
     mOutputs.push_back(new ResTimeGridOut());
     mOutputs.push_back(new StateChangeOut());
+    mOutputs.push_back(new StateHistOut());
     mOutputs.push_back(new FireOut());
 }
 

@@ -335,6 +335,7 @@ void ModelShell::internalRun()
         // we can run the outputs conerning the current state right now (in parallel)
         mModel->outputManager()->run("StateGrid");
         mModel->outputManager()->run("ResTimeGrid");
+        mModel->outputManager()->run("StateHist");
 
 
 }
