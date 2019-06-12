@@ -52,7 +52,7 @@ signals:
     void finished();
 
 public slots:
-    void setup(QString fileName);
+    void setup(QString fileName, Settings *settings=nullptr);
     void shutdown();
 
     void run(int n_years);

@@ -26,6 +26,7 @@
 
 #include "modelrunstate.h"
 #include "spdlog/spdlog.h"
+#include "settings.h"
 
 
 class Model; // forward
@@ -62,7 +63,7 @@ signals:
 
 
 public slots:
-    void createModel(QString fileName);
+    void createModel(QString fileName, Settings *settings=nullptr);
     void setup();
     void runOneStep(int current_step);
     void run(int n_steps);

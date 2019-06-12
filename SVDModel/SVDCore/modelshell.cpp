@@ -150,14 +150,14 @@ std::string ModelShell::run_test_op(std::string what)
 }
 
 
-void ModelShell::createModel(QString fileName)
+void ModelShell::createModel(QString fileName, Settings *settings)
 {
     try {
         setState(ModelRunState::Creating);
         if (Model::hasInstance())
             destroyModel();
 
-        mModel = new Model(fileName.toStdString());
+        mModel = new Model(fileName.toStdString(), settings);
         mModel->setProcessEventsCallback( std::bind(&ModelShell::processEvents, this) );
         mCellsProcesssed=0;
 

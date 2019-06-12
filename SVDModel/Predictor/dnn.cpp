@@ -100,7 +100,6 @@ Status LoadGraph(string graph_file_name,
 
 
 
-
 DNN::DNN()
 {
 
@@ -168,10 +167,14 @@ bool DNN::setupDNN(size_t aindex)
 #else
     mDummyDNN = false;
     tensorflow::SessionOptions opts;
-    opts.config.set_log_device_placement(true);
+    // log of device placement if log level debug is on
+    if (lg->should_log(spdlog::level::debug))
+        opts.config.set_log_device_placement(true);
+
     //opts.config.set_inter_op_parallelism_threads(16); // no big effect.... but uses more threads
     //opts.config.set_intra_op_parallelism_threads(16);
     opts.config.mutable_gpu_options()->set_allow_growth(true); // do not allocate all the RAM
+
     session = tensorflow::NewSession(opts); // no specific options: tensorflow::SessionOptions()
 
     lg->trace("attempting to load the graph...");

@@ -27,16 +27,21 @@
 
 Model *Model::mInstance = nullptr;
 
-Model::Model(const std::string &fileName)
+Model::Model(const std::string &fileName, Settings *externalSettings)
 {
     if (mInstance!=nullptr)
         throw std::logic_error("Creation of model: model instance ptr is not 0.");
     mInstance = this;
     mYear = -1; // not set up
 
-    if (!Tools::fileExists(fileName))
-        throw std::logic_error("Error: The configuration file '" + fileName + "' does not exist.");
-    mSettings.loadFromFile(fileName);
+    if (externalSettings) {
+        mSettings.loadFromSettings(*externalSettings);
+
+    } else {
+        if (!Tools::fileExists(fileName))
+            throw std::logic_error("Error: The configuration file '" + fileName + "' does not exist.");
+        mSettings.loadFromFile(fileName);
+    }
     auto split_path = splitPath(fileName);
     Tools::setProjectDir( split_path.first );
 

@@ -127,11 +127,12 @@ std::unordered_map<std::string, std::string> ModelController::systemStatus()
     return result;
 }
 
-void ModelController::setup(QString fileName)
+void ModelController::setup(QString fileName, Settings *settings)
 {
     // use a blocking connection for initial creation (logging, etc.)
     QMetaObject::invokeMethod(mModelShell, "createModel", Qt::BlockingQueuedConnection,
-                              Q_ARG(QString, fileName)) ;
+                              Q_ARG(QString, fileName),
+                              Q_ARG(Settings*, settings)) ;
 
     if (RunState::instance()->isError())
         return;

@@ -51,6 +51,11 @@ bool Settings::loadFromFile(const std::string &fileName)
     return true;
 }
 
+void Settings::loadFromSettings(const Settings &copy_from)
+{
+    mValues = copy_from.mValues;
+}
+
 void Settings::dump()
 {
     std::cout << "There are " << mValues.size() << "entries in the configuration.";
@@ -94,6 +99,13 @@ double Settings::valueDouble(const std::string &key, double default_value) const
         throw std::logic_error("Error in Settings: The value of '" + key + "': '" + s + "' is not a valid (double) number.");
     }
     return result;
+}
+
+bool Settings::setValue(const std::string &key, std::string value)
+{
+    if (!hasKey(key))
+        throw std::logic_error("Error in updating the settings: " + key + " is not a valid setting in the configuration file.");
+    mValues[key] = value;
 }
 
 void Settings::checkLogDefault(const std::string &key, std::string default_value)

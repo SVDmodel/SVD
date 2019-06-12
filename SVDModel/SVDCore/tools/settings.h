@@ -29,6 +29,7 @@ class Settings
 public:
     Settings();
     bool loadFromFile(const std::string &fileName);
+    void loadFromSettings(const Settings &copy_from);
     void dump();
     // access
     bool hasKey(const std::string &key) const {return mValues.find(key) != mValues.end(); }
@@ -58,6 +59,9 @@ public:
                                                                                if (v=="true" || v=="True") return true;
                                                                                if (v=="false" || v=="False") return false;
                                                                              throw std::logic_error("Error in Settings: Value for key '"+ key + "' (bool) is empty or invalid (allowed values: 'true','True','false','False') and no default value is specified. Value: '" + v + "', default: '" + default_value + "'"); }
+
+    /// set the 'key' to 'value'. Throws an exception if key is not valid.
+    bool setValue(const std::string &key, std::string value);
 
 private:
     std::map< std::string, std::string > mValues;
