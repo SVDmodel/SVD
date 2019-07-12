@@ -40,6 +40,7 @@ public:
     const Model *model() const { return mModelShell->model(); }
     DNNShell *dnnShell() const { return mDNNShell; }
     RunState *state() { return mState.get(); }
+    int yearsToRun() { return mYearsToRun; }
 
     /// retrieve system statistics as key-value pairs
     std::unordered_map<std::string, std::string> systemStatus();

@@ -27,6 +27,7 @@
 #include "states.h"
 #include "grid.h"
 #include "spdlog/spdlog.h"
+#include "expression.h"
 
 class FireOut; // forward
 
@@ -94,6 +95,7 @@ private:
 
     double mExtinguishProb; ///< prob. that a burned pixel stops spreading
     double mSpreadToDistProb; ///< the prob. that a fire (with current wind/slope) reaches the neighboring pixel
+    Expression mFireSizeMultiplier; ///< scaling factor to change the fire size from the input file
 
     // index of variables
     size_t miBurnProbability;

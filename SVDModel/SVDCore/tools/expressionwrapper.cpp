@@ -135,7 +135,8 @@ std::vector<std::string> InferenceDataWrapper::mVariableList = {"state",
                                                        // "id", ??
                                                        "x",
                                                        "y",
-                                                       "year"
+                                                       "year",
+                                                       "environmentId"
                                                       };
 
 
@@ -156,7 +157,11 @@ double InferenceDataWrapper::value(const size_t variableIndex)
         PointF coord =  Model::instance()->landscape()->grid().cellCenterPoint( cell.cellIndex() );
         return coord.y();
     }
-    case 4: return static_cast<double>(Model::instance()->year());
+    case 4:
+        return static_cast<double>(Model::instance()->year());
+    case 5:
+        return static_cast<double>(cell.environment()->id());
+
     default: throw std::logic_error("invalid variable in CellWrapper: " + to_string(variableIndex));
     }
 

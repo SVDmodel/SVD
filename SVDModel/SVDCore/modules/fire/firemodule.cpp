@@ -37,7 +37,7 @@ void FireModule::setup()
     lg = spdlog::get("setup");
     lg->info("Setup of FireModule '{}'", name());
     auto settings = Model::instance()->settings();
-    settings.requiredKeys("modules.fire", {"transitionFile", "stateFile", "ignitionFile", "extinguishProb"});
+    settings.requiredKeys("modules.fire", {"transitionFile", "stateFile", "ignitionFile", "extinguishProb", "spreadDistProb", "fireSizeMultiplier"});
 
     // set up the transition matrix
     std::string filename = settings.valueString("modules.fire.transitionFile");
@@ -76,6 +76,12 @@ void FireModule::setup()
     // set up parameters
     mExtinguishProb = settings.valueDouble("modules.fire.extinguishProb");
     mSpreadToDistProb = 1. - settings.valueDouble("modules.fire.spreadDistProb");
+    std::string firesize_multiplier = settings.valueString("modules.fire.fireSizeMultiplier");
+    if (firesize_multiplier.size()>0) {
+        mFireSizeMultiplier.setExpression(firesize_multiplier);
+        lg->info("fireSizeMultiplier is active (value: {}). The maximum fire size of fires will be scaled with this function (variable: max fire size (ha)).", mFireSizeMultiplier.expression());
+    }
+
 
     // setup of the fire grid (values per cell)
     auto grid = Model::instance()->landscape()->grid();
@@ -151,7 +157,12 @@ void FireModule::fireSpread(const FireModule::SIgnition &ign)
     std::for_each(mGrid.begin(), mGrid.end(), [](SFireCell &c) { c.spread=0.f; });
 
     mGrid[index].spread = 1.f; // initial value
-    int max_ha = static_cast<int>(ign.max_size);
+    double size_multiplier = 1.;
+    if (!mFireSizeMultiplier.isEmpty()) {
+        size_multiplier = mFireSizeMultiplier.calculate(ign.max_size);
+        lg->debug("Modified fire size from '{}' to '{}' (fireSizeMultiplier).", ign.max_size, ign.max_size*size_multiplier);
+    }
+    int max_ha = static_cast<int>(ign.max_size * size_multiplier);
     int n_ha = 0;
     int n_highseverity_ha = 0;
     int grid_max_x = grid.sizeX()-1, grid_max_y=grid.sizeY()-1;
@@ -196,7 +207,7 @@ void FireModule::fireSpread(const FireModule::SIgnition &ign)
                         // the cell is spreading, calculate the probability and decide using a random number
                         if (drandom() < p_spread) {
                             if (burnCell(ix, iy, n_highseverity_ha, n_rounds)) {
-                                // the cell really burned, potentially increase the bounding box
+                                // the cell really burned, potentially increase the bounding box (if the cell is also spreading)
                                 ixmin2 = std::max(std::min(ixmin2, ix-1), 0);
                                 ixmax2 = std::min(std::max(ixmax2, ix+1), grid_max_x);
                                 iymin2 = std::max(std::min(iymin2, iy-1), 0);
@@ -231,7 +242,7 @@ void FireModule::fireSpread(const FireModule::SIgnition &ign)
     stat.Id = ign.Id;
     stat.x = ign.x;
     stat.y = ign.y;
-    stat.max_size = max_ha;
+    stat.max_size = static_cast<int>(ign.max_size);
     stat.ha_burned = n_ha;
     stat.ha_high_severity = n_highseverity_ha;
     mStats.push_back(stat);
@@ -261,15 +272,19 @@ bool FireModule::burnCell(int ix, int iy, int &rHighSeverity, int round)
 
     // burn probability
     double pBurn = s.state()->value(miBurnProbability);
-    if (round>3) {
-        pBurn *= (1. - mExtinguishProb);
-    }
+    if (pBurn > 0. && round<=5)
+        pBurn = 1.;
+
+//    if (round>5) {
+//        pBurn *= (1. - mExtinguishProb);
+//    }
     if (pBurn == 0. || pBurn < drandom()) {
         if (round==1)
             lg->debug("Stopped at ignition: State: {} burn-prob: {}", s.state()->asString(), pBurn);
         c.spread = -1.f;
         return false;
     }
+
 
     bool high_severity = drandom() < s.state()->value(miHighSeverity);
     // effect of fire: a transition to another state
@@ -287,6 +302,16 @@ bool FireModule::burnCell(int ix, int iy, int &rHighSeverity, int round)
         c.n_high_severity++;
         rHighSeverity++;
     }
+
+    // fire extinction: a cell that burned can go out (i.e. spread no further)
+    if (round>5) {
+        if (drandom() < mExtinguishProb ) {
+            c.spread = -1.f;
+            return true; // this cell burned
+        }
+    }
+
+
     c.spread = 1.f; // this cell spreads
     return true;
 }

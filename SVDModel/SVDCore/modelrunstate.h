@@ -63,7 +63,7 @@ public:
     static RunState *instance() { assert(mInstance!=nullptr); return mInstance; }
     ModelRunState &modelState()  { return mModel; }
     ModelRunState &dnnState()  { return mDNN; }
-    ModelRunState &state() { return mModel; }
+    ModelRunState &state() { return mTotal; }
     void set(ModelRunState state);
     // called by other states
     void update(ModelRunState *source);

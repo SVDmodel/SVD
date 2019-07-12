@@ -34,9 +34,9 @@ FireOut::FireOut()
     // define the columns
     columns() = {
     {"year", "simulation year of the fire event", DataType::Int},
+    {"id", "unique identifier of a single fire", DataType::Int},
     {"x", "x coordinate (m) of the ignition point", DataType::Double},
     {"y", "y coordinate (m) of the ignition point", DataType::Double},
-    {"id", "unique identifier of a single fire", DataType::Int},
     {"planned_size", "planned fire size (ha)", DataType::Double},
     {"realized_size", "realized fire size (ha)", DataType::Double},
     {"share_high_severity", "share of pixels burning with high severity (0..1)", DataType::Double}   };
@@ -71,7 +71,11 @@ void FireOut::execute()
         find_and_replace(file_name, "$year$", to_string(Model::instance()->year()));
         auto &grid = fire->mGrid;
 
-        std::string result = gridToESRIRaster<SFireCell>(grid, [](const SFireCell &c) { return std::to_string(c.last_burn); });
+        // last burn:
+        //std::string result = gridToESRIRaster<SFireCell>(grid, [](const SFireCell &c) { return std::to_string(c.last_burn); });
+
+        // number of fires per cell:
+        std::string result = gridToESRIRaster<SFireCell>(grid, [](const SFireCell &c) { return std::to_string(c.n_fire); });
         if (!writeFile(file_name, result))
             throw std::logic_error("FireOut: couldn't write output grid file: " + file_name);
 

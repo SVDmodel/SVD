@@ -138,32 +138,50 @@ void BatchDNN::selectClasses()
         InferenceData &id = inferenceData(i);
         // residence time: at least one year
         restime_t rt = static_cast<restime_t>( chooseProbabilisticIndex(timeProbResult(i), mNTimeClasses )) + 1;
-        if (rt == static_cast<restime_t>(mNTimeClasses)) {
-            // the state will be the same for the next period (no change)
-            id.setResult(id.state(), rt);
-        } else {
-            // select the next state probalistically
-            // the next state is not allowed to stay the same -> set probability to 0
-            for (size_t j=0;j<mNTopK;++j) {
-                if (stateResult(i)[j] == id.state()) {
-                    stateProbResult(i)[j] = 0.f;
-                    break;
-                }
-            }
 
-            size_t index = chooseProbabilisticIndex(stateProbResult(i), mNTopK);
-            state_t stateId = stateResult(i)[index];
-            //size_t state_index = static_cast<size_t>(indices_flat.example(i)[index]);
-            //state_t stateId = Model::instance()->states()->stateByIndex( state_index ).id();
-            if (stateId == 0 || rt == 0) {
-                spdlog::get("main")->error("bad data in batch {} with {} used slots. item {}: update-time: {}, update-state: {} (set state to 1)", packageId(), usedSlots(), i, inferenceData(i).nextTime(), inferenceData(i).nextState());
-                if (stateId==0)
-                    stateId = 1;
-                if (rt == 0)
-                    rt = 1;
-            }
-            id.setResult(stateId, rt);
+
+//        if (rt == static_cast<restime_t>(mNTimeClasses)) {
+//            // the state will be the same for the next period (no change)
+//            id.setResult(id.state(), rt);
+//        } else {
+//            // select the next state probalistically
+//            // the next state is not allowed to stay the same -> set probability to 0
+//            for (size_t j=0;j<mNTopK;++j) {
+//                if (stateResult(i)[j] == id.state()) {
+//                    stateProbResult(i)[j] = 0.f;
+//                    break;
+//                }
+//            }
+
+//            size_t index = chooseProbabilisticIndex(stateProbResult(i), mNTopK);
+//            state_t stateId = stateResult(i)[index];
+//            //size_t state_index = static_cast<size_t>(indices_flat.example(i)[index]);
+//            //state_t stateId = Model::instance()->states()->stateByIndex( state_index ).id();
+//            if (stateId == 0 || rt == 0) {
+//                spdlog::get("main")->error("bad data in batch {} with {} used slots. item {}: update-time: {}, update-state: {} (set state to 1)", packageId(), usedSlots(), i, inferenceData(i).nextTime(), inferenceData(i).nextState());
+//                if (stateId==0)
+//                    stateId = 1;
+//                if (rt == 0)
+//                    rt = 1;
+//            }
+//            id.setResult(stateId, rt);
+//        }
+
+
+
+        size_t index = chooseProbabilisticIndex(stateProbResult(i), mNTopK);
+        state_t stateId = stateResult(i)[index];
+        //size_t state_index = static_cast<size_t>(indices_flat.example(i)[index]);
+        //state_t stateId = Model::instance()->states()->stateByIndex( state_index ).id();
+        if (stateId == 0 || rt == 0) {
+            spdlog::get("main")->error("bad data in batch {} with {} used slots. item {}: update-time: {}, update-state: {} (set state to 1)", packageId(), usedSlots(), i, inferenceData(i).nextTime(), inferenceData(i).nextState());
+            if (stateId==0)
+                stateId = 1;
+            if (rt == 0)
+                rt = 1;
         }
+        id.setResult(stateId, rt);
+
     }
     auto lg = spdlog::get("dnn");
     if (lg->should_log(spdlog::level::trace)) {

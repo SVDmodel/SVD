@@ -19,6 +19,9 @@
 #ifndef TOOLS_H
 #define TOOLS_H
 #include <string>
+#include <vector>
+
+class Settings; // forward
 
 class Tools
 {
@@ -32,9 +35,10 @@ public:
 
 
     // maintenance
-    static void setProjectDir(const std::string &path);
+    static void setupPaths(const std::string &path, const Settings *settings);
 private:
     static std::string mProjectDir;
+    static std::vector< std::pair<std::string, std::string > > mPathReplace;
 };
 
 #endif // TOOLS_H

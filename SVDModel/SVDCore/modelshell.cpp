@@ -270,13 +270,23 @@ void ModelShell::processedPackage(Batch *batch)
         return;
     }
 
-    // TODO: this is a bit too much: some handling in derived batch types (DNN), some in modules (handlers)
-    batch->processResults();
+    try {
 
-    if (batch->module()) {
-        batch->module()->processBatch(batch);
-        mCellsProcesssed += batch->usedSlots();
+        // TODO: this is a bit too much: some handling in derived batch types (DNN), some in modules (handlers)
+        batch->processResults();
+
+        if (batch->module()) {
+            batch->module()->processBatch(batch);
+            mCellsProcesssed += batch->usedSlots();
+        }
+
+    } catch(const std::exception &e) {
+        batch->setError(true);
+        RunState::instance()->setError("An error occured while processing the batch", RunState::instance()->modelState());
+        lg->error("An error occured while processing the batch: {}", e.what());
     }
+
+
 
 
     batch->changeState(Batch::Fill);

@@ -150,7 +150,18 @@ void MainWindow::modelUpdate()
 {
     int stime = ui->lModelState->property("starttime").toTime().elapsed();
     //QTime().addMSecs(stime).toString(Qt::ISODateWithMs)
-    ui->lModelState->setText(QString("%1 - %2").arg( QTime(0,0).addMSecs(stime).toString(Qt::ISODate) ).arg(QString::fromStdString(RunState::instance()->asString())));
+
+    QString statusstring;
+    if (RunState::instance()->isModelRunning()) {
+        statusstring = QString("%1 - %3/%4 - %2").arg( QTime(0,0).addMSecs(stime).toString(Qt::ISODate) )
+                .arg(QString::fromStdString(RunState::instance()->state().stateString()))
+                .arg(mMC->model()->year()).arg(mMC->yearsToRun());
+    } else {
+        statusstring = QString("%1 - %2").arg( QTime(0,0).addMSecs(stime).toString(Qt::ISODate) )
+                .arg(QString::fromStdString(RunState::instance()->asString()));
+    }
+    ui->lModelState->setText(statusstring);
+
     updateModelStats();
     if (mMC->state()->isModelFinished() || mMC->state()->isModelPaused()) {
         mUpdateModelTimer.stop();

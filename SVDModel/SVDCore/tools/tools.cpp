@@ -21,7 +21,25 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+#include "settings.h"
+#include "strtools.h"
+
+#include <chrono>
+#include <sstream>
+#include <iomanip>
+
 std::string Tools::mProjectDir;
+std::vector< std::pair<std::string, std::string > > Tools::mPathReplace;
+
+// helper function for getting a timestamp:
+
+std::string getTimeStamp() {
+  auto now = std::chrono::system_clock::now();
+  auto itt = std::chrono::system_clock::to_time_t(now);
+  std::ostringstream ss;
+  ss << std::put_time(gmtime(&itt), "%Y%m%d_%H%M%S");
+  return ss.str();
+}
 
 Tools::Tools()
 {
@@ -41,13 +59,37 @@ bool Tools::fileExists(const std::string &fileName)
 
 std::string Tools::path(const std::string &fileName)
 {
+    if (fileName.find('$') != std::string::npos) {
+        std::string str = fileName; // a copy
+        // the path contains the magic delimiter - replace all elements of the
+        for (auto &p : mPathReplace) {
+            find_and_replace(str, p.first, p.second);
+        }
+        if (mProjectDir.size()>0)
+            return mProjectDir + "/" + str;
+        else
+            return str;
+    }
     if (mProjectDir.size()>0)
         return mProjectDir + "/" + fileName;
     else
         return fileName;
 }
 
-void Tools::setProjectDir(const std::string &path)
+void Tools::setupPaths(const std::string &path, const Settings *settings)
 {
     Tools::mProjectDir = path;
+    mPathReplace.clear();
+
+    auto keys = settings->findKeys("filemask");
+
+    for (auto &s : keys) {
+        auto key = "$" + s.substr(9) + "$"; // 9: "filemask."
+        mPathReplace.push_back(std::pair<std::string, std::string>(key, settings->valueString(s)));
+
+    }
+
+    mPathReplace.push_back(std::pair<std::string, std::string>("$timestamp$",  getTimeStamp()));
+
+
 }

@@ -43,7 +43,7 @@ Model::Model(const std::string &fileName, Settings *externalSettings)
         mSettings.loadFromFile(fileName);
     }
     auto split_path = splitPath(fileName);
-    Tools::setProjectDir( split_path.first );
+    Tools::setupPaths( split_path.first, &mSettings );
 
     // set up logging
     inititeLogging();
