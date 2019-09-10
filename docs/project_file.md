@@ -56,6 +56,12 @@ The name of the output tensor in the trained network for the remaining residence
 #### `dnn.restime.N` (numeric)
 The number of classes (number of different durations) in the output tensor for the remaining residence time.
 
+#### `dnn.allowStateChangeAtMaxTime` (boolean)
+The setting controls whether the selected residence time controls the subsequent state change. If the
+value is `false`, then both are linked: a maximal time means no state change, and a lower residence time
+forces a state change (i.e. disallows the current state as future state). If the value is `true`, then 
+no interaction between residence time and state is simulated (default: `false`).
+
 ## Model components
 ### States
 #### `states.file` (filepath)

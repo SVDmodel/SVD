@@ -66,6 +66,7 @@ private:
 
     size_t mNTopK; ///< number of classes for each example
     size_t mNTimeClasses; ///< number of time classes for each example
+    bool mAllowStateChangeAtMaxTime; ///< if true, selecting the maximum number of years forces the state to stay the same
     /// store the topK classes from the DNN for target states
     std::vector<state_t> mStates;
     /// store the prob. for the topK classes from the DNN for target states
