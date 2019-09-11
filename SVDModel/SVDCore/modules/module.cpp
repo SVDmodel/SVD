@@ -20,7 +20,7 @@
 #include "model.h"
 
 // include all module headers for the factory function
-#include "matrixmodule.h"
+#include "matrix/matrixmodule.h"
 #include "fire/firemodule.h"
 
 /// list of all available special modules
