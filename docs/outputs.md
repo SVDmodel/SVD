@@ -3,6 +3,7 @@
 * [StateGrid](#StateGrid)
 * [ResTimeGrid](#ResTimeGrid)
 * [StateChange](#StateChange)
+* [StateHist](#StateHist)
 * [Fire](#Fire)
 
 <a name="StateGrid"></a>
@@ -48,6 +49,21 @@ p[i] | probability for state *i* (0..1) | Double
 t[i] | probability for a change in year *i* (with i 1..number of residence time classes) | Double
 
 
+<a name="StateHist"></a>
+## StateHist
+Outputs a frequency distribution of states over the landscape.
+
+### Parameters
+ * not yet
+
+### Columns
+Column|Description|Data type
+------|-----------|---------
+year | simulation year | Int
+state | stateId | Int
+n | number of cells that are currently in the state `state` | Int
+
+
 <a name="Fire"></a>
 ## Fire
 Output on fire events (one event per line) and grids for the year of the last burn.
@@ -61,10 +77,12 @@ Grids are saved as ASCII grids to the location specified by the`lastFireGrid.pat
 Column|Description|Data type
 ------|-----------|---------
 year | simulation year of the fire event | Int
+id | unique identifier of a single fire | Int
 x | x coordinate (m) of the ignition point | Double
 y | y coordinate (m) of the ignition point | Double
 planned_size | planned fire size (ha) | Double
 realized_size | realized fire size (ha) | Double
 share_high_severity | share of pixels burning with high severity (0..1) | Double
+
 
 

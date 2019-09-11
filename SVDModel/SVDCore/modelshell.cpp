@@ -309,16 +309,21 @@ void ModelShell::processedPackage(Batch *batch)
 
 void ModelShell::allPackagesBuilt()
 {
-    if (!BatchManager::instance()->slotsRequested()) {
-        lg->debug("No pixel was updated this year.");
-        finalizeCycle();
-    }
-    //lg->debug("** all packages built, starting the last package");
-    sendPendingBatches(); // start last batch (even if < than batch size)
-    mAllPackagesBuilt = true;
-    if (mPackagesBuilt==mPackagesProcessed && mPackagesProcessed>0) {
-        lg->debug( "Model: processsed Last Package! [NSent: {} NReceived: {}]", mModel->stats.NPackagesSent, mModel->stats.NPackagesDNN );
-        finalizeCycle();
+    try{
+
+        if (!BatchManager::instance()->slotsRequested()) {
+            lg->debug("No pixel was updated this year.");
+            finalizeCycle();
+        }
+        //lg->debug("** all packages built, starting the last package");
+        sendPendingBatches(); // start last batch (even if < than batch size)
+        mAllPackagesBuilt = true;
+        if (mPackagesBuilt==mPackagesProcessed && mPackagesProcessed>0) {
+            lg->debug( "Model: processsed Last Package! [NSent: {} NReceived: {}]", mModel->stats.NPackagesSent, mModel->stats.NPackagesDNN );
+            finalizeCycle();
+        }
+    } catch (const std::exception &e) {
+        RunState::instance()->setError("Error: " + to_string(e.what()), RunState::instance()->modelState());
     }
 
 }
@@ -363,6 +368,11 @@ void ModelShell::evaluateCell(Cell *cell)
         return;
 
     try {
+
+        if (cell->state()==nullptr) {
+            throw std::logic_error("Invalid state of a cell!");
+        }
+
         if( Module *module = cell->state()->module() ) {
             // extra module handles this state:
             // get a suitable slot in a batch for the given type

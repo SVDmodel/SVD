@@ -188,7 +188,7 @@ void BatchDNN::selectClasses()
             s << i+1 << " yrs: " << (*t++)*100 << "%" << (static_cast<size_t>(id.nextTime()) - static_cast<size_t>(Model::instance()->year())==i+1 ? " ***": "")<< "\n";
 
         s << "Next update in year: " << id.nextTime();
-        s << "\nClassifcation Results: current State " << id.state() << ": " << Model::instance()->states()->stateById(id.state()).asString() << "\n";
+        s << "\nClassification Results: current State " << id.state() << ": " << Model::instance()->states()->stateById(id.state()).asString() << "\n";
         state_t *st = stateResult(0);
         float *stp = stateProbResult(0);
         for (size_t i=0;i <mNTopK; ++i) {
