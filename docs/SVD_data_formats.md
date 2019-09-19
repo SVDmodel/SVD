@@ -1,4 +1,5 @@
 # Data formats
+SVD uses simple text file formats for most input data. While SVD supports various encodings for text input (from plain ASCII to UTF-8), some might be problematic (for example UTF-8-BOM on Windows).
 
 * [Configuration files](#config_file)
 * [Data tables](#table)
@@ -37,8 +38,8 @@ Tabular data is read into SVD as delimited text tables.
 * Comments: lines starting with `#` are considered as comment and ignored
 * the first (non-comment) line has the column names (quotes (`"`) are removed)
 * the delimiter is auto-detected and can be one of: tab (`\t`), semicolon (`;`), colon (`,`), or space (` `)
-* floating point values must use `.` as decimal separator and can use scientific notation (e.g. 0.1234 or 1.23e02)
-* the file extension is not considered
+* floating point values __must__ use `.` as decimal separator and can use scientific notation (e.g. 0.1234 or 1.23e02)
+* the file extension is not taken into account
 
 Example: 
 ```
