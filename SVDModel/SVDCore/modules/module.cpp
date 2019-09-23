@@ -22,11 +22,12 @@
 // include all module headers for the factory function
 #include "matrix/matrixmodule.h"
 #include "fire/firemodule.h"
+#include "simplemanagement/simplemanagementmodule.h"
 
 /// list of all available special modules
 /// this has to be edited in case new modules are added
 std::vector<std::string> Module::mModuleTypes = {
-    "matrix", "fire"
+    "matrix", "fire", "simpleManagement"
 };
 
 std::vector<std::string> Module::mModuleNames;
@@ -50,6 +51,7 @@ std::shared_ptr<Module> Module::moduleFactory(std::string module_name, std::stri
     switch (idx) {
     case 0: m = new MatrixModule(module_name); break;
     case 1: m = new FireModule(module_name); break;
+    case 2: m = new SimpleManagementModule(module_name); break;
     default: throw std::logic_error("Error: " + module_type + " is not a valid module type (Module::moduleFactory)!");
     }
     mModuleNames.push_back(module_name);

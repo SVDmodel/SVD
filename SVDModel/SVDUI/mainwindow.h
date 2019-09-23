@@ -128,6 +128,10 @@ private slots:
 
     void on_actionCustom_View_3_triggered();
 
+    void on_actionRun_single_step_triggered();
+
+    void on_actionContinue_triggered();
+
 private:
     QList<QString> mRecentFileList;
 
@@ -145,6 +149,7 @@ private:
     Ui::MainWindow *ui;
     std::unique_ptr<ModelController> mMC;
     LandscapeVisualization *mLandscapeVis;
+    QVector3D mLastClickPosition;
     QQuickWidget *mQmlView;
     Legend *mLegend;
     QTimer mUpdateModelTimer;

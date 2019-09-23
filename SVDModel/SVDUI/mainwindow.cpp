@@ -63,6 +63,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // initialize visualization
     mLandscapeVis = new LandscapeVisualization(this);
+    mLastClickPosition = QVector3D( std::numeric_limits<float>().min(), 0.f, 0.f);
 
     // signals & slots
     initiateModelController();
@@ -179,6 +180,10 @@ void MainWindow::finishedYear(int)
             mLandscapeVis->update(); // force update
             mLandscapeVis->renderToFile(filename);
         }
+        // populate inspector
+        if (mLastClickPosition.x() != std::numeric_limits<float>().min())
+            populateInspector(mLastClickPosition);
+
     }
 }
 
@@ -196,6 +201,7 @@ void MainWindow::checkVisualization()
 
     if (ui->visVariable->isChecked())
         on_visVariables_currentItemChanged(ui->visVariables->currentItem(), nullptr);
+
 }
 
 void MainWindow::pointClickedOnVisualization(QVector3D world_pos)
@@ -205,6 +211,7 @@ void MainWindow::pointClickedOnVisualization(QVector3D world_pos)
     ui->visCoords->setText(label);
     ui->visCoordsInspector->setText(label);
     populateInspector(world_pos);
+    mLastClickPosition = world_pos;
 
 }
 
@@ -398,10 +405,30 @@ void MainWindow::on_actionRunSim_triggered()
 {
     ui->progressBar->reset();
     ui->progressBar->setMaximum( ui->sYears->value() );
+
     mMC->run( ui->sYears->value() );
+
     ui->lModelState->setProperty("starttime", QTime::currentTime());
     mUpdateModelTimer.start(100);
 }
+
+void MainWindow::on_actionRun_single_step_triggered()
+{
+    if (mMC && mMC->model()) {
+        mMC->setInteractiveMode(true);
+        mMC->runStep();
+    }
+}
+
+void MainWindow::on_actionContinue_triggered()
+{
+    if (mMC && mMC->model()) {
+        mMC->setInteractiveMode(false);
+        mMC->runStep();
+    }
+
+}
+
 
 void MainWindow::on_actionStopSim_triggered()
 {
@@ -798,3 +825,6 @@ void MainWindow::on_actionCustom_View_3_triggered()
     }
 
 }
+
+
+

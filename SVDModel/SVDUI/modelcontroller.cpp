@@ -71,6 +71,8 @@ ModelController::ModelController(QObject *)
 
     mYearsToRun = 0;
     mCurrentStep = 0;
+    mIsCurrentlyRunning = false;
+    mInteractiveMode = false;
 
 }
 
@@ -158,14 +160,26 @@ void ModelController::run(int n_years)
 {
     mYearsToRun = n_years;
     mCurrentStep = 1;
+    mIsCurrentlyRunning = true;
     mStopWatch.start();
     QMetaObject::invokeMethod(mModelShell, "run", Qt::QueuedConnection, Q_ARG(int,n_years));
+}
+
+void ModelController::runStep()
+{
+    if (mIsCurrentlyRunning)
+        return;
+    // run the next year of the simulation
+    mIsCurrentlyRunning = true;
+    QMetaObject::invokeMethod(mModelShell, "runOneStep", Qt::QueuedConnection, Q_ARG(int, mCurrentStep));
+
 }
 
 
 void ModelController::finishedStep(int n)
 {
     mCurrentStep++;
+    mIsCurrentlyRunning = false;
     if (mCurrentStep >= mYearsToRun) {
         // finished
         log(QString("Finished!"));
@@ -175,9 +189,10 @@ void ModelController::finishedStep(int n)
     } else {
         emit finishedYear(mCurrentStep);
     }
-    // run the next year of the simulation
-    QMetaObject::invokeMethod(mModelShell, "runOneStep", Qt::QueuedConnection, Q_ARG(int, mCurrentStep));
     log(QString("finished %1 of %2.").arg(n).arg(mYearsToRun));
 
+    // run the next year automatically
+    if (!mInteractiveMode)
+        runStep();
 }
 

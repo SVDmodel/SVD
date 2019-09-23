@@ -33,7 +33,7 @@ void StateHistOut::execute()
     for (const auto &s : states)
         max_state = std::max(max_state, s.id());
     std::vector<int> state_count;
-    state_count.resize(static_cast<size_t>(max_state));
+    state_count.resize(static_cast<size_t>(max_state+1));
 
     // count every state on the landscape
     for (Cell *c=grid.begin(); c!=grid.end(); ++c)

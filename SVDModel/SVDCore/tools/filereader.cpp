@@ -98,6 +98,7 @@ void FileReader::loadFile(const std::string &fileName)
     mHasSections = scanSection();
 
     readHeader();
+    mDataStart = mInStream.tellg();
 
 }
 
@@ -214,7 +215,7 @@ size_t FileReader::columnIndex(const char *columnName)
         return std::string::npos; // =-1
     return (it - mFields.begin());
 }
-void FileReader::first()
+void FileReader::reset()
 {
     if (mInStream.is_open()) {
         mInStream.clear();

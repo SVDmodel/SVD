@@ -81,6 +81,7 @@ private:
 /** FetchDataFunction is the gateway to more complex data items
  *
  * */
+class SimpleManagementModule; // forward
 class FetchDataFunction : public FetchData
 {
 public:
@@ -91,7 +92,8 @@ public:
 
     // functions
     enum EFunctions { Invalid=0,
-                      DistToSeedSource = 1};
+                      DistToSeedSource = 1,
+                      SimpleManagement = 2};
 private:
     EFunctions mFn;
 
@@ -100,6 +102,11 @@ private:
     float calculateDistToSeedSource(Cell *cell);
     size_t mD2S_target; // index of target
     size_t mD2S_seed_source; // index of source
+
+    // simple management
+    void setupSimpleManagement();
+    void calculateSimpleManagement(Cell *cell, float &rActivity, float &rTime);
+    SimpleManagementModule *mMgmtModule;
 
 };
 

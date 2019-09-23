@@ -273,6 +273,8 @@
     <addaction name="menuRecent_files"/>
     <addaction name="actionSetupProject"/>
     <addaction name="actionRunSim"/>
+    <addaction name="actionRun_single_step"/>
+    <addaction name="actionContinue"/>
     <addaction name="actionStopSim"/>
     <addaction name="actiondelete_model"/>
    </widget>
@@ -857,6 +859,30 @@
   <action name="actionSaveView_3">
    <property name="text">
     <string>View 3</string>
+   </property>
+  </action>
+  <action name="actionRun_single_step">
+   <property name="icon">
+    <iconset resource="res/resource.qrc">
+     <normaloff>:/Play.png</normaloff>:/Play.png</iconset>
+   </property>
+   <property name="text">
+    <string>Run single step</string>
+   </property>
+   <property name="shortcut">
+    <string>F8</string>
+   </property>
+  </action>
+  <action name="actionContinue">
+   <property name="icon">
+    <iconset resource="res/resource.qrc">
+     <normaloff>:/Play.png</normaloff>:/Play.png</iconset>
+   </property>
+   <property name="text">
+    <string>Continue</string>
+   </property>
+   <property name="shortcut">
+    <string>F10</string>
    </property>
   </action>
  </widget>

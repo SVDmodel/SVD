@@ -64,7 +64,7 @@ public:
    /// true, if end of file reached
    bool eof() { return mInStream.eof();}
    bool next(); ///< go to next line, return "false" if end of file reached
-   void first(); ///< reset to first line
+   void reset(); ///< reset to first line
    /// number of columns
    size_t columnCount() {return mColCount; }
    const std::string &columnName(const size_t columnIndex) {assert(columnIndex<mColCount); return mFields[columnIndex];}

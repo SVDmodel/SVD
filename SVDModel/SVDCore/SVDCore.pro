@@ -26,6 +26,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     modelshell.cpp \
+    modules/simplemanagement/simplemanagementmodule.cpp \
     outputs/statehistout.cpp \
     tools/grid.cpp \
     tools/strtools.cpp \
@@ -56,6 +57,7 @@ SOURCES += \
 
 HEADERS += \
     modelshell.h \
+    modules/simplemanagement/simplemanagementmodule.h \
     outputs/statehistout.h \
     tools/grid.h \
     tools/strtools.h \

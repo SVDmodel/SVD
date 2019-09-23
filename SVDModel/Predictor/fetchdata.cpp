@@ -26,6 +26,8 @@
 #include "settings.h"
 #include "expressionwrapper.h"
 
+#include "modules/simplemanagement/simplemanagementmodule.h"
+
 void FetchData::setup(const Settings * /*settings*/, const std::string & /*key*/, const InputTensorItem & /*item*/)
 {
 
@@ -267,7 +269,7 @@ void FetchDataVars::fetch(Cell *cell, BatchDNN *batch, size_t slot)
 }
 
 
-static std::vector<std::string> FetchFunctionList = {"Invalid", "DistToSeedSource"};
+static std::vector<std::string> FetchFunctionList = {"Invalid", "DistToSeedSource", "SimpleManagement"};
 void FetchDataFunction::setup(const Settings *settings, const std::string &key, const InputTensorItem &item)
 {
     auto lg = spdlog::get("setup");
@@ -282,6 +284,9 @@ void FetchDataFunction::setup(const Settings *settings, const std::string &key, 
     switch (mFn) {
     case DistToSeedSource:
         setupDisttoSeedSource();
+        break;
+    case SimpleManagement:
+        setupSimpleManagement();
         break;
     default: throw logic_error_fmt("setup of FetchDataFunction: invalid function for {}", item.name);
     }
@@ -299,6 +304,13 @@ void FetchDataFunction::fetch(Cell *cell , BatchDNN *batch, size_t slot)
     case DistToSeedSource:
         value = calculateDistToSeedSource(cell);
         break;
+    case SimpleManagement: {
+        float rActivity, rTime;
+        calculateSimpleManagement(cell, rActivity, rTime);
+        *p++ = rActivity;
+        *p = rTime;
+        return;
+    }
     default:
         throw logic_error_fmt("FetchDataFunction: invalid Function: {}.", mFn );
     }
@@ -368,4 +380,17 @@ float FetchDataFunction::calculateDistToSeedSource(Cell *cell)
     float min_dist = std::min(sqrt(min_dist_sq), 12.5f); // training data goes to 1250m distance, unit here is 100m steps
     return min_dist / 10.f; // convert to m/1000
 
+}
+
+void FetchDataFunction::setupSimpleManagement()
+{
+    // check if required modules / variables are available
+    mMgmtModule = dynamic_cast<SimpleManagementModule*>(Model::instance()->module("mgmt")) ;
+    if (!mMgmtModule)
+        throw logic_error_fmt("Setup of management: the required module 'mgmt' is not available!");
+}
+
+void FetchDataFunction::calculateSimpleManagement(Cell *cell, float &rActivity, float &rTime)
+{
+    mMgmtModule->managementActivity(cell, rActivity, rTime);
 }
