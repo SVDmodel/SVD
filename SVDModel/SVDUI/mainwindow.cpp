@@ -176,7 +176,11 @@ void MainWindow::finishedYear(int)
     if (mLandscapeVis->isValid()) {
 
         if (mMC->model()->settings().hasKey("visualization.render") && mMC->model()->settings().valueBool("visualization.render")) {
-            QString filename=QString("render_%1.png").arg(mMC->model()->year());
+            QString filename="render_%1.png";
+            if (mMC->model()->settings().hasKey("visualization.renderPath"))
+                filename = QString::fromStdString( mMC->model()->settings().valueString("visualization.renderPath") ).replace("$year$", "%1");
+
+            filename=QString(filename).arg(mMC->model()->year());
             mLandscapeVis->update(); // force update
             mLandscapeVis->renderToFile(filename);
         }
@@ -449,7 +453,7 @@ void MainWindow::on_openProject_clicked()
     QString the_filter = "*.conf;;All files (*.*)";
 
     QString fileName = QFileDialog::getOpenFileName(this,
-     "Select project config file", "", the_filter);
+     "Select project config file", ui->lConfigFile->text(), the_filter);
 
 
     if (fileName.isEmpty())

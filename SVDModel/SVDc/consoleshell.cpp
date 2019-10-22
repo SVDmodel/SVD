@@ -73,10 +73,29 @@ void ConsoleShell::run()
 
             }
         }
-
         // set up the model with the modified settings
         mController->setup(  config_file_name,  &local_settings );
-        mUpdateModelTimer.start(100);
+
+        int waitcount = 0;
+        printf("Current model state: %s (dnn: %s, model: %s)\n",
+               RunState::instance()->state().stateString().c_str(),
+               RunState::instance()->dnnState().stateString().c_str(),
+               RunState::instance()->modelState().stateString().c_str());
+        while (RunState::instance()->state().state() == ModelRunState::Creating && waitcount<100) {
+            printf("Waiting # %d Current model state: %s (dnn: %s, model: %s)\n", ++waitcount,
+                   RunState::instance()->state().stateString().c_str(),
+                   RunState::instance()->dnnState().stateString().c_str(),
+                   RunState::instance()->modelState().stateString().c_str());
+            QThread::msleep(50);
+            QCoreApplication::processEvents();
+        }
+        printf("Finished setup -  state: %s (dnn: %s, model: %s)\n",
+               RunState::instance()->state().stateString().c_str(),
+               RunState::instance()->dnnState().stateString().c_str(),
+               RunState::instance()->modelState().stateString().c_str());
+
+
+        mUpdateModelTimer.start(100); // 100
 
     }  catch (const std::exception &e) {
         qWarning() << "*** An error occured ***";
