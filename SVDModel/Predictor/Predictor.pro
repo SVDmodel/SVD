@@ -53,7 +53,7 @@ win32:CONFIG(debug, debug|release): DEFINES +=  TF_DEBUG_MODE=0
 
 #LIBS += -LE:/dev/tensorflow/tensorflow/contrib/cmake/build/RelWithDebInfo -ltensorflow
 # GPU
-LIBS += -L../../tensorflow/lib14 -ltensorflow
+LIBS += -L../../tensorflow/lib14cpu -ltensorflow
 # CPU library
 # LIBS += -L../../tensorflow/lib14cpu -ltensorflow
 # only required for the PredTest example:

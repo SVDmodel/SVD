@@ -80,8 +80,8 @@ else:win32:CONFIG (debug, debug|release): PRE_TARGETDEPS += ../SVDCore/debug/SVD
 win32 {
 #LIBS += -LE:/dev/tensorflow/tensorflow/contrib/cmake/build/RelWithDebInfo -ltensorflow
 #LIBS += -LE:\dev\tensorflow\tensorflow\contrib\cmake\build\protobuf\src\protobuf\RelWithDebInfo -llibprotobuf
-LIBS += -L../../tensorflow/lib14 -ltensorflow
-LIBS += -L../../tensorflow/lib14 -llibprotobuf
+LIBS += -L../../tensorflow/lib14cpu -ltensorflow
+LIBS += -L../../tensorflow/lib14cpu -llibprotobuf
 # for profiling only:
 # LIBS += -L"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v8.0/lib/x64" -lcudart
 }
