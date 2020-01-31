@@ -13,9 +13,9 @@ TEMPLATE = lib
 CONFIG += staticlib
 win32 {
 ### tensorflow compiled locally
-INCLUDEPATH += e:/dev/tensorflow e:/dev/tensorflow/tensorflow/contrib/cmake/build  e:/dev/tensorflow/tensorflow/contrib/cmake/build/external/eigen_archive
-INCLUDEPATH += e:/dev/tensorflow/tensorflow/contrib/cmake/build/external/nsync/public
-INCLUDEPATH += e:/dev/tensorflow/third_party/eigen3 e:/dev/tensorflow/tensorflow/contrib/cmake/build/protobuf/src/protobuf/src
+INCLUDEPATH += ../../../tensorflow ../../../tensorflow/tensorflow/contrib/cmake/build  ../../../tensorflow/tensorflow/contrib/cmake/build/external/eigen_archive
+INCLUDEPATH += ../../../tensorflow/tensorflow/contrib/cmake/build/external/nsync/public
+INCLUDEPATH += ../../../tensorflow/third_party/eigen3 ../../../tensorflow/tensorflow/contrib/cmake/build/protobuf/src/protobuf/src
 }
 unix {
 INCLUDEPATH += /usr/include/tensorflow-cpp
@@ -52,7 +52,9 @@ win32:CONFIG(release, debug|release): DEFINES +=  _ITERATOR_DEBUG_LEVEL=0
 win32:CONFIG(debug, debug|release): DEFINES +=  TF_DEBUG_MODE=0
 
 #LIBS += -LE:/dev/tensorflow/tensorflow/contrib/cmake/build/RelWithDebInfo -ltensorflow
-LIBS += -L../../tensorflow/lib14 -ltensorflow
+#LIBS += -L../../tensorflow/lib14 -ltensorflow
+LIBS += -L../../tensorflow/lib14cpu -ltensorflow
+
 # only required for the PredTest example:
 # LIBS += -LE:\dev\tensorflow\tensorflow\contrib\cmake\build\protobuf\src\protobuf\RelWithDebInfo -llibprotobuf.lib
 # E:\dev\tensorflow\tensorflow\contrib\cmake\build\protobuf\src\protobuf\RelWithDebInfo
