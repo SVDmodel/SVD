@@ -81,12 +81,12 @@ void MatrixModule::processBatch(Batch *batch)
             cw.setData(cell);
             key = static_cast<int>(mKeyFormula.calculate(cw));
             if (mMatrix.isValid(cell->stateId(), key))
-                new_state = mMatrix.transition(cell->stateId(), key); // we have a specific transition for the given key
+                new_state = mMatrix.transition(cell->stateId(), key, &cw); // we have a specific transition for the given key
             else
-                new_state = mMatrix.transition(cell->stateId()); // use the default transition for the state
+                new_state = mMatrix.transition(cell->stateId(), 0, &cw); // use the default transition for the state
         } else {
             // no key, just execute based on current state
-            new_state = mMatrix.transition(cell->stateId() );
+            new_state = mMatrix.transition(cell->stateId(), 0, &cw );
         }
 
         if (new_state != cell->stateId()) {

@@ -88,6 +88,9 @@ public:
 
     /// load properties from a text file (stateId is the key)
     bool loadProperties(const std::string &filename);
+    /// frequency table for every state
+    void updateStateHistogram();
+    const std::vector<int> &stateHistogram() const { return mStateHistogram; }
 
     // members
     bool isValid(state_t state) const { return mStateSet.find(state) != mStateSet.end(); }
@@ -95,6 +98,7 @@ public:
     const std::vector<State> &states() { return mStates; }
     const State &stateByIndex(size_t index) const { return mStates[index]; }
     const State &stateById(state_t id);
+
 
     // handlers
     bool registerHandler(Module *module, const std::string &handler);
@@ -105,6 +109,8 @@ private:
     std::vector<State> mStates;
     std::unordered_map<state_t, size_t> mStateSet;
     std::map<std::string,  Module*> mHandlers;
+
+    std::vector<int> mStateHistogram;
 
 };
 

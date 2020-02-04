@@ -40,6 +40,7 @@ public:
     EnvironmentCell &environmentCell(int index) { assert(mEnvironmentGrid.isIndexValid(index));
                                                 assert(mEnvironmentGrid[index] != nullptr);
                                                 return *mEnvironmentGrid[index]; }
+    int NCells() const { return mNCells; }
 
     // access whole grids
     /// get the grid of Cells. Cells outside the project area are marked
@@ -57,6 +58,7 @@ private:
 
     Grid<EnvironmentCell*> mEnvironmentGrid;
     std::vector<EnvironmentCell> mEnvironmentCells;
+    int mNCells; ///< number of valid cells on the landsscape
 
     std::map<int, int> mClimateIds;
 };

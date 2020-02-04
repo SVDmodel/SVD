@@ -41,6 +41,7 @@ LandscapeVisualization::LandscapeVisualization(QObject *parent): QObject(parent)
     mIsRendering = false;
     mCurrentType = RenderNone;
     mBGColor = QColor(127,127,127,127);
+    mAlpha = 255; // opaque
 
 }
 
@@ -61,24 +62,36 @@ void LandscapeVisualization::setup(SurfaceGraph *graph, Legend *palette)
     }
 
     try {
-    std::string filename = Tools::path(Model::instance()->settings().valueString("visualization.dem"));
-    if (!Tools::fileExists(filename)) {
-        lg->error("DEM not available ('{}').", filename);
-        return;
-    }
-    mDem.loadGridFromFile(filename);
-    mMinHeight = mDem.min();
-    mMaxHeight = mDem.max();
+        if (Model::instance()->settings().valueString("visualization.dem").empty()) {
+            // setup an empty DEM (flat landscape)
 
-    lg->info("Loaded the DEM (visualization.dem) '{}'. Dimensions: {} x {}, with cell size: {}m. Min/max height: {}/{} ", filename, mDem.sizeX(), mDem.sizeY(), mDem.cellsize(), mMinHeight, mMaxHeight);
-    lg->info("Metric rectangle with {}x{}m. Left-Right: {}m - {}m, Top-Bottom: {}m - {}m.  ", mDem.metricRect().width(), mDem.metricRect().height(), mDem.metricRect().left(), mDem.metricRect().right(), mDem.metricRect().top(), mDem.metricRect().bottom());
+            mDem.setup( Model::instance()->landscape()->grid().metricRect(), 100.);
+            mDem.initialize(100.f); // a default value
+            mMinHeight = 100.f;
+            mMaxHeight = 100.f;
+            graph->setup(mDem, mMinHeight, mMaxHeight);
+            lg->info("Created a dummy DEM, because no DEM was provided in 'visualization.dem'.");
+        } else {
+            // load DEM from raster file
+            std::string filename = Tools::path(Model::instance()->settings().valueString("visualization.dem"));
+            if (!Tools::fileExists(filename)) {
+                lg->error("DEM not available ('{}').", filename);
+                return;
+            }
+            mDem.loadGridFromFile(filename);
+            mMinHeight = mDem.min();
+            mMaxHeight = mDem.max();
 
-    graph->setup(mDem, mMinHeight, mMaxHeight);
+            lg->info("Loaded the DEM (visualization.dem) '{}'. Dimensions: {} x {}, with cell size: {}m. Min/max height: {}/{} ", filename, mDem.sizeX(), mDem.sizeY(), mDem.cellsize(), mMinHeight, mMaxHeight);
+            lg->info("Metric rectangle with {}x{}m. Left-Right: {}m - {}m, Top-Bottom: {}m - {}m.  ", mDem.metricRect().width(), mDem.metricRect().height(), mDem.metricRect().left(), mDem.metricRect().right(), mDem.metricRect().top(), mDem.metricRect().bottom());
+
+            graph->setup(mDem, mMinHeight, mMaxHeight);
+        }
 
 
-    setupColorRamps();
-    setupStateColors();
-    mIsValid = true;
+        setupColorRamps();
+        setupStateColors();
+        mIsValid = true;
 
     } catch( const std::exception &e ) {
         lg->error("Error in setup of landscape visualization: {}", e.what());
@@ -279,6 +292,7 @@ void LandscapeVisualization::doRenderExpression(bool auto_scale)
     Palette *pal = (mLegend->currentPalette() == nullptr ? mContinuousPalette : mLegend->currentPalette() );
 
     QRgb fill_color=mBGColor.rgba();
+    QRgb alpha = qRgba(255,255,255, mAlpha);
 
     const uchar *cline = mRenderTexture.scanLine(0);
     QRgb* line = reinterpret_cast<QRgb*>(const_cast<uchar*>(cline)); // write directly to the buffer (without a potential detach)
@@ -289,17 +303,19 @@ void LandscapeVisualization::doRenderExpression(bool auto_scale)
             if (!c.isNull()) {
                 cw.setData(&c);
                 value = mExpression.calculate(cw);
-                *line = pal->color(value);
+                *line = alpha & pal->color(value);
             } else {
                 *line = fill_color;
             }
         }
     }
+    //mGraph->topoSeries()->setTexture(mRenderTexture);
     if (mUpscaleFactor == 1) {
         mGraph->topoSeries()->setTexture(mRenderTexture);
     } else {
         mUpscaleRenderTexture = mRenderTexture.scaled(mUpscaleRenderTexture.size());
         mGraph->topoSeries()->setTexture(mUpscaleRenderTexture);
+        spdlog::get("main")->debug("Render: Scaled texture: width {} height {}.  ", mUpscaleRenderTexture.size().width(), mUpscaleRenderTexture.size().height());
     }
     ++mRenderCount;
 
@@ -355,6 +371,8 @@ void LandscapeVisualization::checkTexture()
             mUpscaleRenderTexture = QImage(mDem.sizeX(), mDem.sizeY(), QImage::Format_ARGB32_Premultiplied);
             mUpscaleFactor = mDem.sizeX() / Model::instance()->landscape()->grid().sizeX();
             spdlog::get("main")->info("DEM Visualization uses an factor of {}", mUpscaleFactor);
+            // mRenderTexture = mUpscaleRenderTexture;
+            //mGraph->topoSeries()->setTexture(mUpscaleRenderTexture);
         }
     }
 

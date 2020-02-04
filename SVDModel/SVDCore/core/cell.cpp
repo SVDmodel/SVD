@@ -147,6 +147,42 @@ std::vector<double> Cell::neighborSpecies() const
     return result;
 }
 
+double Cell::stateFrequencyLocal(state_t stateId) const
+{
+    auto &grid =  Model::instance()->landscape()->grid();
+    Point center = grid.indexOf(this);
+    int n_local = 0;
+    int n = 0;
+    for (const auto &p : mLocalNeighbors) {
+        if (grid.isIndexValid(center + p)) {
+            Cell &cell = grid.valueAtIndex(center + p);
+            if (cell.stateId() == stateId)
+                ++n_local;
+            }
+            ++n;
+        }
+
+    return n>0 ? n_local / static_cast<double>(n) : 0.;
+}
+
+double Cell::stateFrequencyIntermediate(state_t stateId) const
+{
+    auto &grid =  Model::instance()->landscape()->grid();
+    Point center = grid.indexOf(this);
+    int n_local = 0;
+    int n = 0;
+    for (const auto &p : mMediumNeighbors) {
+        if (grid.isIndexValid(center + p)) {
+            Cell &cell = grid.valueAtIndex(center + p);
+            if (cell.stateId() == stateId)
+                ++n_local;
+            }
+            ++n;
+        }
+
+    return n>0 ? n_local / static_cast<double>(n) : 0.;
+}
+
 void Cell::dumpDebugData()
 {
     auto lg = spdlog::get("main");

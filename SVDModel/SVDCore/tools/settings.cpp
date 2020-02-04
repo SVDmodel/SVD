@@ -106,6 +106,7 @@ bool Settings::setValue(const std::string &key, std::string value)
     if (!hasKey(key))
         throw std::logic_error("Error in updating the settings: " + key + " is not a valid setting in the configuration file.");
     mValues[key] = value;
+    return true;
 }
 
 void Settings::checkLogDefault(const std::string &key, std::string default_value)

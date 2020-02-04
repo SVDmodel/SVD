@@ -677,6 +677,12 @@ void MainWindow::onModelCreated()
 
 }
 
+void MainWindow::delayExecution(int msecs)
+{
+    if (mMC)
+        mMC->setDelay(msecs);
+}
+
 void MainWindow::populateInspector(QVector3D point)
 {
     if (!mMC->state()->isModelValid())
@@ -726,6 +732,7 @@ void MainWindow::on_action3D_Camera_settings_triggered()
     cntrl->setSurfaceGraph( ui->main3d);
     cntrl->setLandscapeVisualization(mLandscapeVis);
     QObject::connect(ui->main3d, &SurfaceGraph::cameraChanged, cntrl, &CameraControl::cameraChanged);
+    QObject::connect(cntrl, &CameraControl::delayExecution, this, &MainWindow::delayExecution);
     cntrl->cameraChanged(); // update initital values
     cntrl->show();
 }

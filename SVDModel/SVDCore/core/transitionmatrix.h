@@ -23,6 +23,9 @@
 
 #include "states.h"
 
+class CellWrapper; // forward
+class Expression; // forward
+
 class TransitionMatrix
 {
 public:
@@ -32,13 +35,19 @@ public:
     // access
 
     /// choose a next state from the transition matrix
-    state_t transition(state_t stateId, int key=0);
+    state_t transition(state_t stateId, int key=0, CellWrapper *cell=0);
     /// check if the state stateId has stored transition values
     bool isValid(state_t stateId, int key=0) { return mTM.find({stateId, key}) != mTM.end(); }
 private:
+    struct STransitionItem {
+      STransitionItem(state_t astate, double aprob): state(astate), prob(aprob) {}
+      state_t state;
+      double prob;
+      std::unique_ptr<Expression> expr;
+    };
     /// storage for transition matrix: key: state + numerical key, content: list of target states + probabilties
     std::map< std::pair<state_t, int>,
-              std::vector< std::pair< state_t, double > > > mTM;
+              std::vector< STransitionItem > > mTM;
 };
 
 #endif // TRANSITIONMATRIX_H

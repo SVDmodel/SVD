@@ -82,6 +82,11 @@ public:
 
     /// get a vector with species shares (local, mid-range) for the current cell
     std::vector<double> neighborSpecies() const;
+
+    /// get frequency of neighbor cells with a specific state
+    double stateFrequencyLocal(state_t stateId) const;
+    double stateFrequencyIntermediate(state_t stateId) const;
+    double stateFrequencyGlobal(state_t stateId) const;
 private:
     void dumpDebugData();
     int mCellIndex; ///< index of the grid cell within the landscape grid

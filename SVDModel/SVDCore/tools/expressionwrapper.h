@@ -70,12 +70,17 @@ public:
     virtual const std::vector<std::pair<std::string, std::string> > &getVariablesMetaData() { return mVariablesMetaData; }
     virtual double value(const size_t variableIndex);
 
+    double localStateAverage(size_t stateId);
+    double intermediateStateAverage(size_t stateId);
+    double globalStateAverage(size_t stateId);
+
 private:
     static std::vector<std::string> mVariableList;
     static std::vector<std::pair<std::string, std::string> > mVariablesMetaData;
     static std::vector<std::pair<const Module*, size_t> > mModules;
     static size_t mMaxStateVar;
     static size_t mMaxEnvVar;
+    static size_t mMaxClimVar;
 
     const Cell *mData;
 };

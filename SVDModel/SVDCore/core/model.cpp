@@ -94,6 +94,8 @@ bool Model::setup()
 
     setupExpressionWrapper();
 
+    mStates->updateStateHistogram();
+
     lg_setup->info("************************************************************");
     lg_setup->info("************   Setup completed, Ready to run  **************");
     lg_setup->info("************************************************************");
@@ -112,6 +114,8 @@ void Model::finalizeYear()
 
         }
     }
+
+    mStates->updateStateHistogram();
 
     outputManager()->yearEnd();
 

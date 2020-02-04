@@ -143,6 +143,7 @@ private:
     void checkAvailableActions(); ///< check status of the actions (run, cancel, ...)
     void updateModelStats(); ///< refresh model stats
     void onModelCreated(); ///< called after the model is created (and ready to run)
+    void delayExecution(int msecs);
 
     void populateInspector(QVector3D point);
 

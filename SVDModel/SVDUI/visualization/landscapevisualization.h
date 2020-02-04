@@ -48,7 +48,10 @@ public:
     int viewCount() const;
     bool isViewValid(int camera);
     QString viewString(int camera);
+
     void setViewString(int camera, QString str);
+
+    int alpha() { return mAlpha; }
 
 public slots:
     /// renders the expression and sets the render type to "Expression"
@@ -63,6 +66,7 @@ public slots:
     void resetView(int camera=0);
     void saveView(int camera);
     void setFillColor(QColor col);
+    void setAlpha(int alpha) { mAlpha = alpha; }
 signals:
     void pointSelected(QVector3D world_coord); ///< coordinates of the point where a user clicks on the visualization
 
@@ -78,6 +82,7 @@ private:
     void setupStateColors();
     QRgb colorValue(double value) { return mColorLookup[ std::min(std::max(static_cast<int>(value*1000), 0), 999)]; }
     QColor mBGColor;
+    int mAlpha;
 
     QVector<QRgb> mColorLookup;
     QVector<QRgb> mStateColorLookup;

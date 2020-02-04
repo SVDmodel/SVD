@@ -42,6 +42,7 @@ void States::setup()
     size_t i_name = rdr.columnIndex("name");
     size_t i_color = rdr.columnIndex("color");
 
+    state_t max_state=0;
     while (rdr.next()) {
         // read line
         state_t id = state_t( rdr.value("stateId") );
@@ -57,6 +58,8 @@ void States::setup()
         if (i_color != std::numeric_limits<std::size_t>::max())
             mStates.back().setColorName(rdr.valueString(i_color));
 
+        max_state = std::max(max_state, mStates.back().id());
+
     }
 
     // load extra properties
@@ -66,6 +69,9 @@ void States::setup()
         spdlog::get("setup")->debug("Loading extra state properties from file '{}'...", file_name);
         loadProperties(file_name);
     }
+
+
+    mStateHistogram.resize(static_cast<size_t>(max_state+1));
 
     spdlog::get("setup")->debug("Loaded {} states from file '{}'", mStates.size(), file_name);
 
@@ -94,6 +100,19 @@ bool States::loadProperties(const std::string &filename)
     spdlog::get("setup")->debug("Loaded {} values from file '{}'. States have the following properties: {}", rdr.columnCount()-1, filename, join(State::valueNames()));
     return !has_errors;
 
+}
+
+void States::updateStateHistogram()
+{
+
+    // reset counter
+    std::fill(mStateHistogram.begin(), mStateHistogram.end(), 0);
+
+    // count every state on the landscape
+    auto &grid = Model::instance()->landscape()->grid();
+    for (Cell *c=grid.begin(); c!=grid.end(); ++c)
+        if (!c->isNull())
+            mStateHistogram[static_cast<size_t>(c->stateId())]++;
 }
 
 const State &States::randomState() const

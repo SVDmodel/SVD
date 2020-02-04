@@ -83,8 +83,9 @@
 static std::vector<std::string> mathFuncList={"sin", "cos", "tan",
                                        "exp", "ln", "sqrt",
                                        "min", "max", "if",
-                                       "incsum", "polygon", "mod", "sigmoid", "rnd", "rndg", "limit",  "round", "in"};
-const int  MaxArgCount[18]={1,1,1,1,  1, 1,   -1, -1, 3, 1, -1, 2, 4, 2, 2, 3, 1, -1};
+                                       "incsum", "polygon", "mod", "sigmoid", "rnd", "rndg", "limit",  "round", "in",
+                                             "localNB", "intermediateNB", "globalNB"};
+const int  MaxArgCount[21]={1,1,1,1,  1, 1,   -1, -1, 3, 1, -1, 2, 4, 2, 2, 3, 1, -1,    -1,-1,-1};
 #define    AGGFUNCCOUNT 6
 static std::string AggFuncList[AGGFUNCCOUNT]={"sum", "avg", "max", "min", "stddev", "variance"};
 
@@ -589,6 +590,18 @@ double Expression::execute(double *varlist, ExpressionWrapper *object, bool *rLo
                 *(p-(int)(exec->Value-1))=udfIn(*(p-(int)(exec->Value-1)), p, (int)exec->Value);
                 p-=(int) (exec->Value-1);
                 break;
+            case 18: // localNB
+                *(p-(int)(exec->Value-1)) = udfNeighborhood(object, 1, p, (int)exec->Value);
+                p-=(int) (exec->Value-1);
+                break;
+            case 19: // intermediateNB
+                *(p-(int)(exec->Value-1)) = udfNeighborhood(object, 2, p, (int)exec->Value);
+                p-=(int) (exec->Value-1);
+                break;
+            case 20: // globalNB
+                *(p-(int)(exec->Value-1)) = udfNeighborhood(object, 3, p, (int)exec->Value);
+                p-=(int) (exec->Value-1);
+                break;
             }
             p++;
             break;
@@ -793,6 +806,29 @@ double Expression::udfIn(double Value, double *Stack, int ArgCount) const
         ++p;
     }
     return static_cast<double>(False);
+}
+
+
+// SVD specific neighborhood functions
+double Expression::udfNeighborhood(ExpressionWrapper *object, int neighbor_class, double *Stack, int ArgCount) const
+{
+    // signature: f(
+    if (!object) return 0.;
+    CellWrapper *wrap = dynamic_cast<CellWrapper*>(object);
+    if (!wrap) return 0.;
+    double *p = Stack - (ArgCount-1);
+    double result = 0.;
+    while (p <= Stack) {
+        size_t stateId = static_cast<size_t>( *p );
+        switch (neighbor_class) {
+        case 1: result += wrap->localStateAverage(stateId); break;
+        case 2: result += wrap->intermediateStateAverage(stateId); break;
+        case 3: result +=  wrap->globalStateAverage(stateId); break;
+        default: break;
+        }
+        ++p;
+    }
+    return result;
 }
 
 

@@ -11,6 +11,7 @@ QT      += core
 TARGET = Predictor
 TEMPLATE = lib
 CONFIG += staticlib
+CONFIG += c++11
 win32 {
 ### tensorflow compiled locally
 INCLUDEPATH += ../../../tensorflow ../../../tensorflow/tensorflow/contrib/cmake/build  ../../../tensorflow/tensorflow/contrib/cmake/build/external/eigen_archive

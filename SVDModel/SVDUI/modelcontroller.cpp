@@ -27,7 +27,12 @@
 
 
 //***************** Model Controller ******************
-
+static void delay(int msecs)
+{
+    QTime dieTime= QTime::currentTime().addMSecs(msecs);
+    while (QTime::currentTime() < dieTime)
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+}
 
 ModelController::ModelController(QObject *)
 {
@@ -71,6 +76,7 @@ ModelController::ModelController(QObject *)
 
     mYearsToRun = 0;
     mCurrentStep = 0;
+    mDelayMSecs = 0;
     mIsCurrentlyRunning = false;
     mInteractiveMode = false;
 
@@ -171,6 +177,8 @@ void ModelController::runStep()
         return;
     // run the next year of the simulation
     mIsCurrentlyRunning = true;
+    if (mDelayMSecs>0)
+        delay(mDelayMSecs);
     QMetaObject::invokeMethod(mModelShell, "runOneStep", Qt::QueuedConnection, Q_ARG(int, mCurrentStep));
 
 }

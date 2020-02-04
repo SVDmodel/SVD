@@ -43,6 +43,7 @@ public:
     int yearsToRun() { return mYearsToRun; }
 
     void setInteractiveMode(bool interactive) { mInteractiveMode = interactive; }
+    void setDelay(int msecs) {mDelayMSecs = msecs; }
 
     /// retrieve system statistics as key-value pairs
     std::unordered_map<std::string, std::string> systemStatus();
@@ -69,6 +70,7 @@ private:
 
     int mYearsToRun;
     int mCurrentStep;
+    int mDelayMSecs; // pause each year for a time
     QTime mStopWatch;
     bool mIsCurrentlyRunning;
     bool mInteractiveMode;

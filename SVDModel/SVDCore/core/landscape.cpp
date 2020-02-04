@@ -132,6 +132,7 @@ void Landscape::setup()
 
     Cell *a=mGrid.begin();
     int cell_index = 0;
+    mNCells = 0;
     for (EnvironmentCell **ec=mEnvironmentGrid.begin(); ec!=mEnvironmentGrid.end(); ++ec, ++a, ++cell_index)
         if (*ec) {
             a->setCellIndex(cell_index);
@@ -145,6 +146,7 @@ void Landscape::setup()
                     throw logic_error_fmt("The digital elevation model '{}' is not valid for the point {}/{} (which is within the project area)!", filename, p.x(), p.y());
                 a->setElevation( dem[p] );
             }
+            ++mNCells;
         }
 
 

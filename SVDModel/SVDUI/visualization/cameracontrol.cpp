@@ -21,6 +21,8 @@
 #include "ui_cameracontrol.h"
 #include "landscapevisualization.h"
 
+
+
 CameraControl::CameraControl(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::CameraControl)
@@ -46,7 +48,7 @@ void CameraControl::cameraChanged()
     ui->rotationX->setText(QString::number(camera->xRotation()));
     ui->rotationY->setText(QString::number(camera->yRotation()));
     ui->zFactor->setValue(static_cast<int>(mSurface->graph()->aspectRatio()*100));
-    ui->yMaxRange->setValue(static_cast<int>(mSurface->graph()->axisY()->max()/1000.));
+    ui->yMaxRange->setValue(static_cast<int>(mSurface->graph()->axisY()->max()/100.));
 
     QStringList res;
     res << QString("xRotation=%1").arg(camera->xRotation())
@@ -117,7 +119,7 @@ void CameraControl::closeEvent(QCloseEvent *event)
 void CameraControl::on_yMaxRange_actionTriggered(int action)
 {
     Q_UNUSED(action)
-    float max_range = ui->yMaxRange->value()*1000.f;
+    float max_range = ui->yMaxRange->value()*100.f;
     mSurface->graph()->axisY()->setRange(mSurface->graph()->axisY()->min(), std::max(mSurface->graph()->axisY()->min(), max_range));
     qDebug() << "max-range:" << max_range/1000. << "km";
 }
@@ -131,4 +133,16 @@ void CameraControl::on_mbSetBGColor_clicked()
     else {
         qDebug()<< "invalid color:" << colstr;
     }
+}
+
+void CameraControl::on_alphaSlider_valueChanged(int value)
+{
+    mLandscapeVis->setAlpha(255-value);
+    mLandscapeVis->update();
+
+}
+
+void CameraControl::on_delayExecution_valueChanged(int arg1)
+{
+    emit delayExecution(arg1);
 }

@@ -126,6 +126,13 @@ void DNNShell::doWork(Batch *batch)
         emit workDone(batch);
         return;
     }
+    if (mDNNs.size()==0) {
+        lg->error("Cannot execute DNN batch because no DNN is available!");
+        RunState::instance()->dnnState() = ModelRunState::Error;
+        batch->setError(true);
+        emit workDone(batch);
+        return;
+    }
 
 
     if (batch->state()!=Batch::Fill)

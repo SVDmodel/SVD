@@ -38,6 +38,9 @@ public:
     bool hasSeries(const int year, const int climateId) const { auto y=mData.find(year); if(y==mData.end()) return false;
                                                                 auto s= y->second.find(climateId); if (s==(*y).second.end()) return false;
                                                               return true;}
+    const std::vector< std::string > &climateVariables() { return mColNames; }
+
+    double value(const size_t varIdx, int climateId);
 private:
     size_t mNColumns; ///< the number of data elements per year+id
     /// the main container for climate data
@@ -47,6 +50,8 @@ private:
     std::set<int> mAllIds;
     /// indices of years to use
     std::vector<int> mSequence;
+    /// names of climate variables
+    std::vector<std::string> mColNames;
 };
 
 #endif // CLIMATE_H

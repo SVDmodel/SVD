@@ -40,6 +40,7 @@ public:
 
 public slots:
     void cameraChanged();
+
 private slots:
     void on_targetX_actionTriggered(int action);
     void on_targetY_actionTriggered(int action);
@@ -52,6 +53,12 @@ private slots:
     void on_yMaxRange_actionTriggered(int action);
 
     void on_mbSetBGColor_clicked();
+
+    void on_alphaSlider_valueChanged(int value);
+
+    void on_delayExecution_valueChanged(int arg1);
+signals:
+    void delayExecution(int msecs);
 
 protected:
      void closeEvent(QCloseEvent *event);

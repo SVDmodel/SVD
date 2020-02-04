@@ -25,21 +25,23 @@ void StateHistOut::setup()
 
 void StateHistOut::execute()
 {
-    auto &grid = Model::instance()->landscape()->grid();
-    const auto &states = Model::instance()->states()->states();
+//    auto &grid = Model::instance()->landscape()->grid();
+//    const auto &states = Model::instance()->states()->states();
+//    int year = Model::instance()->year();
+//    // create a (sparse) vector of stateIds
+//    state_t max_state=0;
+//    for (const auto &s : states)
+//        max_state = std::max(max_state, s.id());
+//    std::vector<int> state_count;
+//    state_count.resize(static_cast<size_t>(max_state+1));
+
+//    // count every state on the landscape
+//    for (Cell *c=grid.begin(); c!=grid.end(); ++c)
+//        if (!c->isNull())
+//            state_count[static_cast<size_t>(c->stateId())]++;
+
+    auto state_count = Model::instance()->states()->stateHistogram();
     int year = Model::instance()->year();
-    // create a (sparse) vector of stateIds
-    state_t max_state=0;
-    for (const auto &s : states)
-        max_state = std::max(max_state, s.id());
-    std::vector<int> state_count;
-    state_count.resize(static_cast<size_t>(max_state+1));
-
-    // count every state on the landscape
-    for (Cell *c=grid.begin(); c!=grid.end(); ++c)
-        if (!c->isNull())
-            state_count[static_cast<size_t>(c->stateId())]++;
-
     // write output table
     for (size_t i=0;i<state_count.size();++i) {
         if (state_count[i]>0) {

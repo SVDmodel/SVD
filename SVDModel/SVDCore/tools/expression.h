@@ -141,6 +141,8 @@ private:
         double  udfPolygon(double Value, double* Stack, int ArgCount) const; ///< special function polygon()
         double udfSigmoid(double Value, double sType, double p1, double p2) const; ///< special function sigmoid()
         double  udfIn(double Value, double* Stack, int ArgCount) const; ///< special function in()
+        // SVD specific neighborhood functions
+        double udfNeighborhood(ExpressionWrapper *object, int neighbor_class, double *Stack, int ArgCount) const;
         void checkBuffer(int Index);
 
         // linearization

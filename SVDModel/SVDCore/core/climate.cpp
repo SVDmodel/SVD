@@ -44,10 +44,18 @@ void Climate::setup()
 
     auto i_id = rdr.columnIndex("climateId");
     auto i_year = rdr.columnIndex("year");
+    if (i_id>1 || i_year>1)
+        throw logic_error_fmt("Setup Climate: The columns 'year' and 'climateId' have to be the two first columns in the climate data file: '{}'", file_name);
 
     auto lg = spdlog::get("setup");
     lg->debug("reading climate file '{}' with {} columns. climateId: col {}, year: col {}.", file_name, rdr.columnCount(), i_id, i_year);
     mNColumns = rdr.columnCount()-2;
+    mColNames.clear();
+    if (settings.valueBool("climate.publishVariables","false")) {
+        for (size_t i=2;i<rdr.columnCount();++i)
+           mColNames.push_back(rdr.columnName(i));
+    }
+
 
     // set up transformations
     std::vector<Expression> transformations;
@@ -168,4 +176,14 @@ std::vector<const std::vector<float> *> Climate::series(int start_year, size_t s
         set[i] = &singleSeries(year, climateId);
     }
     return set;
+}
+
+double Climate::value(const size_t varIdx, int climateId)
+{
+    size_t istart = static_cast<size_t>(std::max(Model::instance()->year(),1) - 1); // after loading year==0 -> return the values of the first valid year in the climate series
+    if (istart >= mSequence.size())
+        throw std::logic_error("Climate-series: start year "+ to_string(istart) +" is out of range (min: 1, max: "+ to_string(mSequence.size())+")");
+    int current_year = mSequence[istart];
+    return static_cast<double>( mData.at(current_year).at(climateId)[varIdx] );
+
 }

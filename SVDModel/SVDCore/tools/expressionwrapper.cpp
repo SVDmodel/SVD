@@ -176,6 +176,7 @@ std::vector<std::string> CellWrapper::mVariableList = { "index", "environmentId"
 std::vector<std::pair<std::string, std::string> > CellWrapper::mVariablesMetaData;
 size_t CellWrapper::mMaxStateVar = 0;
 size_t CellWrapper::mMaxEnvVar = 0;
+size_t CellWrapper::mMaxClimVar = 0;
 std::vector<std::pair<const Module*, size_t> > CellWrapper::mModules;
 
 void CellWrapper::setupVariables(EnvironmentCell *ecell, const State *astate)
@@ -217,6 +218,16 @@ void CellWrapper::setupVariables(EnvironmentCell *ecell, const State *astate)
         mVariablesMetaData.push_back({"Environment", "Environment variable (user-defined)"});
     }
     mMaxEnvVar = mVariableList.size();
+
+    for (auto &v : Model::instance()->climate()->climateVariables()) {
+        if (indexOf(mVariableList, v)>=0) {
+            spdlog::get("main")->error("Setup of variable names for CellWrapper: climate variable '{}' already exists! (list of variables so far: {})", v, join(mVariableList));
+            throw std::logic_error("Error in setting up variable names (check log).");
+        }
+        mVariableList.push_back(v);
+        mVariablesMetaData.push_back({"Climate", "Climate variable (user-defined)"});
+    }
+    mMaxClimVar = mVariableList.size();
 }
 
 void CellWrapper::setupVariables(const Module *module)
@@ -261,13 +272,33 @@ double CellWrapper::value(const size_t variableIndex)
         // environment variable
         const EnvironmentCell *ec = mData->environment();
         return ec->value(variableIndex - mMaxStateVar);
+    } else if (variableIndex < mMaxClimVar) {
+        const EnvironmentCell *ec = mData->environment();
+        return Model::instance()->climate()->value( variableIndex - mMaxEnvVar, ec->climateId() );
     } else {
         // module variable
-        size_t mod_idx = variableIndex - mMaxEnvVar;
+        size_t mod_idx = variableIndex - mMaxClimVar;
         if (mod_idx < mModules.size()) {
             return mModules[mod_idx].first->moduleVariable( mData, mModules[mod_idx].second );
         }
 
     }
     return 0.;
+}
+
+double CellWrapper::localStateAverage(size_t stateId)
+{
+    return mData->stateFrequencyLocal(static_cast<state_t>(stateId));
+}
+
+double CellWrapper::intermediateStateAverage(size_t stateId)
+{
+    return mData->stateFrequencyIntermediate(static_cast<state_t>(stateId));
+}
+
+double CellWrapper::globalStateAverage(size_t stateId)
+{
+    auto shist = Model::instance()->states()->stateHistogram();
+
+    return shist[stateId] / static_cast<double>( Model::instance()->landscape()->NCells() );
 }
