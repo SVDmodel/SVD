@@ -62,6 +62,8 @@ void States::setup()
 
     }
 
+    spdlog::get("setup")->debug("Loaded {} states from file '{}'", mStates.size(), file_name);
+
     // load extra properties
     file_name = Model::instance()->settings().valueString("states.extraFile");
     if (!file_name.empty()) {
@@ -73,7 +75,7 @@ void States::setup()
 
     mStateHistogram.resize(static_cast<size_t>(max_state+1));
 
-    spdlog::get("setup")->debug("Loaded {} states from file '{}'", mStates.size(), file_name);
+
 
 }
 

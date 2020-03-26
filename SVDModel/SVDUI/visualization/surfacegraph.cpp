@@ -228,7 +228,11 @@ void SurfaceGraph::resetCameraPosition(int cameraPreset)
    if (cameraPreset>=mDefaultViews.length())
        return;
 
-    m_graph->scene()->activeCamera()->copyValuesFrom(*mDefaultViews[cameraPreset].camera);
+   //auto *camera = mDefaultViews[cameraPreset].camera;
+   //spdlog::get("main")->info("set viewparams: target {}, {}, {}", camera->target().x(), camera->target().y(), camera->target().z());
+
+   m_graph->scene()->activeCamera()->copyValuesFrom(*mDefaultViews[cameraPreset].camera);
+    m_graph->scene()->activeCamera()->setTarget( mDefaultViews[cameraPreset].camera->target() );
     m_graph->setAspectRatio(mDefaultViews[cameraPreset].aspectRatio);
     m_graph->axisY()->setMax(mDefaultViews[cameraPreset].maxAxisYRange);
 
@@ -243,6 +247,7 @@ void SurfaceGraph::saveCameraPosition(int cameraPreset)
 {
     if (cameraPreset>0 && cameraPreset<mDefaultViews.size()) {
         mDefaultViews[cameraPreset].camera->copyValuesFrom(*m_graph->scene()->activeCamera());
+        mDefaultViews[cameraPreset].camera->setTarget(m_graph->scene()->activeCamera()->target());
         mDefaultViews[cameraPreset].aspectRatio = m_graph->aspectRatio();
         mDefaultViews[cameraPreset].maxAxisYRange = m_graph->axisY()->max();
         mDefaultViews[cameraPreset].valid = true;
@@ -291,12 +296,12 @@ void SurfaceGraph::ViewParams::setFromString(QString str)
     camera->setYRotation( dat["yRotation"].toFloat() );
     camera->setZoomLevel( dat["zoomLevel"].toFloat() );
     camera->setTarget(QVector3D(dat["targetX"].toFloat(),
-                                dat["targetX"].toFloat(),
-                                dat["targetX"].toFloat()));
+                                dat["targetY"].toFloat(),
+                                dat["targetZ"].toFloat()));
     aspectRatio = dat["aspectRatio"].toDouble();
     maxAxisYRange= dat["maxYAxis"].toFloat();
     backgroundColor = dat["backgroundColor"];
     valid = dat["valid"] == "true";
 
-
+    //spdlog::get("main")->info("viewparams: target {}, {}, {}", camera->target().x(), camera->target().y(), camera->target().z());
 }

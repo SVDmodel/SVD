@@ -111,7 +111,7 @@ void LandscapeVisualization::renderToFile(QString filename)
     if (!isValid())
         return;
 
-    QImage img = mGraph->graph()->renderToImage(8, QSize(1500, 1000));
+    QImage img = mGraph->graph()->renderToImage(16, QSize(6000, 4000));
     QString file_name;
     if (filename.isEmpty())
         file_name = QString::fromStdString(Tools::path("render.png"));

@@ -28,6 +28,7 @@ SOURCES += \
     modelshell.cpp \
     modules/simplemanagement/simplemanagementmodule.cpp \
     outputs/statehistout.cpp \
+    tools/geotiff.cpp \
     tools/grid.cpp \
     tools/strtools.cpp \
     tools/filereader.cpp \
@@ -59,6 +60,7 @@ HEADERS += \
     modelshell.h \
     modules/simplemanagement/simplemanagementmodule.h \
     outputs/statehistout.h \
+    tools/geotiff.h \
     tools/grid.h \
     tools/strtools.h \
     tools/filereader.h \

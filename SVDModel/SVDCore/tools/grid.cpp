@@ -20,6 +20,7 @@
 //#include "exception.h"
 //#include "global.h"
 #include <string>
+#include "geotiff.h"
 
 struct SCoordTrans {
     SCoordTrans() { setupTransformation(0.,0.,0.,0.); }
@@ -103,6 +104,9 @@ std::string gridToString(const DoubleGrid &grid, const char sep, const int newli
     }
     return res;
 }
+
+
+
 #ifdef ILAND_GUI
 #include <QImage>
 

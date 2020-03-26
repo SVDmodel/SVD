@@ -439,6 +439,11 @@ void DNN::setupInput()
     //    };
         // load tensor definitions from file
     mTensorDef.clear();
+    size_t n_models = Model::instance()->settings().valueUInt("dnn.count", 1);
+    if (n_models == 0)     {
+        spdlog::get("dnn")->debug("dnn.count is 0, canceling setup of network metadata.");
+        return;
+    }
     std::string metafilename = Tools::path(Model::instance()->settings().valueString("dnn.metadata"));
     if (!Tools::fileExists(metafilename))
         throw std::logic_error("The metadata file for the DNN (" + metafilename + ") does not exist (specified as 'dnn.metadata')!");

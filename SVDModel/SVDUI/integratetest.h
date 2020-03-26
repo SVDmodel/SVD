@@ -19,7 +19,7 @@
 #ifndef INTEGRATETEST_H
 #define INTEGRATETEST_H
 
-#include "../SVDCore/tools/grid.h"
+#include "grid.h"
 
 class IntegrateTest
 {

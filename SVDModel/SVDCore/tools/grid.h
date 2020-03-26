@@ -32,6 +32,8 @@
 
 #include "strtools.h"
 #include "randomgen.h"
+#include "geotiff.h"
+
 class Point {
 public:
     Point() : mX(0), mY(0) {}
@@ -119,6 +121,7 @@ public:
     /// load a grid from an ASCII grid file
     /// the coordinates and cell size remain as in the grid file.
     bool loadGridFromFile(const std::string &fileName);
+    bool loadGridFromGeoTIFF(const std::string &fileName);
 
     // copy ctor
     Grid(const Grid<T>& toCopy);
@@ -765,6 +768,29 @@ std::string gridToString(const Grid<T> &grid, std::function<std::string(const T&
 
     return ts.str();
 }
+
+/// Save a grid to a GeoTIFF
+/// @param valueFunction pointer to a function with the signature: QString func(const T&) : this should return a QString
+/// @param fileName string file path
+/// @param valueFunction function that should return a double (for NA use std::numeric_limits<double>::lowest())
+template <class T>
+bool gridToGeoTIFF(const Grid<T> &grid, const std::string &fileName, std::function<double(const T&)> valueFunction)
+{
+    GeoTIFF tif;
+    tif.initialize(grid.sizeX(), grid.sizeY());
+
+    for (int y=0; y<grid.sizeY();++y){
+        for (int x=0;x<grid.sizeX();x++){
+            double value = valueFunction(grid.constValueAtIndex(x,y));
+            //if (value > std::numeric_limits<double>::min())
+            tif.setValue(x, y, value );
+        }
+    }
+
+    return tif.saveToFile(fileName);
+}
+
+
 void modelToWorld(const Vector3D &From, Vector3D &To);
 
 template <class T>
@@ -813,6 +839,9 @@ std::string gridToESRIRaster(const Grid<T> &grid )
 template <typename T>
 bool Grid<T>::loadGridFromFile(const std::string &fileName)
 {
+    if (has_ending(fileName, ".tif") || has_ending(fileName, ".TIF")) {
+        return loadGridFromGeoTIFF(fileName);
+    }
 
     std::vector<std::string> lines = readFile(fileName);
     std::vector<std::string>::iterator l = lines.begin();
@@ -905,6 +934,52 @@ bool Grid<T>::loadGridFromFile(const std::string &fileName)
     return true;
 }
 
+//template<typename T>
+//bool Grid<T>::loadGridFromGeoTIFF(const std::string &fileName);
+//template<> bool Grid<double>::loadGridFromGeoTIFF(const std::string &fileName);
+//template<> bool Grid<int>::loadGridFromGeoTIFF(const std::string &fileName);
+
+template<typename T>
+bool Grid<T>::loadGridFromGeoTIFF(const std::string &fileName) {
+    return false; // not impl
+}
+
+template<> inline bool Grid<double>::loadGridFromGeoTIFF(const std::string &fileName)
+{
+    GeoTIFF tif;
+    tif.loadImage(fileName);
+    // fill grid with the contents of the file, but first set up the grid
+    RectF rect(tif.ox(), tif.oy(), tif.ox() + tif.ncol()*tif.cellsize(), tif.oy() + tif.nrow()*tif.cellsize());
+    setup(rect, tif.cellsize());
+    tif.copyToDoubleGrid(this);
+    return true;
+    //tif.saveToGrid(this)
+}
+template<> inline bool Grid<float>::loadGridFromGeoTIFF(const std::string &fileName)
+{
+    GeoTIFF tif;
+    tif.loadImage(fileName);
+    // fill grid with the contents of the file, but first set up the grid
+    RectF rect(tif.ox(), tif.oy(), tif.ox() + tif.ncol()*tif.cellsize(), tif.oy() + tif.nrow()*tif.cellsize());
+    setup(rect, tif.cellsize());
+    tif.copyToFloatGrid(this);
+    return true;
+    //tif.saveToGrid(this)
+}
+
+template<> inline bool Grid<int>::loadGridFromGeoTIFF(const std::string &fileName)
+{
+    GeoTIFF tif;
+    tif.loadImage(fileName);
+    // fill grid with the contents of the file, but first set up the grid
+    RectF rect(tif.ox(), tif.oy(), tif.ox() + tif.ncol()*tif.cellsize(), tif.oy() + tif.nrow()*tif.cellsize());
+    setup(rect, tif.cellsize());
+    tif.copyToIntGrid(this);
+    return true;
+    //tif.saveToGrid(this)
+}
+
+
 template<typename T>
 std::set<T> Grid<T>::uniqueValues() const
 {
@@ -926,5 +1001,6 @@ int Grid<T>::countNotNull()
 
     return result;
 }
+
 
 #endif // GRID_H

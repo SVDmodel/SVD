@@ -27,7 +27,7 @@
 #include <exception>
 #include <spdlog/spdlog.h>
 
-#define logic_error_fmt(X, ...) std::logic_error(fmt::format( X, __VA_ARGS__ ))
+#define logic_error_fmt(...) std::logic_error(fmt::format( __VA_ARGS__ ))
 
 // convert a value to a string:
 template<class T> std::string to_string(const T& value) {

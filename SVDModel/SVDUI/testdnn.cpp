@@ -86,7 +86,7 @@ void TestDNN::on_doPredict_clicked()
 void TestDNN::on_testGeoTiff_clicked()
 {
     qDebug() << QImageReader::supportedImageFormats();
-    QImage img("e:/Daten/SVD/projects/gye/gis/dem.tif", "tiff");
+    QImage img("c:/Daten/SVD/projects/gye/gis_2018/dem.tif", "tiff");
     qDebug() << "loaded:" << img.size();
 
     ui->output->appendPlainText(img.text());

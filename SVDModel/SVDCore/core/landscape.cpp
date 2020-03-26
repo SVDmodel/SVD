@@ -46,6 +46,8 @@ void Landscape::setup()
 
 
     Grid<int> grid;
+    GeoTIFF::clearProjection(); // first chance to load a tif
+
     grid.loadGridFromFile(grid_file_name);
 
     lg->info("Loaded the grid (landscape.grid) '{}'. Dimensions: {} x {}, with cell size: {}m. ", grid_file_name, grid.sizeX(), grid.sizeY(), grid.cellsize());

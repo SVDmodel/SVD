@@ -256,7 +256,7 @@ void  Expression::parse(ExpressionWrapper *wrapper)
             AktTok=m_tokCount;
             parse_levelL0();  // start with logical level 0
             if (AktTok==m_tokCount)
-                throw std::logic_error("Expression::parse(): Unbalanced Braces.");
+                throw std::logic_error("Expression::parse(): Unbalanced Braces. In:" + m_expression);
             if (m_state==etUnknown){
                 m_tokString+="\n***Error***";
                 throw std::logic_error("Expression::parse(): Syntax error, token: " + m_token);
@@ -642,7 +642,7 @@ double Expression::execute(double *varlist, ExpressionWrapper *object, bool *rLo
         exec++;
     }
     if (p-Stack!=1)
-        throw std::logic_error("Expression::execute: stack unbalanced!");
+        throw std::logic_error("Expression::execute: stack unbalanced: in: " + m_expression);
     result=*(p-1);
     if (rLogicResult)
         *rLogicResult = *(lp-1);

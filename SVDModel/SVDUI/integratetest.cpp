@@ -24,6 +24,7 @@
 #include "tools/expression.h"
 
 #include "spdlog/spdlog.h"
+#include "grid.h"
 
 #include <QDebug>
 QDebug operator<<(QDebug debug, const std::string &c)
@@ -66,7 +67,7 @@ void IntegrateTest::testGrid()
     Grid<double> gg;
     qDebug() << gg.cellsize() << ", " << gg.sizeX() << "," << gg.sizeY();
     std::string fname="E:\\Daten\\Projekte\\staff\\masterarbeit_lea\\height_10.asc";
-    gg.loadGridFromFile(fname);
+    //gg.loadGridFromFile(fname);
     //qDebug() << gridToString(gg).substr(0,1000);
 
 
@@ -198,7 +199,8 @@ void IntegrateTest::testTensor()
 void IntegrateTest::testExpression()
 {
     auto console = spdlog::get("main");
-    Expression e("sin(x*2.434)");
+    Expression e("intermediateNB(2)*(globalNB(2)<0.05)");
+    //Expression e("sin(x*2.434)");
     for (double x=0.; x<3; x+=0.1) {
         double res = e.calculate(x);
         console->debug("x: {} y: {}", x, res);
