@@ -60,6 +60,8 @@ PRE_TARGETDEPS += /usr/lib/tensorflow-cpp/libtensorflow_cc.so
 LIBS += -L../SVDCore -lSVDCore
 LIBS += -L../Predictor -lPredictor
 #LIBS += -L/usr/lib/tensorflow-cpp/ -libtensorflow_cc.so
+LIBS += -L/usr/lib/x86_64-linux-gnu -lfreeimage
+
 }
 
 unix:!macx: LIBS += -L/usr/lib/tensorflow-cpp/ -ltensorflow_cc

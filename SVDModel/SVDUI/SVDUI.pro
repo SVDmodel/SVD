@@ -93,7 +93,11 @@ PRE_TARGETDEPS += ../Predictor/libPredictor.a
 PRE_TARGETDEPS += /usr/lib/tensorflow-cpp/libtensorflow_cc.so
 LIBS += -L../SVDCore -lSVDCore
 LIBS += -L../Predictor -lPredictor
-#LIBS += -L/usr/lib/tensorflow-cpp/ -libtensorflow_cc.so
+LIBS += -lfreeimage
+# FreeImage on Linux: see https://codeyarns.com/2014/02/11/how-to-install-and-use-freeimage/
+# basically sudo apt-get install libfreeimage3 libfreeimage-dev
+#LIBS += -L/usr/lib/x86_64-linux-gnu -lfreeimage
+
 }
 
 unix:!macx: LIBS += -L/usr/lib/tensorflow-cpp/ -ltensorflow_cc

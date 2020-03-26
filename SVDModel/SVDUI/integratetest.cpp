@@ -114,7 +114,7 @@ void IntegrateTest::testSettings()
     qDebug() << s.valueDouble("test.dbl");
 
     std::vector<std::string> test_keys = {"test.test1", "test.test2", "test.test3", "test.test4"};
-    std::for_each(test_keys.begin(), test_keys.end(), [&](auto k) {tst(s,k); } );
+    std::for_each(test_keys.begin(), test_keys.end(), [&](std::string k) {tst(s,k); } );
 
     } catch (const std::exception &e) {
             qDebug() << e.what();

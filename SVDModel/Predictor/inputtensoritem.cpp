@@ -92,7 +92,7 @@ InputTensorItem::DataType InputTensorItem::datatypeFromString(std::string name)
 
 std::string InputTensorItem::contentString(InputTensorItem::DataContent content)
 {
-    auto it = std::find_if(data_contents.begin(), data_contents.end(), [=](const auto &value) { return value.second == content; });
+    auto it = std::find_if(data_contents.begin(), data_contents.end(), [=](const std::pair< std::string, InputTensorItem::DataContent> &value) { return value.second == content; });
     if (it!=data_contents.end())
         return it->first;
     else
@@ -101,7 +101,7 @@ std::string InputTensorItem::contentString(InputTensorItem::DataContent content)
 
 std::string InputTensorItem::datatypeString(InputTensorItem::DataType dtype)
 {
-    auto it = std::find_if(data_types.begin(), data_types.end(), [=](const auto &value) { return value.second == dtype; });
+    auto it = std::find_if(data_types.begin(), data_types.end(), [=](const std::pair< std::string, InputTensorItem::DataType > &value) { return value.second == dtype; });
     if (it!=data_types.end())
         return it->first;
     else
