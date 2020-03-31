@@ -475,11 +475,15 @@ bool ModelShell::checkBatch(Batch *batch)
     return false;
 }
 
+static QMutex _lock_package_built;
 void ModelShell::sendBatch(Batch *batch)
 {
     batch->setPackageId(++mPackageId);
     mModel->stats.NPackagesSent ++;
-    ++mPackagesBuilt;
+    {
+        QMutexLocker lock(&_lock_package_built);
+        ++mPackagesBuilt;
+    }
     // send via signal/slot for DNN packages
     if (batch->type()==Batch::DNN) {
         lg->debug("sending package {} [{}] to Inference (built total: {})", mPackageId, static_cast<void*>(batch), mPackagesBuilt);
