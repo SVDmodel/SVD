@@ -22,6 +22,7 @@
 #include <QDialog>
 #include "surfacegraph.h"
 
+class LandscapeVisualization;
 namespace Ui {
 class CameraControl;
 }
@@ -35,6 +36,7 @@ public:
     ~CameraControl();
 
     void setSurfaceGraph(SurfaceGraph *s) { mSurface=s; }
+    void setLandscapeVisualization(LandscapeVisualization *lv) { mLandscapeVis = lv; }
 
 public slots:
     void cameraChanged();
@@ -46,7 +48,10 @@ private slots:
     void on_zoomFactor_actionTriggered(int action);
 
     void on_zFactor_actionTriggered(int action);
-    void on_pbSetFromString_clicked();
+
+    void on_yMaxRange_actionTriggered(int action);
+
+    void on_mbSetBGColor_clicked();
 
 protected:
      void closeEvent(QCloseEvent *event);
@@ -55,6 +60,7 @@ private:
     void updateCamera();
     Ui::CameraControl *ui;
     SurfaceGraph *mSurface;
+    LandscapeVisualization *mLandscapeVis;
 };
 
 

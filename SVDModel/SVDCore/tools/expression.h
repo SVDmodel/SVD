@@ -140,6 +140,7 @@ private:
         bool   m_incSumEnabled;
         double  udfPolygon(double Value, double* Stack, int ArgCount) const; ///< special function polygon()
         double udfSigmoid(double Value, double sType, double p1, double p2) const; ///< special function sigmoid()
+        double  udfIn(double Value, double* Stack, int ArgCount) const; ///< special function in()
         void checkBuffer(int Index);
 
         // linearization

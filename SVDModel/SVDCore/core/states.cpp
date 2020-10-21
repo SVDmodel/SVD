@@ -106,8 +106,11 @@ const State &States::stateById(state_t id)
 {
 
     auto s = mStateSet.find(id);
-    if (s!=mStateSet.end())
+    if (s!=mStateSet.end()) {
+        if (s->second>=mStates.size())
+            throw std::logic_error("Invalid state id: " + to_string(id));
         return stateByIndex(s->second);
+    }
     throw std::logic_error("Invalid state id: " + to_string(id));
 
 }

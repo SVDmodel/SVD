@@ -21,6 +21,7 @@
 
 #include <QMainWindow>
 #include <QTimer>
+#include <QVector3D>
 #include <memory>
 
 #include "modelcontroller.h"
@@ -28,6 +29,7 @@
 #include "colorpalette.h"
 
 class QQuickWidget; // forward
+class QTreeWidgetItem;
 
 
 namespace Ui {
@@ -50,8 +52,9 @@ protected:
 private slots:
     void modelStateChanged(QString s);
     void modelUpdate();
-    void finishedYear();
+    void finishedYear(int n);
     void checkVisualization();
+    void pointClickedOnVisualization(QVector3D world_pos);
 
     void on_actionTest_DNN_triggered();
 
@@ -79,6 +82,7 @@ private slots:
     void on_visState_clicked() { checkVisualization(); }
     void on_visExpression_clicked() {checkVisualization(); }
     void on_visNone_clicked() {checkVisualization(); }
+    void on_visVariable_clicked() {checkVisualization(); }
 
     void on_actionRender_to_file_triggered();
 
@@ -106,18 +110,46 @@ private slots:
 
     void on_actionOnline_resources_triggered();
 
+    void on_lConfigFile_textChanged(const QString &arg1);
+
+    void on_visVariables_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
+
+    void on_actionReset_view_triggered();
+
+    void on_actionSaveView_1_triggered();
+
+    void on_actionSaveView_2_triggered();
+
+    void on_actionSaveView_3_triggered();
+
+    void on_actionCustom_view_1_triggered();
+
+    void on_actionCustom_View_2_triggered();
+
+    void on_actionCustom_View_3_triggered();
+
+    void on_actionRun_single_step_triggered();
+
+    void on_actionContinue_triggered();
+
 private:
     QList<QString> mRecentFileList;
 
     void readSettings(); ///< read UI settings from ini file
+    void readVisualizationSettings(); ///< read UI settings related to 3d vis
+    void writeVisualizationSettings(); ///< write UI settings related to 3d vis
     void writeSettings(); ///< save UI settings
     void recentFileMenu(); ///< update the list of recently used project files
     void checkAvailableActions(); ///< check status of the actions (run, cancel, ...)
     void updateModelStats(); ///< refresh model stats
+    void onModelCreated(); ///< called after the model is created (and ready to run)
+
+    void populateInspector(QVector3D point);
 
     Ui::MainWindow *ui;
     std::unique_ptr<ModelController> mMC;
     LandscapeVisualization *mLandscapeVis;
+    QVector3D mLastClickPosition;
     QQuickWidget *mQmlView;
     Legend *mLegend;
     QTimer mUpdateModelTimer;

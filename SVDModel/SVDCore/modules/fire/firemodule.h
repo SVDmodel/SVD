@@ -27,12 +27,13 @@
 #include "states.h"
 #include "grid.h"
 #include "spdlog/spdlog.h"
+#include "expression.h"
 
 class FireOut; // forward
 
 struct SFireCell {
-    SFireCell() : spread(0), n_fire(0), n_high_severity(0), last_burn(0) {}
-    short int spread; ///< spread flag during current fire event
+    SFireCell() : spread(0.f), n_fire(0), n_high_severity(0), last_burn(0) {}
+    float spread; ///< spread flag during current fire event
     short int n_fire; ///< counter how often cell burned
     short int n_high_severity; ///< high severity counter
     short int last_burn; ///< year when the cell burned the last time
@@ -40,6 +41,7 @@ struct SFireCell {
 
 struct SFireStat {
     int year; ///< year of the fire
+    int Id; ///< unique identifier
     double x, y; ///<  ignition point (metric coords)
     int max_size; ///< maximum fire size (ha)
     int ha_burned; ///< # of ha. burned
@@ -52,6 +54,8 @@ class FireModule : public Module
 public:
     FireModule(std::string module_name);
     void setup();
+    std::vector<std::pair<std::string, std::string> > moduleVariableNames() const;
+    virtual double moduleVariable(const Cell *cell, size_t variableIndex) const;
 
     void run();
 
@@ -66,10 +70,13 @@ private:
 
     // store for ignitions
     struct SIgnition {
-        SIgnition(int ayear, double ax, double ay, double amax): year(ayear), x(ax), y(ay), max_size(amax) {}
+        SIgnition(int ayear, int id, double ax, double ay, double amax, double wspeed, double wdirection): year(ayear), Id(id), x(ax), y(ay), max_size(amax), wind_speed(wspeed), wind_direction(wdirection) {}
        int year;
+       int Id; // unique id
        double x, y; // cooridnates (meter)
-       double max_size; // maximum fire size in m2
+       double max_size; // maximum fire size in ha
+       double wind_speed; // current wind speed (m/2)
+       double wind_direction; // wind direction in degrees (0=north, 90=east, ...)
     };
     std::multimap< int, SIgnition > mIgnitions;
 
@@ -78,11 +85,17 @@ private:
     void fireSpread(const SIgnition &ign);
     bool burnCell(int ix, int iy, int &rHighSeverity, int round);
 
+    double calcSlopeFactor(const double slope) const;
+    double calcWindFactor(const SIgnition &fire_event, const double direction) const;
+    void calculateSpreadProbability(const SIgnition &fire_event, const Point &point, const float origin_elevation,  const int direction);
+
 
     // store for transition probabilites for burned cells
     TransitionMatrix mFireMatrix;
 
-    double mExtinguishProb;
+    double mExtinguishProb; ///< prob. that a burned pixel stops spreading
+    double mSpreadToDistProb; ///< the prob. that a fire (with current wind/slope) reaches the neighboring pixel
+    Expression mFireSizeMultiplier; ///< scaling factor to change the fire size from the input file
 
     // index of variables
     size_t miBurnProbability;

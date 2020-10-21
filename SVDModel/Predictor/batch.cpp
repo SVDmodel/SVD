@@ -83,5 +83,5 @@ bool Batch::allCellsProcessed()
 
 void Batch::processResults()
 {
-    spdlog::get("main")->debug("Batch::processResults: base class called (something is missing in derived class?)");
+    //spdlog::get("main")->debug("Batch::processResults: base class called (something is missing in derived class?)");
 }

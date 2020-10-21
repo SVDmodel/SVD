@@ -40,7 +40,8 @@ SOURCES += \
     visualization/landscapevisualization.cpp \
     visualization/colorpalette.cpp \
     aboutdialog.cpp \
-    version.cpp
+    version.cpp \
+    visualization/custom3dinputhandler.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -53,7 +54,8 @@ HEADERS += \
     visualization/landscapevisualization.h \
     visualization/colorpalette.h \
     aboutdialog.h \
-    version.h
+    version.h \
+    visualization/custom3dinputhandler.h
 
 FORMS += \
         mainwindow.ui \
@@ -75,11 +77,29 @@ else:win32:CONFIG (debug, debug|release): LIBS += -L../SVDCore/debug -lSVDCore
 win32:CONFIG (release, debug|release): PRE_TARGETDEPS += ../SVDCore/release/SVDCore.lib
 else:win32:CONFIG (debug, debug|release): PRE_TARGETDEPS += ../SVDCore/debug/SVDCore.lib
 
-
-LIBS += -LE:/dev/tensorflow/tensorflow/contrib/cmake/build/RelWithDebInfo -ltensorflow
-LIBS += -LE:\dev\tensorflow\tensorflow\contrib\cmake\build\protobuf\src\protobuf\RelWithDebInfo -llibprotobuf
+win32 {
+#LIBS += -LE:/dev/tensorflow/tensorflow/contrib/cmake/build/RelWithDebInfo -ltensorflow
+#LIBS += -LE:\dev\tensorflow\tensorflow\contrib\cmake\build\protobuf\src\protobuf\RelWithDebInfo -llibprotobuf
+LIBS += -L../../tensorflow/lib14 -ltensorflow
+LIBS += -L../../tensorflow/lib14 -llibprotobuf
 # for profiling only:
-LIBS += -L"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v8.0/lib/x64" -lcudart
+# LIBS += -L"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v8.0/lib/x64" -lcudart
+}
+linux-g++ {
+PRE_TARGETDEPS += ../SVDCore/libSVDCore.a
+PRE_TARGETDEPS += ../Predictor/libPredictor.a
+PRE_TARGETDEPS += /usr/lib/tensorflow-cpp/libtensorflow_cc.so
+LIBS += -L../SVDCore -lSVDCore
+LIBS += -L../Predictor -lPredictor
+#LIBS += -L/usr/lib/tensorflow-cpp/ -libtensorflow_cc.so
+INCLUDEPATH += $$PWD/../../../../../../usr/lib/tensorflow-cpp
+DEPENDPATH += $$PWD/../../../../../../usr/lib/tensorflow-cpp
+}
+
+unix:!macx: LIBS += -L/usr/lib/tensorflow-cpp/ -ltensorflow_cc
+
+
+
 
 RESOURCES += \
     res/resource.qrc

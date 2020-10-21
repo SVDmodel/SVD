@@ -21,6 +21,7 @@
 
 #include <QDebug>
 #include <QFileDialog>
+#include <QImageReader>
 
 #include "../Predictor/predictortest.h"
 
@@ -80,4 +81,13 @@ void TestDNN::on_doPredict_clicked()
         ui->output->appendPlainText(result);
     }
     ui->output->appendPlainText("*** executed 1000 times *** !!"); */
+}
+
+void TestDNN::on_testGeoTiff_clicked()
+{
+    qDebug() << QImageReader::supportedImageFormats();
+    QImage img("e:/Daten/SVD/projects/gye/gis/dem.tif", "tiff");
+    qDebug() << "loaded:" << img.size();
+
+    ui->output->appendPlainText(img.text());
 }

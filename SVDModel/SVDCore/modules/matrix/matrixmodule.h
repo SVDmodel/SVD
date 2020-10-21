@@ -21,7 +21,7 @@
 
 #include "spdlog/spdlog.h"
 
-#include "module.h"
+#include "../module.h"
 #include "transitionmatrix.h"
 #include "expression.h"
 

@@ -63,7 +63,7 @@ public:
     static RunState *instance() { assert(mInstance!=nullptr); return mInstance; }
     ModelRunState &modelState()  { return mModel; }
     ModelRunState &dnnState()  { return mDNN; }
-    ModelRunState &state() { return mModel; }
+    ModelRunState &state() { return mTotal; }
     void set(ModelRunState state);
     // called by other states
     void update(ModelRunState *source);
@@ -78,8 +78,11 @@ public:
     bool isError() const { return mModel.in({ModelRunState::Error, ModelRunState::ErrorDuringSetup}); }
     bool isModelRunning() const { return mModel.in({ModelRunState::Creating, ModelRunState::Running, ModelRunState::Stopping}); }
     bool isModelFinished() const { return mModel.in({ModelRunState::Error, ModelRunState::ErrorDuringSetup, ModelRunState::Finished, ModelRunState::Canceled});}
-    bool isModelPaused() const { return mModel.in({ ModelRunState::ReadyToRun, ModelRunState::Paused}); }
-    bool isModelValid() const { return isModelRunning() || isModelFinished() || isModelPaused(); }
+    bool isModelPaused() const { return mModel.in({ ModelRunState::Paused}); }
+    bool isModelReadyToRun() const { return mModel.in({ ModelRunState::ReadyToRun}); }
+    //bool isModelPaused() const { return mModel.in({ ModelRunState::ReadyToRun, ModelRunState::Paused}); }
+    bool isModelValid() const { return isModelRunning() || isModelFinished() || isModelPaused() || isModelReadyToRun();  }
+    bool isModelCreated() const { return !mModel.in({ModelRunState::Invalid, ModelRunState::Creating}); }
 private:
     ModelRunState mModel;
     ModelRunState mDNN;

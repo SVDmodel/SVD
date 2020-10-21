@@ -6,16 +6,24 @@
 
 QT       -= gui
 QT      += concurrent
+QT      += core
 
 TARGET = Predictor
 TEMPLATE = lib
 CONFIG += staticlib
-
+win32 {
 ### tensorflow compiled locally
 INCLUDEPATH += e:/dev/tensorflow e:/dev/tensorflow/tensorflow/contrib/cmake/build  e:/dev/tensorflow/tensorflow/contrib/cmake/build/external/eigen_archive
 INCLUDEPATH += e:/dev/tensorflow/tensorflow/contrib/cmake/build/external/nsync/public
 INCLUDEPATH += e:/dev/tensorflow/third_party/eigen3 e:/dev/tensorflow/tensorflow/contrib/cmake/build/protobuf/src/protobuf/src
+}
+unix {
+INCLUDEPATH += /usr/include/tensorflow-cpp
+}
+# SVD modules
 INCLUDEPATH += ../SVDCore ../SVDCore/core ../SVDCore/tools ../SVDCore/third_party ../SVDCore/outputs
+
+win32 {
 
 # https://joe-antognini.github.io/machine-learning/windows-tf-project
 DEFINES +=  COMPILER_MSVC
@@ -36,18 +44,23 @@ DEFINES +=  NOGDI
 DEFINES +=  TENSORFLOW_USE_EIGEN_THREADPOOL
 DEFINES +=  EIGEN_HAS_C99_MATH
 DEFINES += GOOGLE_CUDA=1
+}
+
 
 win32:CONFIG(release, debug|release): DEFINES +=  _ITERATOR_DEBUG_LEVEL=0
 
 win32:CONFIG(debug, debug|release): DEFINES +=  TF_DEBUG_MODE=0
 
 #LIBS += -LE:/dev/tensorflow/tensorflow/contrib/cmake/build/RelWithDebInfo -ltensorflow
+# GPU
 LIBS += -L../../tensorflow/lib14 -ltensorflow
+# CPU library
+# LIBS += -L../../tensorflow/lib14cpu -ltensorflow
 # only required for the PredTest example:
 # LIBS += -LE:\dev\tensorflow\tensorflow\contrib\cmake\build\protobuf\src\protobuf\RelWithDebInfo -llibprotobuf.lib
 # E:\dev\tensorflow\tensorflow\contrib\cmake\build\protobuf\src\protobuf\RelWithDebInfo
 # for profiling only:
-LIBS += -L"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v8.0/lib/x64" -lcudart
+# LIBS += -L"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v8.0/lib/x64" -lcudart
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked as deprecated (the exact warnings

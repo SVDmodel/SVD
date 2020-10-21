@@ -27,18 +27,23 @@
 
 Model *Model::mInstance = nullptr;
 
-Model::Model(const std::string &fileName)
+Model::Model(const std::string &fileName, Settings *externalSettings)
 {
     if (mInstance!=nullptr)
         throw std::logic_error("Creation of model: model instance ptr is not 0.");
     mInstance = this;
     mYear = -1; // not set up
 
-    if (!Tools::fileExists(fileName))
-        throw std::logic_error("Error: The configuration file '" + fileName + "' does not exist.");
-    mSettings.loadFromFile(fileName);
+    if (externalSettings) {
+        mSettings.loadFromSettings(*externalSettings);
+
+    } else {
+        if (!Tools::fileExists(fileName))
+            throw std::logic_error("Error: The configuration file '" + fileName + "' does not exist.");
+        mSettings.loadFromFile(fileName);
+    }
     auto split_path = splitPath(fileName);
-    Tools::setProjectDir( split_path.first );
+    Tools::setupPaths( split_path.first, &mSettings );
 
     // set up logging
     inititeLogging();
@@ -169,14 +174,14 @@ void Model::inititeLogging()
 
     int idx = indexOf(levels, settings().valueString("logging.model.level"));
     if (idx==-1)
-        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.model.level") + "' is not a valid logging level. Valid are: " + join(levels) );
+        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.model.level") + "' is not a valid logging level for logging.model.level. Valid are: " + join(levels) );
     combined_logger->set_level(spdlog::level::level_enum(idx) );
 
     combined_logger=spdlog::create("setup", sinks.begin(), sinks.end());
     combined_logger->flush_on(spdlog::level::err);
     idx = indexOf(levels, settings().valueString("logging.setup.level"));
     if (idx==-1)
-        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.setup.level") + "' is not a valid logging level. Valid are: " + join(levels) );
+        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.setup.level") + "' is not a valid logging level for logging.setup.level. Valid are: " + join(levels) );
     combined_logger->set_level(spdlog::level::level_enum(idx) );
 
 
@@ -184,9 +189,15 @@ void Model::inititeLogging()
     combined_logger->flush_on(spdlog::level::err);
     idx = indexOf(levels, settings().valueString("logging.dnn.level"));
     if (idx==-1)
-        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.dnn.level") + "' is not a valid logging level. Valid are: " + join(levels) );
+        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.dnn.level") + "' is not a valid logging level for logging.dnn.level. Valid are: " + join(levels) );
     combined_logger->set_level(spdlog::level::level_enum(idx) );
 
+    combined_logger=spdlog::create("modules", sinks.begin(), sinks.end());
+    combined_logger->flush_on(spdlog::level::err);
+    idx = indexOf(levels, settings().valueString("logging.modules.level"));
+    if (idx==-1)
+        throw std::logic_error("Setup logging: the value '" + settings().valueString("logging.modules.level") + "' is not a valid logging level for logging.modules.level. Valid are: " + join(levels) );
+    combined_logger->set_level(spdlog::level::level_enum(idx) );
 
     //auto combined_logger = std::make_shared<spdlog::logger>("console", begin(sinks), end(sinks));
 
@@ -195,7 +206,7 @@ void Model::inititeLogging()
     lg_main = spdlog::get("main");
     lg_setup = spdlog::get("setup");
 
-    lg_main->info("Started logging. Log levels: main: {}, setup: {}, dnn: {}", levels[lg_main->level()], levels[lg_setup->level()], levels[spdlog::get("dnn")->level()]);
+    lg_main->info("Started logging. Log levels: main: {}, setup: {}, dnn: {}, modules: {}", levels[lg_main->level()], levels[lg_setup->level()], levels[spdlog::get("dnn")->level()], levels[spdlog::get("modules")->level()]);
 
 }
 
@@ -258,9 +269,14 @@ void Model::setupModules()
 
 void Model::setupExpressionWrapper()
 {
-    EnvironmentCell &ec = mLandscape->environmentCell(0);
+    //EnvironmentCell &ec = mLandscape->environmentCell(0);
+    EnvironmentCell ec(-1, -1); // need just something to extract variable names from (which are static)
     const State &s = mStates->stateByIndex(0);
     CellWrapper::setupVariables(&ec, &s);
+    // set up module variables
+    for (const auto &module : mModules) {
+        CellWrapper::setupVariables(module.get());
+    }
     CellWrapper cw(nullptr);
     lg_setup->debug("Setup of variables for expressions completed. List of variables: {}", join(cw.getVariablesList()) );
 }

@@ -48,7 +48,7 @@
 // visualization
 #include "cameracontrol.h"
 #include "colorpalette.h"
-
+#include "expressionwrapper.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -63,6 +63,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // initialize visualization
     mLandscapeVis = new LandscapeVisualization(this);
+    mLastClickPosition = QVector3D( std::numeric_limits<float>().min(), 0.f, 0.f);
 
     // signals & slots
     initiateModelController();
@@ -91,7 +92,8 @@ MainWindow::MainWindow(QWidget *parent) :
     // from resource (proper)
     // for develop/debug from file system
     mQmlView->setResizeMode(QQuickWidget::SizeRootObjectToView);
-    mQmlView->setSource(QUrl::fromLocalFile("E:/dev/SVD/SVDModel/SVDUI/res/qml/legend.qml"));
+    //mQmlView->setSource(QUrl::fromLocalFile("E:/dev/SVD/SVDModel/SVDUI/res/qml/legend.qml"));
+    mQmlView->setSource(QUrl("qrc:/qml/legend.qml"));
     mQmlView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     ui->legendLayout->replaceWidget(ui->legendContainer, mQmlView);
@@ -131,6 +133,8 @@ void MainWindow::modelStateChanged(QString s)
     if (mMC->state()->state() == ModelRunState::ReadyToRun && !mLandscapeVis->isValid()) {
         // setup of the visualization
         mLandscapeVis->setup(ui->main3d, mLegend);
+        readVisualizationSettings(); // from ini file
+        onModelCreated();
     }
 
     // stop the update timer...
@@ -147,17 +151,44 @@ void MainWindow::modelUpdate()
 {
     int stime = ui->lModelState->property("starttime").toTime().elapsed();
     //QTime().addMSecs(stime).toString(Qt::ISODateWithMs)
-    ui->lModelState->setText(QString("%1 - %2").arg( QTime(0,0).addMSecs(stime).toString(Qt::ISODate) ).arg(QString::fromStdString(RunState::instance()->asString())));
+
+    QString statusstring;
+    if (RunState::instance()->isModelRunning()) {
+        statusstring = QString("%1 - %3/%4 - %2").arg( QTime(0,0).addMSecs(stime).toString(Qt::ISODate) )
+                .arg(QString::fromStdString(RunState::instance()->state().stateString()))
+                .arg(mMC->model()->year()).arg(mMC->yearsToRun());
+    } else {
+        statusstring = QString("%1 - %2").arg( QTime(0,0).addMSecs(stime).toString(Qt::ISODate) )
+                .arg(QString::fromStdString(RunState::instance()->asString()));
+    }
+    ui->lModelState->setText(statusstring);
+
     updateModelStats();
     if (mMC->state()->isModelFinished() || mMC->state()->isModelPaused()) {
         mUpdateModelTimer.stop();
     }
+    if (mMC->state()->isModelRunning())
+        mUpdateModelTimer.start(100);
 }
 
-void MainWindow::finishedYear()
+void MainWindow::finishedYear(int)
 {
-    if (mLandscapeVis->isValid())
-        mLandscapeVis->update();
+    if (mLandscapeVis->isValid()) {
+
+        if (mMC->model()->settings().hasKey("visualization.render") && mMC->model()->settings().valueBool("visualization.render")) {
+            QString filename="render_%1.png";
+            if (mMC->model()->settings().hasKey("visualization.renderPath"))
+                filename = QString::fromStdString( mMC->model()->settings().valueString("visualization.renderPath") ).replace("$year$", "%1");
+
+            filename=QString(filename).arg(mMC->model()->year());
+            mLandscapeVis->update(); // force update
+            mLandscapeVis->renderToFile(filename);
+        }
+        // populate inspector
+        if (mLastClickPosition.x() != std::numeric_limits<float>().min())
+            populateInspector(mLastClickPosition);
+
+    }
 }
 
 void MainWindow::checkVisualization()
@@ -171,6 +202,21 @@ void MainWindow::checkVisualization()
 
     if (ui->visNone->isChecked())
         mLandscapeVis->setRenderType(LandscapeVisualization::RenderNone);
+
+    if (ui->visVariable->isChecked())
+        on_visVariables_currentItemChanged(ui->visVariables->currentItem(), nullptr);
+
+}
+
+void MainWindow::pointClickedOnVisualization(QVector3D world_pos)
+{
+    //spdlog::get("main")->info("x/y: {}/{}", world_pos.x(), world_pos.y());
+    QString label=QString("%1m/%2m").arg(static_cast<int>(world_pos.x())).arg(static_cast<int>(world_pos.y()));
+    ui->visCoords->setText(label);
+    ui->visCoordsInspector->setText(label);
+    populateInspector(world_pos);
+    mLastClickPosition = world_pos;
+
 }
 
 
@@ -273,9 +319,12 @@ void MainWindow::initiateModelController()
     connect(mMC.get(), &ModelController::stateChanged, [this](QString s) {ui->statusBar->showMessage(s);});
     connect(mMC.get(), &ModelController::stateChanged, this, &MainWindow::modelStateChanged);
     connect(mMC.get(), &ModelController::finishedYear, ui->progressBar, &QProgressBar::setValue);
+    connect(mMC.get(), &ModelController::finishedYear, this, &MainWindow::finishedYear);
     connect(mMC.get(), &ModelController::finished, [this]() { ui->progressBar->setValue(ui->progressBar->maximum());});
 
     connect(mMC.get(), &ModelController::finishedYear, mLandscapeVis, &LandscapeVisualization::update);
+    connect(mMC.get(), &ModelController::finished, mLandscapeVis, &LandscapeVisualization::update);
+    connect(mLandscapeVis, &LandscapeVisualization::pointSelected, this, &MainWindow::pointClickedOnVisualization);
 
     connect(&mUpdateModelTimer, &QTimer::timeout, this, &MainWindow::modelUpdate);
 
@@ -360,10 +409,30 @@ void MainWindow::on_actionRunSim_triggered()
 {
     ui->progressBar->reset();
     ui->progressBar->setMaximum( ui->sYears->value() );
+
     mMC->run( ui->sYears->value() );
+
     ui->lModelState->setProperty("starttime", QTime::currentTime());
     mUpdateModelTimer.start(100);
 }
+
+void MainWindow::on_actionRun_single_step_triggered()
+{
+    if (mMC && mMC->model()) {
+        mMC->setInteractiveMode(true);
+        mMC->runStep();
+    }
+}
+
+void MainWindow::on_actionContinue_triggered()
+{
+    if (mMC && mMC->model()) {
+        mMC->setInteractiveMode(false);
+        mMC->runStep();
+    }
+
+}
+
 
 void MainWindow::on_actionStopSim_triggered()
 {
@@ -384,7 +453,7 @@ void MainWindow::on_openProject_clicked()
     QString the_filter = "*.conf;;All files (*.*)";
 
     QString fileName = QFileDialog::getOpenFileName(this,
-     "Select project config file", "", the_filter);
+     "Select project config file", ui->lConfigFile->text(), the_filter);
 
 
     if (fileName.isEmpty())
@@ -439,6 +508,42 @@ void MainWindow::readSettings()
 
 }
 
+void MainWindow::readVisualizationSettings()
+{
+    QSettings settings;
+    QString view_name = QString("view-%1").arg(ui->lConfigFile->text()
+                                               .replace(QChar('/'),"_")
+                                               .replace(QChar('\\'), "_"));
+
+    settings.beginGroup(view_name);
+
+    for(int i = 0;i < settings.childKeys().size();i++){
+        QString camsettings = settings.value(QString("camera-%1").arg(i)).toString();
+        mLandscapeVis->setViewString(i, camsettings);
+    }
+    ui->actionCustom_view_1->setEnabled( mLandscapeVis->isViewValid(1) );
+    ui->actionCustom_View_2->setEnabled( mLandscapeVis->isViewValid(2) );
+    ui->actionCustom_View_3->setEnabled( mLandscapeVis->isViewValid(3) );
+
+
+    settings.endGroup();
+}
+
+void MainWindow::writeVisualizationSettings()
+{
+    QSettings settings;
+    if (mLandscapeVis->isValid()) {
+        QString view_name = QString("view-%1").arg(ui->lConfigFile->text()
+                                                   .replace(QChar('/'),"_")
+                                                   .replace(QChar('\\'), "_"));
+        settings.beginGroup(view_name);
+        for (int i=0; i< mLandscapeVis->viewCount(); ++i)
+            settings.setValue(QString("camera-%1").arg(i), mLandscapeVis->viewString(i));
+        settings.endGroup();
+    }
+
+}
+
 void MainWindow::writeSettings()
 {
     QSettings settings;
@@ -447,13 +552,13 @@ void MainWindow::writeSettings()
     settings.setValue("windowState", saveState());
     settings.endGroup();
     // javascript commands
-//    settings.beginWriteArray("javascriptCommands");
-//    int size = qMin(ui->scriptCommandHistory->count(), 15); // max 15 entries in the history
-//    for (int i=0;i<size; ++i) {
-//        settings.setArrayIndex(i);
-//        settings.setValue("item", ui->scriptCommandHistory->itemText(i));
-//    }
-//    settings.endArray();
+    //    settings.beginWriteArray("javascriptCommands");
+    //    int size = qMin(ui->scriptCommandHistory->count(), 15); // max 15 entries in the history
+    //    for (int i=0;i<size; ++i) {
+    //        settings.setArrayIndex(i);
+    //        settings.setValue("item", ui->scriptCommandHistory->itemText(i));
+    //    }
+    //    settings.endArray();
     settings.beginGroup("project");
     settings.setValue("lastprojectfile", ui->lConfigFile->text());
     settings.endGroup();
@@ -463,6 +568,9 @@ void MainWindow::writeSettings()
         settings.setValue(QString("file-%1").arg(i),mRecentFileList[i]);
     }
     settings.endGroup();
+
+    writeVisualizationSettings();
+
     //settings.setValue("javascript", ui->scriptCode->toPlainText());
 
 }
@@ -495,13 +603,13 @@ void MainWindow::checkAvailableActions()
 {
     if (!mMC)
         return;
-    mMC->state()->isModelValid();
-    ui->actionRunSim->setEnabled( mMC->state()->isModelPaused() );
+    ui->actionRunSim->setEnabled( mMC->state()->isModelPaused() || mMC->state()->isModelReadyToRun());
     ui->actionStopSim->setEnabled( mMC->state()->isModelRunning() );
     ui->actiondelete_model->setEnabled( mMC->state()->isModelValid() );
     ui->actionSetupProject->setEnabled( !mMC->state()->isModelRunning() && !ui->lConfigFile->text().isEmpty());
     ui->actionOpenProject->setEnabled( !mMC->state()->isModelRunning() );
     ui->openProject->setEnabled(!mMC->state()->isModelRunning());
+    ui->actionReset_view->setEnabled( mMC->state()->isModelValid() );
 
 }
 
@@ -521,6 +629,85 @@ void MainWindow::updateModelStats()
 
 }
 
+void MainWindow::onModelCreated()
+{
+    ui->visVariables->clear();
+    ui->visCellData->clear();
+    CellWrapper cw(nullptr);
+    auto & vars = cw.getVariablesList();
+    auto & metadata = cw.getVariablesMetaData();
+
+    QList<QTreeWidgetItem *> items;
+    QStack<QTreeWidgetItem*> stack;
+    QList<QTreeWidgetItem *> items_insp;
+    QStack<QTreeWidgetItem*> stack_insp;
+    items_insp.append(new QTreeWidgetItem(QStringList() << "State")); // add group
+    items_insp.back()->setData(0, Qt::UserRole+0, -2);
+
+    stack.push(nullptr);
+    stack_insp.push(nullptr);
+    std::string group="";
+    for (size_t i=0;i<vars.size();++i) {
+        if (metadata[i].first != group) {
+            if (stack.size()>1) {
+                stack.pop();
+                stack_insp.pop();
+            }
+            items.append(new QTreeWidgetItem(stack.last(), QStringList() << QString::fromStdString(metadata[i].first))); // add group
+            items.back()->setData(0, Qt::UserRole+0, -1);
+            stack.push(items.back());
+
+            items_insp.append(new QTreeWidgetItem(stack_insp.last(), QStringList() << QString::fromStdString(metadata[i].first))); // add group
+            items_insp.back()->setData(0, Qt::UserRole+0, -1);
+            stack_insp.push(items_insp.back());
+
+            group = metadata[i].first;
+        }
+        items.append( new QTreeWidgetItem(stack.last(),  QStringList() << QString::fromStdString(vars[i]) ) ); // add variable
+        items.back()->setToolTip(0, QString::fromStdString(metadata[i].second));
+        items.back()->setData(0, Qt::UserRole+0, static_cast<int>(i));
+        items_insp.append( new QTreeWidgetItem(stack_insp.last(),  QStringList() << QString::fromStdString(vars[i]) ) ); // add variable
+        items_insp.back()->setToolTip(0, QString::fromStdString(metadata[i].second));
+        items_insp.back()->setData(0, Qt::UserRole+0, static_cast<int>(i));
+
+    }
+
+    ui->visVariables->addTopLevelItems(items);
+    ui->visCellData->addTopLevelItems(items_insp);
+
+}
+
+void MainWindow::populateInspector(QVector3D point)
+{
+    if (!mMC->state()->isModelValid())
+        return;
+    auto &grid = mMC->model()->instance()->landscape()->grid();
+    if (!grid.coordValid(static_cast<double>(point.x()), static_cast<double>(point.y())))
+        return;
+    const auto &cell = grid(static_cast<double>(point.x()), static_cast<double>(point.y()));
+    if (cell.isNull())
+        return;
+    CellWrapper cw(&cell);
+
+    // loop over all elements of the inspector and
+    ui->visCellData->topLevelItem(0);
+    QTreeWidgetItemIterator it(ui->visCellData);
+    while (*it) {
+        int idx = (*it)->data(0, Qt::UserRole+0).toInt();
+        if (idx >= 0) {
+            double val = cw.value(static_cast<size_t>(idx));
+            (*it)->setText(1, QString::number(val));
+        }
+        if (idx<-1) {
+            switch (-idx) {
+            case 2: (*it)->setText(1, QString::fromStdString(cell.state()->asString()));  break;
+
+            }
+        }
+        ++it;
+    }
+}
+
 
 
 void MainWindow::on_pbReloadQml_clicked()
@@ -537,7 +724,9 @@ void MainWindow::on_action3D_Camera_settings_triggered()
     // open form for camera control
     CameraControl *cntrl = new CameraControl(this);
     cntrl->setSurfaceGraph( ui->main3d);
+    cntrl->setLandscapeVisualization(mLandscapeVis);
     QObject::connect(ui->main3d, &SurfaceGraph::cameraChanged, cntrl, &CameraControl::cameraChanged);
+    cntrl->cameraChanged(); // update initital values
     cntrl->show();
 }
 
@@ -553,3 +742,93 @@ void MainWindow::on_actionOnline_resources_triggered()
     QDesktopServices::openUrl(QUrl("https://github.com/SVDmodel/SVD/blob/master/README.md"));
 
 }
+
+void MainWindow::on_lConfigFile_textChanged(const QString &arg1)
+{
+    Q_UNUSED(arg1)
+    checkAvailableActions();
+}
+
+void MainWindow::on_visVariables_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
+{
+    Q_UNUSED(previous)
+    if (!mLandscapeVis->isValid())
+        return;
+
+    if (!current || current->data(0, Qt::UserRole+0).isNull())
+        return;
+
+    int key = current->data(0, Qt::UserRole+0).toInt();
+    if (key<0)
+        return;
+    size_t ukey = static_cast<size_t>(key);
+    spdlog::get("main")->debug("Clicked on {}", key);
+    CellWrapper cw(nullptr);
+    ui->visVariable->setChecked(true);
+    mLandscapeVis->renderVariable(QString::fromStdString( cw.getVariablesList()[ukey] ),
+                                  QString::fromStdString(cw.getVariablesMetaData()[ukey].second) );
+
+
+}
+
+void MainWindow::on_actionReset_view_triggered()
+{
+    if (mLandscapeVis->isValid()) {
+        mLandscapeVis->resetView();
+    }
+}
+
+void MainWindow::on_actionSaveView_1_triggered()
+{
+    if (mLandscapeVis->isValid()) {
+        mLandscapeVis->saveView(1);
+        ui->actionCustom_view_1->setEnabled(true);
+        writeVisualizationSettings();
+    }
+}
+
+void MainWindow::on_actionSaveView_2_triggered()
+{
+    if (mLandscapeVis->isValid()) {
+        mLandscapeVis->saveView(2);
+        ui->actionCustom_View_2->setEnabled(true);
+        writeVisualizationSettings();
+    }
+
+}
+
+void MainWindow::on_actionSaveView_3_triggered()
+{
+    if (mLandscapeVis->isValid()) {
+        mLandscapeVis->saveView(3);
+        ui->actionCustom_View_3->setEnabled(true);
+        writeVisualizationSettings();
+    }
+
+}
+
+void MainWindow::on_actionCustom_view_1_triggered()
+{
+    if (mLandscapeVis->isValid()) {
+        mLandscapeVis->resetView(1);
+    }
+}
+
+void MainWindow::on_actionCustom_View_2_triggered()
+{
+    if (mLandscapeVis->isValid()) {
+        mLandscapeVis->resetView(2);
+    }
+
+}
+
+void MainWindow::on_actionCustom_View_3_triggered()
+{
+    if (mLandscapeVis->isValid()) {
+        mLandscapeVis->resetView(3);
+    }
+
+}
+
+
+

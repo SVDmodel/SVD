@@ -67,6 +67,8 @@
 #include "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v8.0/include/cuda_profiler_api.h"
 #endif
 
+std::list<InputTensorItem> DNN::mTensorDef; // static def
+
 // These are all common classes it's handy to reference with no namespace.
 using tensorflow::Flag;
 using tensorflow::Tensor;
@@ -97,13 +99,10 @@ Status LoadGraph(string graph_file_name,
 }
 
 
-DNN *DNN::mInstance = nullptr;
 
 DNN::DNN()
 {
-    if (mInstance!=nullptr)
-        throw std::logic_error("Creation of DNN: instance ptr is not 0.");
-    mInstance = this;
+
     if (spdlog::get("dnn"))
         spdlog::get("dnn")->debug("DNN created: {}", static_cast<void*>(this));
     session = nullptr;
@@ -119,20 +118,20 @@ DNN::~DNN()
         session->Close();
     if (top_k_session)
         top_k_session->Close();
-    mInstance=nullptr;
 }
 
-bool DNN::setupDNN()
+bool DNN::setupDNN(size_t aindex)
 {
 #ifdef CUDA_PROFILING
     cudaProfilerStop();
 #endif
 
     lg = spdlog::get("dnn");
+    mIndex = aindex;
     auto settings = Model::instance()->settings();
     if (!lg)
         throw std::logic_error("DNN::setup: logging not available.");
-    lg->info("Setup of DNN.");
+    lg->info("Setup of DNN #{}", aindex);
     settings.requiredKeys("dnn", {"file", "maxBatchQueue", "topKNClasses", "state.name", "state.N", "restime.name", "restime.N"});
 
     std::string file = Tools::path(settings.valueString("dnn.file"));
@@ -168,9 +167,14 @@ bool DNN::setupDNN()
 #else
     mDummyDNN = false;
     tensorflow::SessionOptions opts;
-    opts.config.set_log_device_placement(true);
+    // log of device placement if log level debug is on
+    if (lg->should_log(spdlog::level::debug))
+        opts.config.set_log_device_placement(true);
+
     //opts.config.set_inter_op_parallelism_threads(16); // no big effect.... but uses more threads
     //opts.config.set_intra_op_parallelism_threads(16);
+    opts.config.mutable_gpu_options()->set_allow_growth(true); // do not allocate all the RAM
+
     session = tensorflow::NewSession(opts); // no specific options: tensorflow::SessionOptions()
 
     lg->trace("attempting to load the graph...");
@@ -297,7 +301,7 @@ Batch * DNN::run(Batch *abatch)
 #endif
     std::vector<Tensor> outputs;
     STimer timr(lg, "DNN::run:" + to_string(batch->packageId()));
-    lg->debug("DNN: started execution for package {}.", batch->packageId());
+    lg->debug("DNN#{}: started execution for package {}.", mIndex, batch->packageId());
 
     std::vector<std::pair<string, Tensor> > inputs;
     const std::list<InputTensorItem> &tdef = tensorDefinition();
@@ -383,7 +387,7 @@ Batch * DNN::run(Batch *abatch)
 #endif
 
 
-    lg->debug("DNN result: {} output tensors. package {}, {} slots.", outputs.size(), batch->packageId(), batch->usedSlots());
+    lg->debug("DNN result (#{}): {} output tensors. package {}, {} slots.", mIndex, outputs.size(), batch->packageId(), batch->usedSlots());
     lg->debug("out:  {}", outputs[0].DebugString());
     lg->debug("time: {}", outputs[1].DebugString());
     // output tensors: 2dim; 1x batch, 1x data
@@ -434,48 +438,50 @@ void DNN::setupInput()
     //        {"test2", InputTensorItem::DT_INT16, 1, 1, 0, InputTensorItem::State}
     //    };
         // load tensor definitions from file
-        std::string metafilename = Tools::path(Model::instance()->settings().valueString("dnn.metadata"));
-        if (!Tools::fileExists(metafilename))
-            throw std::logic_error("The metadata file for the DNN (" + metafilename + ") does not exist (specified as 'dnn.metadata')!");
+    mTensorDef.clear();
+    std::string metafilename = Tools::path(Model::instance()->settings().valueString("dnn.metadata"));
+    if (!Tools::fileExists(metafilename))
+        throw std::logic_error("The metadata file for the DNN (" + metafilename + ") does not exist (specified as 'dnn.metadata')!");
 
-        Settings mg;
-        mg.loadFromFile(metafilename);
+    Settings mg;
+    mg.loadFromFile(metafilename);
 
-        auto sections = mg.findKeys("input.", true);
-        lg->debug("Found sections: {}", join(sections));
-        if (lg->should_log(spdlog::level::trace)) {
-            for (auto &s : sections) {
-                auto keys = mg.findKeys("input." + s);
-                lg->trace("Section: {}", s);
-                for (auto &k : keys)
-                    lg->trace("'{}' = '{}'", k, mg.valueString(k));
-            }
-        }
-
+    auto sections = mg.findKeys("input.", true);
+    std::shared_ptr<spdlog::logger> lg = spdlog::get("dnn");
+    lg->debug("Found sections: {}", join(sections));
+    if (lg->should_log(spdlog::level::trace)) {
         for (auto &s : sections) {
-            mg.requiredKeys("input."+s, {"enabled", "dim", "sizeX", "sizeY", "dtype", "type"});
-            if (!mg.valueBool("input." + s + ".enabled"))
-                continue;
-
-            InputTensorItem item(s,
-                                 mg.valueString("input."+ s +".dtype"),
-                                 mg.valueUInt("input." + s + ".dim"),
-                                 mg.valueUInt("input." + s + ".sizeX"),
-                                 mg.valueUInt("input." + s + ".sizeY"),
-                                 mg.valueString("input."+ s +".type"));
-
-            mTensorDef.push_back(item);
-            // setup the data extractor
-            InputTensorItem *ti =& mTensorDef.back();
-            ti->mFetch = FetchData::createFetchObject(ti);
-            if (!ti->mFetch) {
-                lg->error("create Batch for DNN: Error:");
-                lg->error("Name: '{}', dataype: '{}', dimensions: {}, size-x: {}, size-y: {}, content: '{}'",
-                          item.name, item.datatypeString(item.type), item.ndim, item.sizeX, item.sizeY, item.contentString(item.content));
-                throw std::logic_error("Could not create a tensor (check the logfile).");
-            }
-            ti->mFetch->setup(&mg, "input." + s, item);
+            auto keys = mg.findKeys("input." + s);
+            lg->trace("Section: {}", s);
+            for (auto &k : keys)
+                lg->trace("'{}' = '{}'", k, mg.valueString(k));
         }
+    }
+
+    for (auto &s : sections) {
+        mg.requiredKeys("input."+s, {"enabled", "dim", "sizeX", "sizeY", "dtype", "type"});
+        if (!mg.valueBool("input." + s + ".enabled"))
+            continue;
+
+        InputTensorItem item(s,
+                             mg.valueString("input."+ s +".dtype"),
+                             mg.valueUInt("input." + s + ".dim"),
+                             mg.valueUInt("input." + s + ".sizeX"),
+                             mg.valueUInt("input." + s + ".sizeY"),
+                             mg.valueString("input."+ s +".type"));
+
+        mTensorDef.push_back(item);
+        // setup the data extractor
+        InputTensorItem *ti =& mTensorDef.back();
+        ti->mFetch = FetchData::createFetchObject(ti);
+        if (!ti->mFetch) {
+            lg->error("create Batch for DNN: Error:");
+            lg->error("Name: '{}', dataype: '{}', dimensions: {}, size-x: {}, size-y: {}, content: '{}'",
+                      item.name, item.datatypeString(item.type), item.ndim, item.sizeX, item.sizeY, item.contentString(item.content));
+            throw std::logic_error("Could not create a tensor (check the logfile).");
+        }
+        ti->mFetch->setup(&mg, "input." + s, item);
+    }
 
 
     //    mTensorDef =  {
@@ -490,15 +496,15 @@ void DNN::setupInput()
     //    };
 
 
-        if (lg->should_log(spdlog::level::debug)) {
-            lg->debug("Available data types: {}", InputTensorItem::allDataTypeStrings());
-            lg->debug("Available content types: {}", InputTensorItem::allContentStrings());
-            // print tensor-items
-            lg->debug("InputTensorItems:");
-            for (auto &i : mTensorDef)
-                lg->debug("Name: '{}', dataype: '{}', dimensions: {}, size-x: {}, size-y: {}, content: '{}'",
-                          i.name, i.datatypeString(i.type), i.ndim, i.sizeX, i.sizeY, i.contentString(i.content));
-        }
+    if (lg->should_log(spdlog::level::debug)) {
+        lg->debug("Available data types: {}", InputTensorItem::allDataTypeStrings());
+        lg->debug("Available content types: {}", InputTensorItem::allContentStrings());
+        // print tensor-items
+        lg->debug("InputTensorItems:");
+        for (auto &i : mTensorDef)
+            lg->debug("Name: '{}', dataype: '{}', dimensions: {}, size-x: {}, size-y: {}, content: '{}'",
+                      i.name, i.datatypeString(i.type), i.ndim, i.sizeX, i.sizeY, i.contentString(i.content));
+    }
 
 }
 
@@ -514,7 +520,7 @@ TensorWrapper *DNN::buildTensor(size_t batch_size, InputTensorItem &item)
             // defaults to true, TODO
             TensorWrap1d<bool> *twb = static_cast< TensorWrap1d<bool>* >(tw);
             twb->setValue(false);
-            lg->debug("created a scalar, value: '{}'", twb->value());
+            spdlog::get("main")->debug("created a scalar, value: '{}'", twb->value());
             break;
         }
         default: break;
@@ -533,6 +539,9 @@ TensorWrapper *DNN::buildTensor(size_t batch_size, InputTensorItem &item)
             tw = new TensorWrap2d<short unsigned int>(batch_size, item.sizeX); break;
         case InputTensorItem::DT_INT64:
             tw = new TensorWrap2d<long long>(batch_size, item.sizeX); break;
+        case InputTensorItem::DT_INT32:
+            tw = new TensorWrap2d<int32_t>(batch_size, item.sizeX); break;
+
         default:
             throw std::logic_error("Unhandled data type in tensorwrapper");
         }
@@ -549,7 +558,7 @@ TensorWrapper *DNN::buildTensor(size_t batch_size, InputTensorItem &item)
 
     if (tw)
         return tw;
-
+    std::shared_ptr<spdlog::logger> lg = spdlog::get("main");
     lg->error("build Tensor: not able to create the tensor from the definition:");
     lg->error("Name: '{}', dataype: '{}', dimensions: {}, size-x: {}, size-y: {}, content: '{}'",
               item.name, item.datatypeString(item.type), item.ndim, item.sizeX, item.sizeY, item.contentString(item.content));

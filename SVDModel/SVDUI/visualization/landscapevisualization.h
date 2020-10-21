@@ -21,6 +21,7 @@
 
 #include <QString>
 #include <QImage>
+#include <QVector3D>
 #include "grid.h"
 #include "expression.h"
 #include "colorpalette.h"
@@ -31,7 +32,7 @@ class LandscapeVisualization : public QObject
 {
 Q_OBJECT
 public:
-    enum RenderType {RenderNone, RenderState, RenderExpression};
+    enum RenderType {RenderNone, RenderState, RenderExpression, RenderVariable};
     LandscapeVisualization(QObject *parent=nullptr);
     ~LandscapeVisualization();
     void setup(SurfaceGraph *graph, Legend *palette);
@@ -42,14 +43,28 @@ public:
     RenderType renderType() const { return mCurrentType; }
     void setRenderType(RenderType type) { mCurrentType = type; update(); }
 
-    void renderToFile();
+    void renderToFile(QString filename=QString());
+
+    int viewCount() const;
+    bool isViewValid(int camera);
+    QString viewString(int camera);
+    void setViewString(int camera, QString str);
 
 public slots:
     /// renders the expression and sets the render type to "Expression"
     bool renderExpression(QString expression);
 
+    /// renders the content of the cell variable
+    bool renderVariable(QString variableName, QString description);
+
     /// update the rendering
     void update();
+    /// reset view to stored view
+    void resetView(int camera=0);
+    void saveView(int camera);
+    void setFillColor(QColor col);
+signals:
+    void pointSelected(QVector3D world_coord); ///< coordinates of the point where a user clicks on the visualization
 
 private:
     bool isRendering() {return mIsRendering; }
@@ -62,6 +77,7 @@ private:
     void setupColorRamps();
     void setupStateColors();
     QRgb colorValue(double value) { return mColorLookup[ std::min(std::max(static_cast<int>(value*1000), 0), 999)]; }
+    QColor mBGColor;
 
     QVector<QRgb> mColorLookup;
     QVector<QRgb> mStateColorLookup;

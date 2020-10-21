@@ -79,7 +79,7 @@ public:
     // actions
 
     /// set value range (min/max) for a user-defined range
-    void setValueRange(double min_value, double max_value) { mMinValue = min_value; mMaxValue = max_value; if(min_value==max_value) mMaxValue+=1.; }
+    void setValueRange(double min_value, double max_value) { mMinValue = min_value; mMaxValue = max_value; if(fabs(min_value-max_value) < 0.000001) mMaxValue+=1.; }
 
     /// get the corresponding color of `value` with the current settings of the palette
     QRgb color(double value) { assert(isValid()); double value_rel = (value - mMinValue) / (mMaxValue - mMinValue);

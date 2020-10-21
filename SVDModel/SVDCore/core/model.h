@@ -35,7 +35,9 @@
 class Model
 {
 public:
-    Model(const std::string &fileName);
+    /// creates a model and loads the settings from the given configuration file.
+    /// The content of externalSettings is used for the settings (if present).
+    Model(const std::string &fileName, Settings *externalSettings=nullptr);
     ~Model();
     /// sets up the model components (such as states, climate, landscape) from the config file 'fileName'
     /// returns true on success

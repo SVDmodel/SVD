@@ -20,6 +20,7 @@
 #define EXPRESSIONWRAPPERH
 
 #include <vector>
+#include <string>
 
 class ExpressionWrapper
 {
@@ -52,6 +53,7 @@ private:
 class EnvironmentCell; // forward
 class State; // forward
 class Cell; // forward
+class Module; // forward
 
 /// Wrapper for Cell data (environment, state meta data, ...)
 class CellWrapper: public ExpressionWrapper
@@ -62,13 +64,18 @@ public:
 
     /// fetch variable names from environment and state and add to the wrapper object.
     static void setupVariables(EnvironmentCell *ecell, const State *astate);
+    static void setupVariables(const Module *module);
 
     virtual const std::vector<std::string> &getVariablesList() { return mVariableList; }
+    virtual const std::vector<std::pair<std::string, std::string> > &getVariablesMetaData() { return mVariablesMetaData; }
     virtual double value(const size_t variableIndex);
 
 private:
     static std::vector<std::string> mVariableList;
+    static std::vector<std::pair<std::string, std::string> > mVariablesMetaData;
+    static std::vector<std::pair<const Module*, size_t> > mModules;
     static size_t mMaxStateVar;
+    static size_t mMaxEnvVar;
 
     const Cell *mData;
 };

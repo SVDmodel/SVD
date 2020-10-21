@@ -26,6 +26,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     modelshell.cpp \
+    modules/simplemanagement/simplemanagementmodule.cpp \
+    outputs/statehistout.cpp \
     tools/grid.cpp \
     tools/strtools.cpp \
     tools/filereader.cpp \
@@ -51,10 +53,12 @@ SOURCES += \
     modules/fire/firemodule.cpp \
     modules/fire/fireout.cpp \
     modules/module.cpp \
-    modules/matrixmodule.cpp
+    modules/matrix/matrixmodule.cpp
 
 HEADERS += \
     modelshell.h \
+    modules/simplemanagement/simplemanagementmodule.h \
+    outputs/statehistout.h \
     tools/grid.h \
     tools/strtools.h \
     tools/filereader.h \
@@ -80,7 +84,7 @@ HEADERS += \
     modules/fire/firemodule.h \
     modules/fire/fireout.h \
     modules/module.h \
-    modules/matrixmodule.h
+    modules/matrix/matrixmodule.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

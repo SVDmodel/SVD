@@ -6,6 +6,7 @@
 #include "tensorflow/core/framework/tensor.h"
 
 #pragma warning(pop)
+#include <stdint.h>
 
 /// Some array conversion tools.
 /// \author David Stutz
@@ -43,7 +44,8 @@ public:
     TensorWrap1d() {
         tensorflow::DataType dt = tensorflow::DT_FLOAT;
         if (typeid(T)==typeid(float)) dt=tensorflow::DT_FLOAT;
-        if (typeid(T)==typeid(int)) dt=tensorflow::DT_INT64;
+        if (typeid(T)==typeid(int64_t)) dt=tensorflow::DT_INT64;
+        if (typeid(T)==typeid(int32_t)) dt=tensorflow::DT_INT32;
         if (typeid(T)==typeid(unsigned short)) dt=tensorflow::DT_UINT16;
         if (typeid(T)==typeid(short int)) dt=tensorflow::DT_INT16;
         if (typeid(T)==typeid(bool)) dt=tensorflow::DT_BOOL;
@@ -79,7 +81,8 @@ public:
         mBatchSize = batch_size; mN=n;
         tensorflow::DataType dt = tensorflow::DT_FLOAT;
         if (typeid(T)==typeid(float)) dt=tensorflow::DT_FLOAT;
-        if (typeid(T)==typeid(int)) dt=tensorflow::DT_INT64;
+        if (typeid(T)==typeid(int64_t)) dt=tensorflow::DT_INT64;
+        if (typeid(T)==typeid(int32_t)) dt=tensorflow::DT_INT32;
         if (typeid(T)==typeid(unsigned short)) dt=tensorflow::DT_UINT16;
         if (typeid(T)==typeid(short int)) dt=tensorflow::DT_INT16;
         if (typeid(T)==typeid(bool)) dt=tensorflow::DT_BOOL;
@@ -133,7 +136,8 @@ public:
         mBatchSize = batch_size; mRows=nx; mCols=ny;
         tensorflow::DataType dt = tensorflow::DT_FLOAT;
         if (typeid(T)==typeid(float)) dt=tensorflow::DT_FLOAT;
-        if (typeid(T)==typeid(int)) dt=tensorflow::DT_INT64;
+        if (typeid(T)==typeid(int64_t)) dt=tensorflow::DT_INT64;
+        if (typeid(T)==typeid(int32_t)) dt=tensorflow::DT_INT32;
         if (typeid(T)==typeid(unsigned short)) dt=tensorflow::DT_UINT16;
         if (typeid(T)==typeid(short int)) dt=tensorflow::DT_INT16;
         if (typeid(T)==typeid(bool)) dt=tensorflow::DT_BOOL;

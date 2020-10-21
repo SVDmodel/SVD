@@ -43,7 +43,7 @@ ModelController::ModelController(QObject *)
 
 
     dnnThread = new QThread();
-    mDNNShell = new DNNShell;
+    mDNNShell = new DNNShell();
     mDNNShell->moveToThread(dnnThread);
 
     connect(dnnThread, &QThread::finished, mDNNShell, &QObject::deleteLater);
@@ -71,6 +71,8 @@ ModelController::ModelController(QObject *)
 
     mYearsToRun = 0;
     mCurrentStep = 0;
+    mIsCurrentlyRunning = false;
+    mInteractiveMode = false;
 
 }
 
@@ -93,7 +95,7 @@ ModelController::~ModelController()
 std::unordered_map<std::string, std::string> ModelController::systemStatus()
 {
     std::unordered_map<std::string, std::string> result;
-    if (mModelShell->model() == nullptr)
+    if (mModelShell->model() == nullptr || !state()->isModelCreated() || !BatchManager::hasInstance())
         return result;
 
     // add statistics
@@ -127,11 +129,12 @@ std::unordered_map<std::string, std::string> ModelController::systemStatus()
     return result;
 }
 
-void ModelController::setup(QString fileName)
+void ModelController::setup(QString fileName, Settings *settings)
 {
     // use a blocking connection for initial creation (logging, etc.)
     QMetaObject::invokeMethod(mModelShell, "createModel", Qt::BlockingQueuedConnection,
-                              Q_ARG(QString, fileName)) ;
+                              Q_ARG(QString, fileName),
+                              Q_ARG(Settings*, settings)) ;
 
     if (RunState::instance()->isError())
         return;
@@ -157,14 +160,26 @@ void ModelController::run(int n_years)
 {
     mYearsToRun = n_years;
     mCurrentStep = 1;
+    mIsCurrentlyRunning = true;
     mStopWatch.start();
     QMetaObject::invokeMethod(mModelShell, "run", Qt::QueuedConnection, Q_ARG(int,n_years));
+}
+
+void ModelController::runStep()
+{
+    if (mIsCurrentlyRunning)
+        return;
+    // run the next year of the simulation
+    mIsCurrentlyRunning = true;
+    QMetaObject::invokeMethod(mModelShell, "runOneStep", Qt::QueuedConnection, Q_ARG(int, mCurrentStep));
+
 }
 
 
 void ModelController::finishedStep(int n)
 {
     mCurrentStep++;
+    mIsCurrentlyRunning = false;
     if (mCurrentStep >= mYearsToRun) {
         // finished
         log(QString("Finished!"));
@@ -174,9 +189,10 @@ void ModelController::finishedStep(int n)
     } else {
         emit finishedYear(mCurrentStep);
     }
-    // run the next year of the simulation
-    QMetaObject::invokeMethod(mModelShell, "runOneStep", Qt::QueuedConnection, Q_ARG(int, mCurrentStep));
     log(QString("finished %1 of %2.").arg(n).arg(mYearsToRun));
 
+    // run the next year automatically
+    if (!mInteractiveMode)
+        runStep();
 }
 

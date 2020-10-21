@@ -31,7 +31,7 @@ public:
     double value(const std::string &s) const { return value(static_cast<size_t>(indexOf(s))); }
     double value(const size_t var_idx) const { if (var_idx<mValues.size()) return mValues[var_idx]; throw std::logic_error("Invalid index for environment cell!");}
     /// return the index of variable 's' or -1 if invalid
-    int indexOf(const std::string &s) const { return ::indexOf(mVariables, s); }
+    static int indexOf(const std::string &s)  { return ::indexOf(mVariables, s); }
 
     /// set the value of a variable given by the index ('var_idx'). Throws an error of var_idx is invalid.
     void setValue(const int var_idx, double new_value);

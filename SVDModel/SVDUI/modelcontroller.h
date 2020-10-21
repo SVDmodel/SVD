@@ -40,6 +40,9 @@ public:
     const Model *model() const { return mModelShell->model(); }
     DNNShell *dnnShell() const { return mDNNShell; }
     RunState *state() { return mState.get(); }
+    int yearsToRun() { return mYearsToRun; }
+
+    void setInteractiveMode(bool interactive) { mInteractiveMode = interactive; }
 
     /// retrieve system statistics as key-value pairs
     std::unordered_map<std::string, std::string> systemStatus();
@@ -52,10 +55,11 @@ signals:
     void finished();
 
 public slots:
-    void setup(QString fileName);
+    void setup(QString fileName, Settings *settings=nullptr);
     void shutdown();
 
     void run(int n_years);
+    void runStep();
     //void abort();
     void finishedStep(int n);
 private:
@@ -66,6 +70,8 @@ private:
     int mYearsToRun;
     int mCurrentStep;
     QTime mStopWatch;
+    bool mIsCurrentlyRunning;
+    bool mInteractiveMode;
 
 };
 

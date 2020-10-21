@@ -71,7 +71,7 @@ const Cell &InferenceData::cell() const
 std::string InferenceData::dumpTensorData()
 {
     std::stringstream ss;
-    const std::list<InputTensorItem> &tdef = DNN::instance()->tensorDefinition();
+    const std::list<InputTensorItem> &tdef = DNN::tensorDefinition();
     ss << " **** Dump for example " << mSlot << " **** " << std::endl;
     for (const auto &def : tdef) {
         ss << "*****************************************" << std::endl;

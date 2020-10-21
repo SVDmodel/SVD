@@ -24,6 +24,8 @@ number of threads used by the SVD model (without threads specifically for the DN
 
 #### `dnn.threads` (numeric)
 The number of threads used for DNN processing (default 2)
+#### `dnn.count` (numeric)
+Number of (parallel) DNNs that are used. Each instance uses the same network (`dnn.file`) (default: 1)
 #### `dnn.batchSize` (numeric)
 The size of a single "batch". Multiple cells are processed simultaneously by the DNN, and the batch size
 indicates how many. Bigger batch sizes are usually processed faster, if batches are too large memory problems
@@ -53,6 +55,12 @@ The number of classes (number of different states) in the output tensor for the 
 The name of the output tensor in the trained network for the remaining residence time.
 #### `dnn.restime.N` (numeric)
 The number of classes (number of different durations) in the output tensor for the remaining residence time.
+
+#### `dnn.allowStateChangeAtMaxTime` (boolean)
+The setting controls whether the selected residence time controls the subsequent state change. If the
+value is `false`, then both are linked: a maximal time means no state change, and a lower residence time
+forces a state change (i.e. disallows the current state as future state). If the value is `true`, then 
+no interaction between residence time and state is simulated (default: `false`).
 
 ## Model components
 ### States

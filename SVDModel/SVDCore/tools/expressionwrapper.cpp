@@ -31,6 +31,7 @@
 #include "strtools.h"
 #include "../Predictor/inferencedata.h"
 #include "model.h"
+#include "modules/module.h"
 
 #define VARCOUNT 52
 static const char *VarList[VARCOUNT]={"bhd", "alter", "hoehe", "art", "id", "vorrat",
@@ -134,7 +135,8 @@ std::vector<std::string> InferenceDataWrapper::mVariableList = {"state",
                                                        // "id", ??
                                                        "x",
                                                        "y",
-                                                       "year"
+                                                       "year",
+                                                       "environmentId"
                                                       };
 
 
@@ -148,14 +150,18 @@ double InferenceDataWrapper::value(const size_t variableIndex)
     case 1: // restime
         return static_cast<double>(cell.residenceTime());
     case 2:  { // x
-        PointF coord =  Model::instance()->landscape()->grid().cellCenterPoint( Model::instance()->landscape()->grid().indexOf(&cell) );
+        PointF coord =  Model::instance()->landscape()->grid().cellCenterPoint( cell.cellIndex() );
         return coord.x();
     }
     case 3:  { // y
-        PointF coord =  Model::instance()->landscape()->grid().cellCenterPoint( Model::instance()->landscape()->grid().indexOf(&cell) );
+        PointF coord =  Model::instance()->landscape()->grid().cellCenterPoint( cell.cellIndex() );
         return coord.y();
     }
-    case 4: return static_cast<double>(Model::instance()->year());
+    case 4:
+        return static_cast<double>(Model::instance()->year());
+    case 5:
+        return static_cast<double>(cell.environment()->id());
+
     default: throw std::logic_error("invalid variable in CellWrapper: " + to_string(variableIndex));
     }
 
@@ -167,11 +173,25 @@ double InferenceDataWrapper::value(const size_t variableIndex)
 */
 
 std::vector<std::string> CellWrapper::mVariableList = { "index", "environmentId" "climateId", "stateId", "residenceTime", "function", "structure" };
+std::vector<std::pair<std::string, std::string> > CellWrapper::mVariablesMetaData;
 size_t CellWrapper::mMaxStateVar = 0;
+size_t CellWrapper::mMaxEnvVar = 0;
+std::vector<std::pair<const Module*, size_t> > CellWrapper::mModules;
 
 void CellWrapper::setupVariables(EnvironmentCell *ecell, const State *astate)
 {
-    mVariableList = {  "index", "environmentId", "climateId", "stateId", "residenceTime", "function", "structure" }; // reset
+    mVariableList = {  "index", "environmentId", "climateId", "elevation" ,"stateId", "residenceTime", "function", "structure" }; // reset
+    mVariablesMetaData = {
+        { "General", "0-based cell index" }, // index
+        { "General", "Id of the environment zone" }, // environmentId
+        { "General", "Id of the climate zone" }, // climateId
+        { "General", "elevation (m) of the cell" }, // elevation
+        { "General", "Id of the cell state" }, // stateId
+        { "General", "residence time of the cell (years)" }, // residenceTime
+        { "General", "ecosystem functioning class of the cell" }, // function
+        { "General", "ecosystem structure class of the cell" }, // structure
+    };
+    mModules.clear();
 
     // add variables from states
     const auto &names = astate->valueNames();
@@ -181,6 +201,7 @@ void CellWrapper::setupVariables(EnvironmentCell *ecell, const State *astate)
             throw std::logic_error("Error in setting up variable names (check log).");
         }
         mVariableList.push_back(v);
+        mVariablesMetaData.push_back({"State", "State variable (user-defined)"});
     }
     mMaxStateVar = mVariableList.size();
 
@@ -193,28 +214,41 @@ void CellWrapper::setupVariables(EnvironmentCell *ecell, const State *astate)
         }
 
         mVariableList.push_back(v);
+        mVariablesMetaData.push_back({"Environment", "Environment variable (user-defined)"});
     }
+    mMaxEnvVar = mVariableList.size();
+}
 
-
+void CellWrapper::setupVariables(const Module *module)
+{
+    auto vars = module->moduleVariableNames();
+    if (vars.size()==0)
+        return;
+    for (size_t i=0;i<vars.size();++i) {
+        mVariableList.push_back(vars[i].first);
+        mModules.push_back(std::pair<const Module*, size_t>(module, i));
+        mVariablesMetaData.push_back({module->name(), vars[i].second});
+    }
 }
 
 
 
 double CellWrapper::value(const size_t variableIndex)
 {
+    const size_t NFixedVariables = 8;
 
-    if (variableIndex < 7) {
-        // fixed variables: id, climateId
+    if (variableIndex < NFixedVariables) {
+        // fixed variables: id, climateId, ...
 
         switch (variableIndex) {
-        case 0: return 0.; // TODO: cell index
+        case 0: return mData->cellIndex();
         case 1: return static_cast<double>(mData->environment()->id());
         case 2: return static_cast<double>(mData->environment()->climateId());
-        case 3: return static_cast<double>(mData->stateId());
-        case 4: return static_cast<double>(mData->residenceTime());
-        case 5: return static_cast<double>( mData->state() ? mData->state()->function() : 0); // function
-        case 6: return static_cast<double>( mData->state() ? mData->state()->structure() : 0); // structure
-
+        case 3: return static_cast<double>(mData->elevation());
+        case 4: return static_cast<double>(mData->stateId());
+        case 5: return static_cast<double>(mData->residenceTime());
+        case 6: return static_cast<double>( mData->state() ? mData->state()->function() : 0); // function
+        case 7: return static_cast<double>( mData->state() ? mData->state()->structure() : 0); // structure
 
         }
 
@@ -222,10 +256,18 @@ double CellWrapper::value(const size_t variableIndex)
     } else if (variableIndex < mMaxStateVar) {
         // state variable
         const State *s = mData->state();
-        return s->value(variableIndex - 5);
-    } else {
+        return s->value(variableIndex - NFixedVariables);
+    } else if (variableIndex < mMaxEnvVar){
+        // environment variable
         const EnvironmentCell *ec = mData->environment();
         return ec->value(variableIndex - mMaxStateVar);
+    } else {
+        // module variable
+        size_t mod_idx = variableIndex - mMaxEnvVar;
+        if (mod_idx < mModules.size()) {
+            return mModules[mod_idx].first->moduleVariable( mData, mModules[mod_idx].second );
+        }
+
     }
     return 0.;
 }

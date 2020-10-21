@@ -273,6 +273,8 @@
     <addaction name="menuRecent_files"/>
     <addaction name="actionSetupProject"/>
     <addaction name="actionRunSim"/>
+    <addaction name="actionRun_single_step"/>
+    <addaction name="actionContinue"/>
     <addaction name="actionStopSim"/>
     <addaction name="actiondelete_model"/>
    </widget>
@@ -280,8 +282,21 @@
     <property name="title">
      <string>Visualization</string>
     </property>
+    <widget class="QMenu" name="menuSave_custom_view">
+     <property name="title">
+      <string>Save custom view...</string>
+     </property>
+     <addaction name="actionSaveView_1"/>
+     <addaction name="actionSaveView_2"/>
+     <addaction name="actionSaveView_3"/>
+    </widget>
     <addaction name="actionRender_to_file"/>
     <addaction name="action3D_Camera_settings"/>
+    <addaction name="actionReset_view"/>
+    <addaction name="actionCustom_view_1"/>
+    <addaction name="actionCustom_View_2"/>
+    <addaction name="actionCustom_View_3"/>
+    <addaction name="menuSave_custom_view"/>
    </widget>
    <widget class="QMenu" name="menuOther">
     <property name="title">
@@ -467,7 +482,7 @@
    <property name="minimumSize">
     <size>
      <width>150</width>
-     <height>38</height>
+     <height>305</height>
     </size>
    </property>
    <property name="windowTitle">
@@ -477,72 +492,196 @@
     <number>2</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_2">
-    <widget class="QLineEdit" name="lExpression">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>90</y>
-       <width>131</width>
-       <height>20</height>
-      </rect>
+    <layout class="QVBoxLayout" name="verticalLayout_6">
+     <property name="leftMargin">
+      <number>3</number>
      </property>
-    </widget>
-    <widget class="QPushButton" name="pbRenderExpression">
-     <property name="geometry">
-      <rect>
-       <x>130</x>
-       <y>90</y>
-       <width>21</width>
-       <height>23</height>
-      </rect>
+     <property name="rightMargin">
+      <number>3</number>
      </property>
-     <property name="text">
-      <string/>
-     </property>
-     <property name="icon">
-      <iconset resource="res/resource.qrc">
-       <normaloff>:/camera.png</normaloff>:/camera.png</iconset>
-     </property>
-    </widget>
-    <widget class="QRadioButton" name="visExpression">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>70</y>
-       <width>82</width>
-       <height>17</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Expression</string>
-     </property>
-    </widget>
-    <widget class="QRadioButton" name="visState">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>50</y>
-       <width>82</width>
-       <height>17</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>State</string>
-     </property>
-    </widget>
-    <widget class="QRadioButton" name="visNone">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>30</y>
-       <width>82</width>
-       <height>17</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Nothing</string>
-     </property>
-    </widget>
+     <item>
+      <widget class="QTabWidget" name="tabWidget_2">
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <widget class="QWidget" name="tabVisualization">
+        <attribute name="title">
+         <string>Visualization</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_5">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <property name="spacing">
+            <number>3</number>
+           </property>
+           <item>
+            <widget class="QLineEdit" name="lExpression"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pbRenderExpression">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="res/resource.qrc">
+               <normaloff>:/camera.png</normaloff>:/camera.png</iconset>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="visNone">
+           <property name="text">
+            <string>Nothing</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="visState">
+           <property name="text">
+            <string>State</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="visExpression">
+           <property name="text">
+            <string>Expression</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="visVariable">
+           <property name="text">
+            <string>Variable</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTreeWidget" name="visVariables">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>1000</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="indentation">
+            <number>8</number>
+           </property>
+           <attribute name="headerVisible">
+            <bool>false</bool>
+           </attribute>
+           <column>
+            <property name="text">
+             <string notr="true">1</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="visCoords">
+           <property name="text">
+            <string>-</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="tabInspector">
+        <attribute name="title">
+         <string>Inspector</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_7">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>3</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="visCoordsInspector">
+           <property name="text">
+            <string>-</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTreeWidget" name="visCellData">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>1000</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="indentation">
+            <number>8</number>
+           </property>
+           <property name="columnCount">
+            <number>2</number>
+           </property>
+           <attribute name="headerVisible">
+            <bool>false</bool>
+           </attribute>
+           <column>
+            <property name="text">
+             <string notr="true">Variable</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Value</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </item>
+    </layout>
    </widget>
   </widget>
   <action name="actionTest_DNN">
@@ -666,6 +805,86 @@
     <string>About SVD</string>
    </property>
   </action>
+  <action name="actionReset_view">
+   <property name="text">
+    <string>Reset view</string>
+   </property>
+   <property name="shortcut">
+    <string>F6</string>
+   </property>
+  </action>
+  <action name="actionCustom_view_1">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Custom view 1</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+F1</string>
+   </property>
+  </action>
+  <action name="actionCustom_View_2">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Custom View 2</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+F2</string>
+   </property>
+  </action>
+  <action name="actionCustom_View_3">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Custom View 3</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+F3</string>
+   </property>
+  </action>
+  <action name="actionSaveView_1">
+   <property name="text">
+    <string>View 1</string>
+   </property>
+  </action>
+  <action name="actionSaveView_2">
+   <property name="text">
+    <string>View 2</string>
+   </property>
+  </action>
+  <action name="actionSaveView_3">
+   <property name="text">
+    <string>View 3</string>
+   </property>
+  </action>
+  <action name="actionRun_single_step">
+   <property name="icon">
+    <iconset resource="res/resource.qrc">
+     <normaloff>:/Play.png</normaloff>:/Play.png</iconset>
+   </property>
+   <property name="text">
+    <string>Run single step</string>
+   </property>
+   <property name="shortcut">
+    <string>F8</string>
+   </property>
+  </action>
+  <action name="actionContinue">
+   <property name="icon">
+    <iconset resource="res/resource.qrc">
+     <normaloff>:/Play.png</normaloff>:/Play.png</iconset>
+   </property>
+   <property name="text">
+    <string>Continue</string>
+   </property>
+   <property name="shortcut">
+    <string>F10</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -678,23 +897,7 @@
  </customwidgets>
  <resources>
   <include location="res/resource.qrc"/>
+  <include location="res/resource.qrc"/>
  </resources>
- <connections>
-  <connection>
-   <sender>lExpression</sender>
-   <signal>returnPressed()</signal>
-   <receiver>pbRenderExpression</receiver>
-   <slot>click()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1036</x>
-     <y>326</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1094</x>
-     <y>330</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

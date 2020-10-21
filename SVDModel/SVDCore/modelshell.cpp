@@ -150,14 +150,14 @@ std::string ModelShell::run_test_op(std::string what)
 }
 
 
-void ModelShell::createModel(QString fileName)
+void ModelShell::createModel(QString fileName, Settings *settings)
 {
     try {
         setState(ModelRunState::Creating);
         if (Model::hasInstance())
             destroyModel();
 
-        mModel = new Model(fileName.toStdString());
+        mModel = new Model(fileName.toStdString(), settings);
         mModel->setProcessEventsCallback( std::bind(&ModelShell::processEvents, this) );
         mCellsProcesssed=0;
 
@@ -270,13 +270,23 @@ void ModelShell::processedPackage(Batch *batch)
         return;
     }
 
-    // TODO: this is a bit too much: some handling in derived batch types (DNN), some in modules (handlers)
-    batch->processResults();
+    try {
 
-    if (batch->module()) {
-        batch->module()->processBatch(batch);
-        mCellsProcesssed += batch->usedSlots();
+        // TODO: this is a bit too much: some handling in derived batch types (DNN), some in modules (handlers)
+        batch->processResults();
+
+        if (batch->module()) {
+            batch->module()->processBatch(batch);
+            mCellsProcesssed += batch->usedSlots();
+        }
+
+    } catch(const std::exception &e) {
+        batch->setError(true);
+        RunState::instance()->setError("An error occured while processing the batch", RunState::instance()->modelState());
+        lg->error("An error occured while processing the batch: {}", e.what());
     }
+
+
 
 
     batch->changeState(Batch::Fill);
@@ -299,16 +309,21 @@ void ModelShell::processedPackage(Batch *batch)
 
 void ModelShell::allPackagesBuilt()
 {
-    if (!BatchManager::instance()->slotsRequested()) {
-        lg->debug("No pixel was updated this year.");
-        finalizeCycle();
-    }
-    //lg->debug("** all packages built, starting the last package");
-    sendPendingBatches(); // start last batch (even if < than batch size)
-    mAllPackagesBuilt = true;
-    if (mPackagesBuilt==mPackagesProcessed && mPackagesProcessed>0) {
-        lg->debug( "Model: processsed Last Package! [NSent: {} NReceived: {}]", mModel->stats.NPackagesSent, mModel->stats.NPackagesDNN );
-        finalizeCycle();
+    try{
+
+        if (!BatchManager::instance()->slotsRequested()) {
+            lg->debug("No pixel was updated this year.");
+            finalizeCycle();
+        }
+        //lg->debug("** all packages built, starting the last package");
+        sendPendingBatches(); // start last batch (even if < than batch size)
+        mAllPackagesBuilt = true;
+        if (mPackagesBuilt==mPackagesProcessed && mPackagesProcessed>0) {
+            lg->debug( "Model: processsed Last Package! [NSent: {} NReceived: {}]", mModel->stats.NPackagesSent, mModel->stats.NPackagesDNN );
+            finalizeCycle();
+        }
+    } catch (const std::exception &e) {
+        RunState::instance()->setError("Error: " + to_string(e.what()), RunState::instance()->modelState());
     }
 
 }
@@ -325,7 +340,7 @@ void ModelShell::internalRun()
 
         // check for each cell if we need to do something; if yes, then
         // fill a InferenceData item within a batch of data
-        //
+        // allPackagesBuilt() is called when completed
         packageFuture = QtConcurrent::map(mModel->landscape()->grid(), [this](Cell &cell){ this->evaluateCell(&cell); });
         packageWatcher.setFuture(packageFuture);
 
@@ -335,10 +350,13 @@ void ModelShell::internalRun()
         // we can run the outputs conerning the current state right now (in parallel)
         mModel->outputManager()->run("StateGrid");
         mModel->outputManager()->run("ResTimeGrid");
+        mModel->outputManager()->run("StateHist");
 
 
 }
 
+/// Main processing function for a single cell on the landscape
+/// this function is called in parallel.
 void ModelShell::evaluateCell(Cell *cell)
 {
     if (RunState::instance()->cancel())
@@ -350,6 +368,11 @@ void ModelShell::evaluateCell(Cell *cell)
         return;
 
     try {
+
+        if (cell->state()==nullptr) {
+            throw std::logic_error("Invalid state of a cell!");
+        }
+
         if( Module *module = cell->state()->module() ) {
             // extra module handles this state:
             // get a suitable slot in a batch for the given type

@@ -48,7 +48,7 @@ public:
     static BatchManager *instance() {
         assert(mInstance!=nullptr);
         return mInstance; }
-
+    static bool hasInstance() { return mInstance != nullptr; }
     size_t batchSize() const { return mBatchSize; }
 
     std::shared_ptr<spdlog::logger> &log() {return lg; }
