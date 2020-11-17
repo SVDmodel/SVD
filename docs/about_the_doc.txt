@@ -1,0 +1,28 @@
+SVD Documentation 
+
+
+SVD docs use docsify (https://docsify.js.org)
+
+Installation and usage
+======================
+
+see https://docsify.js.org/#/quickstart
+
+Basically docsify is a node-js application (package docsify-cli), and can run locally:
+
+docsify serve docs
+or
+docsify serve
+if already in the "docs" folder
+
+Github automatically forwards changes to:
+https://svdmodel.github.io/SVD
+or provides the local copy:
+https://github.com/SVDmodel/SVD/blob/master/docs/README.md
+
+Steps to update the documentation
+=================================
+
+* modify the *.md documentation files (Notepad++ plugin Markdown Viewer is helpful)
+* check locally: run "docsify serve" (this auto-updates when files change)
+* commit to GitHub

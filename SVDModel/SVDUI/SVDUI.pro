@@ -78,12 +78,19 @@ win32:CONFIG (release, debug|release): PRE_TARGETDEPS += ../SVDCore/release/SVDC
 else:win32:CONFIG (debug, debug|release): PRE_TARGETDEPS += ../SVDCore/debug/SVDCore.lib
 
 win32 {
+<<<<<<< HEAD
 #LIBS += -L../../../tensorflow/tensorflow/contrib/cmake/build/RelWithDebInfo -ltensorflow
 LIBS += -L../../../tensorflow/tensorflow\contrib\cmake\build\protobuf\src\protobuf\RelWithDebInfo -llibprotobuf
 LIBS += -L../../tensorflow/lib14cpu -ltensorflow
 
 LIBS += -L../../SVDModel/SVDCore/third_party/FreeImage -lFreeImage
 
+=======
+#LIBS += -LE:/dev/tensorflow/tensorflow/contrib/cmake/build/RelWithDebInfo -ltensorflow
+#LIBS += -LE:\dev\tensorflow\tensorflow\contrib\cmake\build\protobuf\src\protobuf\RelWithDebInfo -llibprotobuf
+LIBS += -L../../tensorflow/lib14 -ltensorflow
+LIBS += -L../../tensorflow/lib14 -llibprotobuf
+>>>>>>> 07199763b3b875f10f855ccd4a5bdfdbf99daf9f
 # for profiling only:
 # LIBS += -L"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v8.0/lib/x64" -lcudart
 }
@@ -93,17 +100,21 @@ PRE_TARGETDEPS += ../Predictor/libPredictor.a
 PRE_TARGETDEPS += /usr/lib/tensorflow-cpp/libtensorflow_cc.so
 LIBS += -L../SVDCore -lSVDCore
 LIBS += -L../Predictor -lPredictor
+<<<<<<< HEAD
 LIBS += -lfreeimage
 # FreeImage on Linux: see https://codeyarns.com/2014/02/11/how-to-install-and-use-freeimage/
 # basically sudo apt-get install libfreeimage3 libfreeimage-dev
 #LIBS += -L/usr/lib/x86_64-linux-gnu -lfreeimage
 
+=======
+#LIBS += -L/usr/lib/tensorflow-cpp/ -libtensorflow_cc.so
+INCLUDEPATH += $$PWD/../../../../../../usr/lib/tensorflow-cpp
+DEPENDPATH += $$PWD/../../../../../../usr/lib/tensorflow-cpp
+>>>>>>> 07199763b3b875f10f855ccd4a5bdfdbf99daf9f
 }
 
 unix:!macx: LIBS += -L/usr/lib/tensorflow-cpp/ -ltensorflow_cc
 
-INCLUDEPATH += $$PWD/../../../../../../usr/lib/tensorflow-cpp
-DEPENDPATH += $$PWD/../../../../../../usr/lib/tensorflow-cpp
 
 
 
