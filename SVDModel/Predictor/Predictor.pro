@@ -53,16 +53,16 @@ win32:CONFIG(release, debug|release): DEFINES +=  _ITERATOR_DEBUG_LEVEL=0
 win32:CONFIG(debug, debug|release): DEFINES +=  TF_DEBUG_MODE=0
 
 #LIBS += -LE:/dev/tensorflow/tensorflow/contrib/cmake/build/RelWithDebInfo -ltensorflow
-<<<<<<< HEAD
-#LIBS += -L../../tensorflow/lib14 -ltensorflow
-LIBS += -L../../tensorflow/lib14cpu -ltensorflow
 
-=======
+#LIBS += -L../../tensorflow/lib14 -ltensorflow
+#LIBS += -L../../tensorflow/lib14cpu -ltensorflow
+
+
 # GPU
 LIBS += -L../../tensorflow/lib14 -ltensorflow
 # CPU library
 # LIBS += -L../../tensorflow/lib14cpu -ltensorflow
->>>>>>> 07199763b3b875f10f855ccd4a5bdfdbf99daf9f
+
 # only required for the PredTest example:
 # LIBS += -LE:\dev\tensorflow\tensorflow\contrib\cmake\build\protobuf\src\protobuf\RelWithDebInfo -llibprotobuf.lib
 # E:\dev\tensorflow\tensorflow\contrib\cmake\build\protobuf\src\protobuf\RelWithDebInfo
