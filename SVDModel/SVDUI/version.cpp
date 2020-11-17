@@ -19,7 +19,7 @@
 
 
 #include <QString>
-static const char *version = "0.2";
+static const char *version = "0.3";
 static const char *git_revision = "<gitcommit>";
 const char *currentVersion(){ return version;}
 const char *gitVersion(){ return git_revision;}
